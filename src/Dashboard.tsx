@@ -69,6 +69,163 @@ type TopBarMode = 'default' | 'search' | 'category' | 'filter' | 'move' | 'visib
 
 let hasRunCleanup = false;
 
+// Memoized Top Product item for lag-free Analytics Items Grid
+const TopProductItem = React.memo(({ 
+  product, 
+  quantity, 
+  showImages 
+}: { 
+  product: Product; 
+  quantity: number; 
+  showImages: boolean; 
+}) => {
+  return (
+    <div 
+      className="relative overflow-hidden rounded-xl bg-[var(--dash-card)] border border-[var(--dash-border)] aspect-square content-visibility-auto contain-paint"
+      style={{ transform: 'translateZ(0)' }}
+    >
+      {showImages && (
+        <img 
+          src={product.thumbnail || product.image} 
+          alt={product.title} 
+          loading="lazy"
+          decoding="async"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      )}
+      <div className="absolute top-1 right-1 bg-[#fafafa] text-[var(--dash-bg)] text-xs font-bold px-2 py-0.5 rounded-full z-10 shadow-md">
+        {quantity}
+      </div>
+    </div>
+  );
+});
+
+// Memoized Product Card for lag-free Virtualized Products Grid
+interface DashboardProductGridCardProps {
+  product: Product;
+  topBarMode: TopBarMode;
+  isOutOfStock: boolean;
+  isSelected: boolean;
+  isVisible: boolean;
+  perms: any;
+  onEdit: (p: Product) => void;
+  onToggleSelection: (id: string) => void;
+  onToggleVisibility: (id: string) => void;
+  onMoveProducts: (e: React.MouseEvent, id: string) => void;
+}
+
+const DashboardProductGridCard = React.memo(({
+  product,
+  topBarMode,
+  isOutOfStock,
+  isSelected,
+  isVisible,
+  perms,
+  onEdit,
+  onToggleSelection,
+  onToggleVisibility,
+  onMoveProducts
+}: DashboardProductGridCardProps) => {
+  return (
+    <div 
+      className="rounded-xl overflow-hidden border flex flex-col relative cursor-pointer transition-colors bg-[var(--dash-card)] border-[var(--dash-border)] content-visibility-auto contain-paint"
+      style={{ transform: 'translateZ(0)' }}
+      onClick={() => {
+        if (topBarMode === 'default') {
+          onEdit(product);
+        } else if (topBarMode === 'move' || topBarMode === 'delete') {
+          onToggleSelection(product.id);
+        } else if (topBarMode === 'visibility') {
+          if (!isOutOfStock) {
+            onToggleVisibility(product.id);
+          }
+        }
+      }}
+    >
+      <div className="relative aspect-square w-full overflow-hidden bg-[var(--dash-card)]">
+        <img 
+          src={product.thumbnail || product.image} 
+          alt={product.title} 
+          loading="lazy"
+          decoding="async"
+          className={cn("absolute inset-0 w-full h-full object-cover", (product.isVisible === false || isOutOfStock) ? "opacity-75 grayscale" : "")} 
+        />
+        
+        {/* Stock Out Overlay/Label */}
+        {isOutOfStock && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-[var(--dash-bg)]/20 pointer-events-none transition-opacity duration-200">
+             <div className="w-8 h-8 rounded-full border border-[#ff4d4f] flex items-center justify-center bg-[var(--dash-bg)]/90 text-[#ff4d4f] shadow-lg shadow-[#ff4d4f]/20 backdrop-blur-sm">
+                <PackageX size={14} strokeWidth={2} />
+             </div>
+          </div>
+        )}
+        
+        {/* Mode Specific Overlays */}
+        {(topBarMode === 'move' || topBarMode === 'delete') && (
+          <div className="absolute top-2 left-2 w-6 h-6 rounded border-2 border-[var(--dash-border)] bg-[var(--dash-bg)]/50 flex items-center justify-center z-10">
+            {isSelected && <Check size={16} className="text-[#fafafa]" />}
+          </div>
+        )}
+
+        {topBarMode === 'visibility' && (
+          <div className={cn("absolute top-2 left-2 w-8 h-8 rounded flex items-center justify-center z-10", 
+            isVisible ? "bg-[#fafafa] text-[var(--dash-bg)]" : "bg-red-500 text-white"
+          )}>
+            {isVisible ? <Eye size={16} /> : <EyeOff size={16} />}
+          </div>
+        )}
+
+        {topBarMode === 'move' && (
+          <button 
+            onClick={(e) => onMoveProducts(e, product.id)}
+            className="absolute bottom-2 left-2 bg-[var(--dash-bg)]/80 text-white text-xs font-medium px-3 py-1.5 rounded z-10"
+          >
+            Insert
+          </button>
+        )}
+
+        {/* Default Overlays */}
+        {topBarMode === 'default' && (
+          <>
+            <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+              {product.isNew && <div className="bg-[var(--dash-bg)]/80 text-white text-[10px] font-bold px-2 py-1 rounded w-fit">NEW</div>}
+            </div>
+            <div className="absolute top-2 right-2 flex flex-col items-end gap-1 z-10">
+              <div className="bg-[var(--dash-bg)]/80 text-white text-[10px] font-bold px-2 py-1 rounded w-fit flex items-center gap-1">
+                ID: {product.id} <CopyButton text={product.id} className="p-0 text-gray-300 hover:text-white" />
+              </div>
+            </div>
+          </>
+        )}
+        
+        <div className="absolute bottom-2 right-2 bg-[#ff4d6d] text-white text-xs font-bold px-2 py-1 rounded z-10">
+          ¥{product.autoPrice || 0}
+        </div>
+        {topBarMode !== 'move' && !isOutOfStock && (
+          <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border z-10 shadow-md bg-[#fafafa] text-[var(--dash-bg)] border-[#fafafa]/20">
+            <Package size={14} />
+            {perms.product.stock ? (product.stock || 0) : '***'}
+          </div>
+        )}
+      </div>
+      <div className="grid grid-cols-3 text-center text-[10px] border-t border-[var(--dash-border)] divide-x divide-[var(--dash-border)]">
+        <div className="py-1">
+          <div className="text-gray-500">BUY</div>
+          <div className="font-medium text-white">{perms.product.buyPrice ? (product.buyPrice || Math.floor(product.price * 0.4)) : '***'}</div>
+        </div>
+        <div className="py-1">
+          <div className="text-gray-500">SELL</div>
+          <div className="font-medium text-white">{perms.product.sellPrice ? product.price : '***'}</div>
+        </div>
+        <div className="py-1">
+          <div className="text-gray-500">PROFIT</div>
+          <div className="font-medium text-white">{perms.product.profit ? product.price - (product.buyPrice || Math.floor(product.price * 0.4)) : '***'}</div>
+        </div>
+      </div>
+    </div>
+  );
+});
+
 export default function Dashboard({ products, setProducts, orders, setOrders, incompleteOrders, setIncompleteOrders, categories, setCategories, websiteSettings, setWebsiteSettings, marketingSettings, setMarketingSettings, courierSettings, setCourierSettings, priceCalculatorSettings, setPriceCalculatorSettings, onClose, isMaintenanceMode, setIsMaintenanceMode }: DashboardProps) {
   useScrollLock(true);
   const [activeTab, setActiveTab] = useState('Products');
@@ -1688,21 +1845,12 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
                 <h3 className="text-xl font-bold text-white mb-6 flex items-center justify-center">Items</h3>
                 <div className="grid grid-cols-3 gap-2 md:grid-cols-4 lg:grid-cols-6 md:gap-4">
                   {topProducts.map(({ product, quantity }) => (
-                    <div 
-                      key={product.id} 
-                      className="relative overflow-hidden rounded-xl bg-[var(--dash-card)] border border-[var(--dash-border)] aspect-square"
-                    >
-                      {perms.analytics.productImages && (
-                        <img 
-                          src={product.thumbnail || product.image} 
-                          alt={product.title} 
-                          className="absolute inset-0 w-full h-full object-cover"
-                        />
-                      )}
-                      <div className="absolute top-1 right-1 bg-[#fafafa] text-[var(--dash-bg)] text-xs font-bold px-2 py-0.5 rounded-full z-10 shadow-md">
-                        {quantity}
-                      </div>
-                    </div>
+                    <TopProductItem 
+                      key={product.id}
+                      product={product}
+                      quantity={quantity}
+                      showImages={Boolean(perms.analytics.productImages)}
+                    />
                   ))}
                 </div>
               </div>
@@ -1732,117 +1880,24 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
                       ? !product.variants.some(v => v.stock !== undefined && v.stock !== null && Number(v.stock) > 0)
                       : (product.stock === undefined || product.stock === null || Number(product.stock) <= 0);
 
-            return (
-            <div 
-              key={product.id} 
-              className={cn(
-                "rounded-xl overflow-hidden border flex flex-col relative cursor-pointer transition-all",
-                isOutOfStock 
-                  ? "bg-[var(--dash-card)] border-[var(--dash-border)]" 
-                  : "bg-[var(--dash-card)] border-[var(--dash-border)]"
-              )}
-              onClick={() => {
-                if (topBarMode === 'default') {
-                  setEditingProduct(product);
-                } else if (topBarMode === 'move' || topBarMode === 'delete') {
-                  toggleProductSelection(product.id);
-                } else if (topBarMode === 'visibility') {
-                  if (!isOutOfStock) {
-                    toggleVisibility(product.id);
-                  }
-                }
-              }}
-            >
-              <div className="relative aspect-square w-full overflow-hidden bg-[var(--dash-card)]">
-                <img src={product.thumbnail || product.image} alt={product.title} className={cn("absolute inset-0 w-full h-full object-cover", (product.isVisible === false || isOutOfStock) ? "opacity-75 grayscale" : "")} />
-                
-                {/* Stock Out Overlay/Label */}
-                <AnimatePresence>
-                {isOutOfStock && (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-[var(--dash-bg)]/20 pointer-events-none"
-                  >
-                     <div className="w-8 h-8 rounded-full border border-[#ff4d4f] flex items-center justify-center bg-[var(--dash-bg)]/90 text-[#ff4d4f] shadow-lg shadow-[#ff4d4f]/20 backdrop-blur-sm">
-                        <PackageX size={14} strokeWidth={2} />
-                     </div>
-                  </motion.div>
-                )}
-                </AnimatePresence>
-                
-                {/* Mode Specific Overlays */}
-                {(topBarMode === 'move' || topBarMode === 'delete') && (
-                  <div 
-                    className="absolute top-2 left-2 w-6 h-6 rounded border-2 border-[var(--dash-border)] bg-[var(--dash-bg)]/50 flex items-center justify-center z-10"
-                  >
-                    {selectedProducts.includes(product.id) && <Check size={16} className="text-[#fafafa]" />}
-                  </div>
-                )}
+                    const isSelected = selectedProducts.includes(product.id);
+                    const isVisible = visibilityChanges[product.id] !== undefined ? visibilityChanges[product.id] : product.isVisible !== false;
 
-                {topBarMode === 'visibility' && (
-                  <div 
-                    className={cn("absolute top-2 left-2 w-8 h-8 rounded flex items-center justify-center z-10", 
-                      (visibilityChanges[product.id] !== undefined ? visibilityChanges[product.id] : product.isVisible !== false) 
-                        ? "bg-[#fafafa] text-[var(--dash-bg)]" 
-                        : "bg-red-500 text-white"
-                    )}
-                  >
-                    {(visibilityChanges[product.id] !== undefined ? visibilityChanges[product.id] : product.isVisible !== false) ? <Eye size={16} /> : <EyeOff size={16} />}
-                  </div>
-                )}
-
-                {topBarMode === 'move' && (
-                  <button 
-                    onClick={(e) => handleMoveProducts(e, product.id)}
-                    className="absolute bottom-2 left-2 bg-[var(--dash-bg)]/80 text-white text-xs font-medium px-3 py-1.5 rounded z-10"
-                  >
-                    Insert
-                  </button>
-                )}
-
-                {/* Default Overlays */}
-                {topBarMode === 'default' && (
-                  <>
-                    <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-                      {product.isNew && <div className="bg-[var(--dash-bg)]/80 text-white text-[10px] font-bold px-2 py-1 rounded w-fit">NEW</div>}
-                    </div>
-                    <div className="absolute top-2 right-2 flex flex-col items-end gap-1 z-10">
-                      <div className="bg-[var(--dash-bg)]/80 text-white text-[10px] font-bold px-2 py-1 rounded w-fit flex items-center gap-1">
-                        ID: {product.id} <CopyButton text={product.id} className="p-0 text-gray-300 hover:text-white" />
-                      </div>
-                    </div>
-                  </>
-                )}
-                
-                <div className="absolute bottom-2 right-2 bg-[#ff4d6d] text-white text-xs font-bold px-2 py-1 rounded z-10">
-                  ¥{product.autoPrice || 0}
-                </div>
-                {topBarMode !== 'move' && !isOutOfStock && (
-                  <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border z-10 shadow-md bg-[#fafafa] text-[var(--dash-bg)] border-[#fafafa]/20">
-                    <Package size={14} />
-                    {perms.product.stock ? (product.stock || 0) : '***'}
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-3 text-center text-[10px] border-t border-[var(--dash-border)] divide-x divide-[var(--dash-border)]">
-                <div className="py-1">
-                  <div className="text-gray-500">BUY</div>
-                  <div className="font-medium text-white">{perms.product.buyPrice ? (product.buyPrice || Math.floor(product.price * 0.4)) : '***'}</div>
-                </div>
-                <div className="py-1">
-                  <div className="text-gray-500">SELL</div>
-                  <div className="font-medium text-white">{perms.product.sellPrice ? product.price : '***'}</div>
-                </div>
-                <div className="py-1">
-                  <div className="text-gray-500">PROFIT</div>
-                  <div className="font-medium text-white">{perms.product.profit ? product.price - (product.buyPrice || Math.floor(product.price * 0.4)) : '***'}</div>
-                </div>
-              </div>
-            </div>
-            );
+                    return (
+                      <DashboardProductGridCard
+                        key={product.id}
+                        product={product}
+                        topBarMode={topBarMode}
+                        isOutOfStock={isOutOfStock}
+                        isSelected={isSelected}
+                        isVisible={isVisible}
+                        perms={perms}
+                        onEdit={setEditingProduct}
+                        onToggleSelection={toggleProductSelection}
+                        onToggleVisibility={toggleVisibility}
+                        onMoveProducts={handleMoveProducts}
+                      />
+                    );
                   })}
               </div>
             ))}
@@ -2503,7 +2558,8 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
              height: ${websiteSettings?.dashboardNav?.height ?? 64}px !important;
              width: ${websiteSettings?.dashboardNav?.width ?? 92}% !important;
              left: 50% !important;
-             transform: translateX(-50%) !important;
+             transform: translateX(-50%) translateZ(0) !important;
+             will-change: transform;
              backdrop-filter: blur(${websiteSettings?.dashboardNav?.blur ?? 4}px) saturate(1.8) !important;
              -webkit-backdrop-filter: blur(${websiteSettings?.dashboardNav?.blur ?? 4}px) saturate(1.8) !important;
           }
@@ -2511,6 +2567,8 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
              backdrop-filter: blur(${websiteSettings?.dashboardNav?.blur ?? 4}px) saturate(1.8) !important;
              -webkit-backdrop-filter: blur(${websiteSettings?.dashboardNav?.blur ?? 4}px) saturate(1.8) !important;
              bottom: calc(${websiteSettings?.dashboardNav?.bottomOffset ?? 10}px + ${websiteSettings?.dashboardNav?.height ?? 64}px + 16px) !important;
+             transform: translateZ(0) !important;
+             will-change: transform;
           }
         }
       `}</style>

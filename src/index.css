@@ -66,4 +66,8 @@ html.scroll-locked, body.scroll-locked {
   contain-intrinsic-size: 85px;
 }
 
+.contain-paint {
+  contain: paint;
+}
+
 
