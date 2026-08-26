@@ -986,6 +986,8 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
     return 300;
   }, []);
 
+  const getScrollElement = React.useCallback(() => scrollEl, [scrollEl]);
+
   const virtualizer = useVirtualizer({
     count: rowCount,
     getScrollElement,
