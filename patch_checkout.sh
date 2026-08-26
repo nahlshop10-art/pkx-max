@@ -1,0 +1,2 @@
+#!/bin/bash
+sed -i -e "s/const productsRes = await env.DB.prepare('SELECT id, data FROM products').all();/const productIds = order.items.map((i: any) => i.product.id);\n    const placeholders = productIds.map(() => '?').join(',');\n    const productsRes = await env.DB.prepare(\`SELECT id, data FROM products WHERE id IN (\${placeholders})\`).bind(...productIds).all();/g" functions/api/public_checkout.ts

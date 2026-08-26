@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PaikariX Pro</title>
+    <script>
+      try {
+        const cached = localStorage.getItem('paikarix_website_settings_cache');
+        if (cached) {
+          const settings = JSON.parse(cached);
+          const colors = settings.themeColors || {};
+          const primary = colors.primary || '#ff4d6d';
+          const black = colors.black || '#000000';
+          const white = colors.white || '#ffffff';
+          const bg = colors.bg || white;
+          const root = document.documentElement;
+          root.style.setProperty('--theme-primary', primary);
+          root.style.setProperty('--theme-primary-hover', `color-mix(in srgb, ${primary} 80%, black)`);
+          root.style.setProperty('--theme-primary-gradient', `linear-gradient(90deg, color-mix(in srgb, ${primary} 76%, white 24%) 0%, ${primary} 45%, ${primary} 100%)`);
+          root.style.setProperty('--theme-primary-shadow', `0 4px 14px color-mix(in srgb, ${primary} 28%, transparent)`);
+          root.style.setProperty('--theme-black', black);
+          root.style.setProperty('--theme-white', white);
+          root.style.setProperty('--store-bg', bg);
+          document.body.style.backgroundColor = bg;
+        }
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

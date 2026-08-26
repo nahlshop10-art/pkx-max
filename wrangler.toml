@@ -1,0 +1,24 @@
+name = "paikarix-store"
+pages_build_output_dir = "dist"
+compatibility_date = "2024-03-20"
+compatibility_flags = ["nodejs_compat"]
+
+[placement]
+mode = "smart"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "paikarix-db"
+database_id = "7a2554ae-66ce-46c9-9d81-8c486cac8ed4"
+
+# R2 Bucket binding
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "paikarix-images"
+
+[vars]
+# Ensure fallback environment variables can run locally.
+ENVIRONMENT = "production"
+R2_PUBLIC_DOMAIN = "pub-6a0fdc5513454bd19473508e0d154f70.r2.dev"
+

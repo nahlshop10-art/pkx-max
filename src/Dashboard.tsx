@@ -1,0 +1,5540 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  Search, Home, Filter, Edit, Plus, LayoutDashboard, Package, 
+  ShoppingCart, Settings, ChevronLeft, Save, Upload, X, Eye, EyeOff,
+  Trash2, Move, RefreshCcw, ChevronDown, ChevronUp, Image as ImageIcon,
+  LayoutGrid, Activity, Check, SlidersHorizontal, Calendar as CalendarIcon,
+  ChevronRight, Edit3, Copy, RefreshCw, Palette, Factory, BadgePercent, Globe, CreditCard, Truck, JapaneseYen, Target, LogOut, User, ShieldAlert, UserCheck, UserX, Unlock, Lock,
+  Printer, CheckSquare, PackagePlus, AlertCircle, FileArchive, Calculator, PackageX, Download,
+  HelpCircle, Shield, Layers, Database, Info, ExternalLink,
+  TrendingUp, ShoppingBag, CircleDollarSign, Undo2, MinusCircle, ClipboardList, ClipboardCheck, XCircle, Tag,
+  Star, Key, FileText, Type, AlignLeft, Share2, Lightbulb
+} from 'lucide-react';
+import { Product, Order, OrderStatus, Category, WebsiteSettings, DeliveryCharge, MarketingSettings, GA4Settings, SeoSettings, CourierSettings, PriceCalculatorSettings, AdminUser, DiscountRule, DiscountType, DEFAULT_ADMIN_PERMISSIONS } from './types';
+import { restoreOrderStock, deductOrderStock, notifyMasterStockSync, adjustOrderStockDiff, notifyMasterStockSyncDiff } from './lib/stockUtils';
+import { cn, formatPrice, useScrollRestore, slugify } from './lib/utils';
+import { useHistoryModal } from './hooks/useHistoryModal';
+import { downloadReceiptAsJPG } from './lib/downloadReceipt';
+import { Receipt } from './components/Receipt';
+
+import { cloudStore } from './lib/cloudStore';
+import { getDefaultImageOptimization, setDefaultImageOptimization, ImageOptimizationConfig } from './lib/imageOptimizationWorker';
+import ProductEditorModal from './ProductEditorModal';
+import OrderDetailsModal from './OrderDetailsModal';
+import ZipImportModal from './components/ZipImportModal';
+import { DatePicker } from './components/DatePicker';
+import DiscountManager from './DiscountManager';
+import CustomersManager from './CustomersManager';
+import AccountControlManager from './AccountControlManager';
+import CustomiseManager from './CustomiseManager';
+import SupplierManager from './SupplierManager';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import BulkPriceManager from './BulkPriceManager';
+import IncompleteOrdersManager from './IncompleteOrdersManager';
+import AntiSpamManager from './AntiSpamManager';
+import MinOrderManager from './MinOrderManager';
+import SocialMediaManager from './SocialMediaManager';
+import PreOrderManager from './PreOrderManager';
+import { ApiSyncManager } from './ApiSyncManager';
+import NotificationManager from './NotificationManager';
+import { CopyButton } from './components/CopyButton';
+import AdminLoadingScreen from './components/AdminLoadingScreen';
+import { useScrollLock } from './hooks/useScrollLock';
+
+interface DashboardProps {
+  products: Product[];
+  setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
+  orders: Order[];
+  setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
+  categories: Category[];
+  setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
+  websiteSettings: WebsiteSettings;
+  setWebsiteSettings: React.Dispatch<React.SetStateAction<WebsiteSettings>>;
+  marketingSettings: MarketingSettings;
+  setMarketingSettings: React.Dispatch<React.SetStateAction<MarketingSettings>>;
+  courierSettings: CourierSettings;
+  setCourierSettings: React.Dispatch<React.SetStateAction<CourierSettings>>;
+  priceCalculatorSettings: PriceCalculatorSettings;
+  setPriceCalculatorSettings: React.Dispatch<React.SetStateAction<PriceCalculatorSettings>>;
+  onClose: () => void;
+  isMaintenanceMode: boolean;
+  setIsMaintenanceMode: (val: boolean) => void;
+  incompleteOrders?: any[];
+  setIncompleteOrders?: React.Dispatch<React.SetStateAction<any[]>>;
+}
+
+type TopBarMode = 'default' | 'search' | 'category' | 'filter' | 'move' | 'visibility' | 'delete';
+
+let hasRunCleanup = false;
+
+export default function Dashboard({ products, setProducts, orders, setOrders, incompleteOrders, setIncompleteOrders, categories, setCategories, websiteSettings, setWebsiteSettings, marketingSettings, setMarketingSettings, courierSettings, setCourierSettings, priceCalculatorSettings, setPriceCalculatorSettings, onClose, isMaintenanceMode, setIsMaintenanceMode }: DashboardProps) {
+  useScrollLock(true);
+  const [activeTab, setActiveTab] = useState('Products');
+  const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const [settingsView, setSettingsView] = useState<'main' | 'categories' | 'website' | 'marketing' | 'courier' | 'priceCalculator' | 'account' | 'accountControl' | 'discounts' | 'customers' | 'suppliers' | 'customise' | 'qtyRules' | 'incompleteOrders' | 'antiSpam' | 'minOrder' | 'bulkPrice' | 'socialMedia' | 'preOrder' | 'imageSettings' | 'seoSettings' | 'apiSync' | 'notification'>('main');
+  
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isUpdatingFromUrl = useRef(false);
+
+  // Sync URL -> State
+  useEffect(() => {
+     isUpdatingFromUrl.current = true;
+     const path = location.pathname;
+     if (path.startsWith('/admin/settings/')) {
+        const slug = path.replace('/admin/settings/', '');
+        setActiveTab('Settings');
+        const validViews = ['main', 'categories', 'website', 'marketing', 'courier', 'priceCalculator', 'account', 'accountControl', 'discounts', 'customers', 'suppliers', 'customise', 'qtyRules', 'incompleteOrders', 'antiSpam', 'minOrder', 'bulkPrice', 'socialMedia', 'preOrder', 'imageSettings', 'seoSettings', 'apiSync', 'notification'];
+        const matchedView = validViews.find(v => slugify(v) === slug) || slug;
+        setSettingsView(matchedView as any);
+     } else if (path.startsWith('/admin/')) {
+        const slug = path.replace('/admin/', '');
+        const tabs = ['Dashboard', 'Products', 'Orders', 'Settings'];
+        const mTab = tabs.find(t => slugify(t) === slug);
+        if (mTab) {
+           setActiveTab(mTab);
+           if (mTab !== 'Settings') setSettingsView('main');
+        }
+     } else if (path === '/admin') {
+        setActiveTab('Products');
+        setSettingsView('main');
+     }
+     setTimeout(() => { isUpdatingFromUrl.current = false; }, 50);
+  }, [location.pathname]);
+
+  // Sync State -> URL
+  useEffect(() => {
+     if (isUpdatingFromUrl.current) return;
+     let target = '/admin';
+     if (activeTab === 'Settings' && settingsView !== 'main') {
+        target = `/admin/settings/${slugify(settingsView)}`;
+     } else if (activeTab !== 'Products') {
+        target = `/admin/${slugify(activeTab)}`;
+     }
+     if (location.pathname !== target) navigate(target);
+  }, [activeTab, settingsView]);
+
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [showZipImport, setShowZipImport] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
+
+  useHistoryModal(isAddingProduct, () => setIsAddingProduct(false), 'add-product');
+  useHistoryModal(!!editingProduct, () => setEditingProduct(null), 'edit-product');
+  useHistoryModal(showZipImport, () => setShowZipImport(false), 'zip-import');
+  useHistoryModal(!!confirmAction, () => setConfirmAction(null), 'confirm-action');
+
+  const handleTabChange = (tab: any) => {
+    setActiveTab(tab);
+    if (tab !== 'Settings') {
+      setSettingsView('main');
+    }
+  };
+
+  const [topBarMode, setTopBarMode] = useState<TopBarMode>('default');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('All');
+
+  const [selectedFilter, setSelectedFilter] = useState('All');
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [visibilityChanges, setVisibilityChanges] = useState<Record<string, boolean>>({});
+  const [showEditMenu, setShowEditMenu] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showDashboardSwitcher, setShowDashboardSwitcher] = useState(false);
+
+  // Orders State
+  const [paginatedOrders, setPaginatedOrders] = useState<Order[]>([]);
+  const [paginatedOrdersPage, setPaginatedOrdersPage] = useState(1);
+  const [paginatedOrdersHasMore, setPaginatedOrdersHasMore] = useState(true);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [adminStats, setAdminStats] = useState<any>(null);
+
+  const [orderSearchQuery, setOrderSearchQuery] = useState('');
+  const [orderFilter, setOrderFilter] = useState<OrderStatus | 'All'>('All');
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
+  const [showOrderSummary, setShowOrderSummary] = useState(false);
+  const [isOrderSearchMode, setIsOrderSearchMode] = useState(false);
+
+  useHistoryModal(!!selectedOrder, () => setSelectedOrder(null), 'dashboard-selected-order');
+  useHistoryModal(showOrderSummary, () => setShowOrderSummary(false), 'dashboard-order-summary');
+  const [showPrintDropdown, setShowPrintDropdown] = useState(false);
+  const bulkPrintRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
+  // Dashboard Tab State
+  const [showPresetDropdown, setShowPresetDropdown] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [dateRangePreset, setDateRangePreset] = useState('This month');
+  
+  const scrollRef = useScrollRestore(`dashboard-${activeTab}`);
+
+  // Admin Auth State
+  const [isCloudLoading, setIsCloudLoading] = useState(true);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([{
+    id: 'default-admin',
+    email: 'max@gmail.com',
+    passwordHash: '1234',
+    isApproved: true,
+    createdAt: new Date().toISOString()
+  }]);
+
+  React.useEffect(() => {
+    setIsCloudLoading(false);
+  }, []);
+
+
+  const [currentAdmin, setCurrentAdmin] = useState<AdminUser | null>(() => {
+    const saved = localStorage.getItem('paikarix_current_admin');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse current admin', e);
+      }
+    }
+    return null;
+  });
+
+  const perms = currentAdmin?.permissions || DEFAULT_ADMIN_PERMISSIONS;
+  const isOwner = currentAdmin?.role === 'Owner' || !currentAdmin?.role;
+
+  // Enforce Permissions on Route/Tab changes
+  React.useEffect(() => {
+    if (!perms) return;
+    
+    // Determine the default fallback tab based on what's available
+    let defaultTab = 'Products';
+    if (perms.sections.products) defaultTab = 'Products';
+    else if (perms.sections.orders) defaultTab = 'Orders';
+    else if (perms.sections.dashboard) defaultTab = 'Dashboard';
+    else if (perms.sections.settings) defaultTab = 'Settings';
+    else defaultTab = 'Products'; // fallback
+
+    // Check main tabs
+    if (activeTab === 'Dashboard' && !perms.sections.dashboard) {
+      setActiveTab(defaultTab);
+    } else if (activeTab === 'Products' && !perms.sections.products) {
+      setActiveTab(defaultTab);
+    } else if (activeTab === 'Orders' && !perms.sections.orders) {
+      setActiveTab(defaultTab);
+    } else if (activeTab === 'Settings' && !perms.sections.settings) {
+      setActiveTab(defaultTab);
+    }
+
+    // Check specific settings views
+    if (activeTab === 'Settings' || settingsView !== 'main') {
+      if (settingsView === 'customers' && !perms.sections.customers) {
+        setSettingsView('main');
+      }
+      // If settings tab is completely disabled, then any settings view is disallowed
+      if (!perms.sections.settings && settingsView !== 'main') {
+        setSettingsView('main');
+      }
+    }
+  }, [activeTab, settingsView, perms]);
+
+  React.useEffect(() => {
+    if (currentAdmin) {
+      localStorage.setItem('paikarix_current_admin', JSON.stringify(currentAdmin));
+    } else {
+      localStorage.removeItem('paikarix_current_admin');
+      cloudStore.logoutAdmin().catch(() => {});
+    }
+  }, [currentAdmin]);
+
+  React.useEffect(() => {
+    if (currentAdmin) {
+      const userInDb = adminUsers.find(u => u.id === currentAdmin.id);
+      if (userInDb) {
+        if (userInDb.isBlocked) {
+          setCurrentAdmin(null);
+          return;
+        }
+        if (JSON.stringify(userInDb.permissions) !== JSON.stringify(currentAdmin.permissions) || userInDb.role !== currentAdmin.role) {
+          setCurrentAdmin({ ...userInDb, loginTimestamp: currentAdmin.loginTimestamp });
+        }
+      }
+      
+      if (currentAdmin.loginTimestamp && websiteSettings?.autoLogoutDays) {
+        const now = Date.now();
+        const daysInMs = websiteSettings.autoLogoutDays * 24 * 60 * 60 * 1000;
+        if (now - currentAdmin.loginTimestamp > daysInMs) {
+          setCurrentAdmin(null);
+        }
+      }
+    }
+  }, [currentAdmin, adminUsers, websiteSettings?.autoLogoutDays]);
+  
+  const [dateRange, setDateRange] = useState(() => {
+    const today = new Date();
+    const startStr = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-01`;
+    const endStr = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+    return `${startStr} / ${endStr}`;
+  });
+  
+  const [calStart, setCalStart] = useState<Date | null>(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), 1);
+  });
+  const [calEnd, setCalEnd] = useState<Date | null>(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  });
+
+  const [isSyncingSteadfast, setIsSyncingSteadfast] = useState(false);
+
+  React.useEffect(() => {
+    if (activeTab === 'Orders' && courierSettings?.steadfast?.apiKey && courierSettings?.steadfast?.secretKey) {
+      syncSteadfastOrders();
+    }
+  }, [activeTab]);
+
+  React.useEffect(() => {
+    if (!currentAdmin) return;
+
+    const fetchAdminData = async () => {
+      const state = await cloudStore.getAdminState();
+      if (state) {
+        if (state.orders) setOrders(state.orders);
+        if (state.incompleteOrders) setIncompleteOrders(state.incompleteOrders);
+        if (state.adminUsers) setAdminUsers(state.adminUsers);
+        if (state.customers) setCustomers(state.customers);
+        
+        if (state.settings) {
+          if (state.settings.websiteSettings) setWebsiteSettings(state.settings.websiteSettings);
+          if (state.settings.marketingSettings) setMarketingSettings(state.settings.marketingSettings);
+          if (state.settings.courierSettings) setCourierSettings(state.settings.courierSettings);
+          if (state.settings.priceCalculatorSettings) setPriceCalculatorSettings(state.settings.priceCalculatorSettings);
+        }
+      }
+      
+      // Trigger background retention cleanup once per session
+      if (!hasRunCleanup) {
+        hasRunCleanup = true;
+        fetch('/api/run_retention_cleanup', { method: 'POST' }).catch(console.error);
+      }
+    };
+    fetchAdminData();
+  }, [currentAdmin?.id]);
+
+  React.useEffect(() => {
+    if (!currentAdmin) return;
+    
+    // Auto-migrate base64 images to R2 silently
+    const migrateImages = async () => {
+      if (!products || products.length === 0) return;
+      
+      let migratedAny = false;
+      let newProducts = [...products];
+
+      for (let i = 0; i < newProducts.length; i++) {
+        const p = { ...newProducts[i] };
+        let pChanged = false;
+
+        if (p.image && p.image.startsWith('data:image/')) {
+          try {
+            const res = await fetch(p.image);
+            const blob = await res.blob();
+            const url = await cloudStore.uploadFile(blob, `mig_img_${Date.now()}.jpg`, true);
+            p.image = url;
+            pChanged = true;
+          } catch(e) { console.warn('Failed to migrate main image for product', p.id); }
+        }
+
+        if (p.images && p.images.length > 0) {
+          const updatedImages = [...p.images];
+          for (let j = 0; j < updatedImages.length; j++) {
+            if (updatedImages[j].startsWith('data:image/')) {
+              try {
+                const res = await fetch(updatedImages[j]);
+                const blob = await res.blob();
+                const url = await cloudStore.uploadFile(blob, `mig_img_${Date.now()}_${j}.jpg`, true);
+                updatedImages[j] = url;
+                pChanged = true;
+              } catch(e) {}
+            }
+          }
+          if (pChanged) p.images = updatedImages;
+        }
+
+        if (pChanged) {
+          newProducts[i] = p;
+          migratedAny = true;
+        }
+      }
+
+      if (migratedAny) {
+        console.log('Migrated base64 images to R2 successfully!');
+        setProducts(newProducts);
+        cloudStore.syncAllProducts(newProducts, true).catch(console.error);
+      }
+    };
+
+    // Delay migration slightly so UI loads fast
+    const t = setTimeout(() => {
+      migrateImages();
+    }, 5000);
+    return () => clearTimeout(t);
+  }, [currentAdmin?.id, products.length]);
+
+  const loadAdminOrders = async (page: number, append: boolean = false) => {
+    setIsLoadingOrders(true);
+    const [startDate, endDate] = dateRange.split(' / ');
+    const res = await cloudStore.getAdminOrders({
+      page,
+      limit: 50,
+      search: orderSearchQuery,
+      status: orderFilter,
+      startDate: startDate + 'T00:00:00',
+      endDate: endDate + 'T23:59:59.999'
+    });
+    if (res) {
+      if (append) {
+        setPaginatedOrders(prev => {
+          const newOrders = res.orders.filter((o: Order) => !prev.some(p => p.id === o.id));
+          return [...prev, ...newOrders];
+        });
+      } else {
+        setPaginatedOrders(res.orders);
+      }
+      setPaginatedOrdersHasMore(res.orders.length === 50);
+      setAdminStats(res.stats);
+    }
+    setIsLoadingOrders(false);
+  };
+
+  React.useEffect(() => {
+    if (!currentAdmin) return;
+    // Debounce the fetching slightly
+    const t = setTimeout(() => {
+      setPaginatedOrdersPage(1);
+      loadAdminOrders(1, false);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [currentAdmin?.id, dateRange, orderSearchQuery, orderFilter]);
+
+  const handleLoadMoreOrders = () => {
+    if (!isLoadingOrders && paginatedOrdersHasMore) {
+      const nextPage = paginatedOrdersPage + 1;
+      setPaginatedOrdersPage(nextPage);
+      loadAdminOrders(nextPage, true);
+    }
+  };
+
+  const syncSteadfastOrders = async () => {
+    if (isSyncingSteadfast) return;
+    setIsSyncingSteadfast(true);
+
+    try {
+      const ordersToSync = orders.filter(o => 
+        o.steadfast?.consignmentId && 
+        !['Completed', 'Canceled', 'Returned', 'Complete Return'].includes(o.status)
+      );
+
+      if (ordersToSync.length === 0) {
+        setIsSyncingSteadfast(false);
+        return;
+      }
+
+      let updatedOrders = [...orders];
+      let hasChanges = false;
+
+      for (const order of ordersToSync) {
+        try {
+          const response = await fetch(`https://portal.packzy.com/api/v1/status_by_cid/${order.steadfast!.consignmentId}`, {
+            headers: {
+              'Api-Key': courierSettings.steadfast.apiKey,
+              'Secret-Key': courierSettings.steadfast.secretKey
+            }
+          });
+          if (!response.ok) {
+            if (response.status === 401) {
+              console.warn(`Steadfast API returned 401 Unauthorized. Please check your Steadfast API Key and Secret Key in Settings > Courier.`);
+              break; // Stop syncing to prevent further errors
+            }
+            console.error(`Steadfast API error for order ${order.id}: ${response.status} ${response.statusText}`);
+            continue;
+          }
+          const text = await response.text();
+          let data;
+          try {
+            data = JSON.parse(text);
+          } catch (e) {
+            console.error(`Invalid JSON from Steadfast for order ${order.id}:`, text);
+            continue; // Skip JSON error
+          }
+          
+          if (data.status === 200 && data.delivery_status) {
+            const sfStatus = data.delivery_status.toLowerCase();
+            let newStatus: OrderStatus | null = null;
+            
+            if (sfStatus === 'delivered') newStatus = 'Completed';
+            else if (sfStatus === 'cancelled' || sfStatus === 'returned') newStatus = 'Returned';
+            else if (sfStatus === 'in_transit' || sfStatus === 'dispatched') newStatus = 'Shipping';
+            
+            if (newStatus && newStatus !== order.status) {
+              const orderIndex = updatedOrders.findIndex(o => o.id === order.id);
+              if (orderIndex !== -1) {
+                const wasRestored = order.status === 'Canceled' || order.status === 'Complete Return' || order.stockReturned;
+                const isRestored = newStatus === 'Canceled' || newStatus === 'Complete Return' || order.stockReturned;
+                
+                if (!wasRestored && isRestored) {
+                  setProducts(prev => {
+                    const newProducts = restoreOrderStock(prev, order);
+                    const changed = newProducts.filter(p => order.items.some(item => item.product.id === p.id));
+                    if(changed.length > 0) cloudStore.upsertProducts(changed).catch(console.error);
+                    return newProducts;
+                  });
+                  notifyMasterStockSync(order, websiteSettings, true); // Restore
+                } else if (wasRestored && !isRestored) {
+                  setProducts(prev => {
+                    const newProducts = deductOrderStock(prev, order);
+                    const changed = newProducts.filter(p => order.items.some(item => item.product.id === p.id));
+                    if(changed.length > 0) cloudStore.upsertProducts(changed).catch(console.error);
+                    return newProducts;
+                  });
+                  notifyMasterStockSync(order, websiteSettings, false); // Deduct
+                }
+
+                updatedOrders[orderIndex] = {
+                  ...updatedOrders[orderIndex],
+                  status: newStatus,
+                  steadfast: {
+                    ...updatedOrders[orderIndex].steadfast!,
+                    status: data.delivery_status
+                  }
+                };
+                hasChanges = true;
+              }
+            }
+          }
+        } catch (err) {
+          console.error(`Failed to sync order ${order.id}:`, err);
+        }
+      }
+
+      if (hasChanges) {
+        setOrders(updatedOrders);
+        cloudStore.syncAllOrders(updatedOrders, 'standard', true).catch(console.error);
+      }
+    } finally {
+      setIsSyncingSteadfast(false);
+    }
+  };
+
+  const [isSyncingBdCourier, setIsSyncingBdCourier] = useState(false);
+  const [activeBdCourierApiIndex, setActiveBdCourierApiIndex] = useState(0);
+
+  const checkBdCourierFraud = async (orderId?: string) => {
+    if (isSyncingBdCourier && !orderId) return;
+    if (!orderId) setIsSyncingBdCourier(true);
+
+    try {
+      const activeApis = courierSettings?.bdCourierApis?.filter(api => api.enabled) || [];
+      if (activeApis.length === 0) {
+        if (!orderId) setIsSyncingBdCourier(false);
+        return;
+      }
+
+      const ordersToProcess = orderId 
+        ? orders.filter(o => o.id === orderId) 
+        : orders.filter(o => !o.bdCourierStatus || o.bdCourierStatus === 'pending');
+
+      if (ordersToProcess.length === 0) {
+        if (!orderId) setIsSyncingBdCourier(false);
+        return;
+      }
+
+      let updatedOrders = [...orders];
+      let hasChanges = false;
+      let currentApiIndex = activeBdCourierApiIndex;
+
+      for (const order of ordersToProcess) {
+        let success = false;
+        let attempts = 0;
+
+        while (!success && attempts < activeApis.length) {
+          const api = activeApis[currentApiIndex];
+          try {
+            const response = await fetch('https://api.bdcourier.com/courier-check', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${api.apiKey}`
+              },
+              body: JSON.stringify({ phone: order.userInfo.phone })
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              
+              if (data.status === 'success') {
+                const orderIndex = updatedOrders.findIndex(o => o.id === order.id);
+                if (orderIndex !== -1) {
+                  updatedOrders[orderIndex] = { 
+                    ...updatedOrders[orderIndex], 
+                    bdCourierStatus: 'success',
+                    bdCourierData: data.data || data
+                  };
+                  hasChanges = true;
+                }
+                success = true;
+              } else {
+                currentApiIndex = (currentApiIndex + 1) % activeApis.length;
+              }
+            } else {
+              currentApiIndex = (currentApiIndex + 1) % activeApis.length;
+            }
+          } catch (err) {
+            console.error(`BD Courier API error for ${order.id}:`, err);
+            currentApiIndex = (currentApiIndex + 1) % activeApis.length;
+          }
+          attempts++;
+        }
+
+        if (!success) {
+           const orderIndex = updatedOrders.findIndex(o => o.id === order.id);
+           if (orderIndex !== -1) {
+             updatedOrders[orderIndex] = { 
+               ...updatedOrders[orderIndex], 
+               bdCourierStatus: 'failed'
+             };
+             hasChanges = true;
+           }
+        }
+      }
+
+      if (currentApiIndex !== activeBdCourierApiIndex) {
+        setActiveBdCourierApiIndex(currentApiIndex);
+      }
+
+      if (hasChanges) {
+        setOrders(updatedOrders);
+        setPaginatedOrders(prev => prev.map(o => updatedOrders.find(u => u.id === o.id) || o));
+        const changedOrders = updatedOrders.filter(o => ordersToProcess.some(p => p.id === o.id));
+        for (const o of changedOrders) {
+           cloudStore.upsertOrder(o, 'standard', true).catch(console.error);
+        }
+      }
+    } finally {
+      if (!orderId) setIsSyncingBdCourier(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (activeTab === 'Orders' && courierSettings?.bdCourierApis?.some(api => api.enabled)) {
+      checkBdCourierFraud();
+    }
+  }, [activeTab, orders.length, courierSettings?.bdCourierApis]);
+
+  const handlePresetSelect = (preset: string) => {
+    setDateRangePreset(preset);
+    setShowPresetDropdown(false);
+    
+    const today = new Date();
+    let start = new Date(today);
+    let end = new Date(today);
+
+    switch (preset) {
+      case 'Today':
+        break;
+      case 'Yesterday':
+        start.setDate(today.getDate() - 1);
+        end.setDate(today.getDate() - 1);
+        break;
+      case 'This month':
+        start.setDate(1);
+        break;
+      case 'Last month':
+        start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        end = new Date(today.getFullYear(), today.getMonth(), 0);
+        break;
+      case 'Last 7 days':
+        start.setDate(today.getDate() - 7);
+        break;
+      case 'Last 30 days':
+        start.setDate(today.getDate() - 30);
+        break;
+      case 'Last 60 days':
+        start.setDate(today.getDate() - 60);
+        break;
+    }
+
+    setCalStart(start);
+    setCalEnd(end);
+
+    const startStr = `${start.getFullYear()}-${(start.getMonth() + 1).toString().padStart(2, '0')}-${start.getDate().toString().padStart(2, '0')}`;
+    const endStr = `${end.getFullYear()}-${(end.getMonth() + 1).toString().padStart(2, '0')}-${end.getDate().toString().padStart(2, '0')}`;
+    setDateRange(`${startStr} / ${endStr}`);
+  };
+
+  const handleApplyDateRange = () => {
+    if (calStart !== null) {
+      const startStr = `${calStart.getFullYear()}-${(calStart.getMonth() + 1).toString().padStart(2, '0')}-${calStart.getDate().toString().padStart(2, '0')}`;
+      const endStr = calEnd !== null 
+        ? `${calEnd.getFullYear()}-${(calEnd.getMonth() + 1).toString().padStart(2, '0')}-${calEnd.getDate().toString().padStart(2, '0')}`
+        : startStr;
+      setDateRange(`${startStr} / ${endStr}`);
+    }
+    setShowCalendar(false);
+  };
+
+  const handleSaveProduct = (updatedProduct: Product) => {
+    if (editingProduct) {
+      setProducts(products.map(p => p.id === editingProduct.id ? updatedProduct : p));
+    } else {
+      // Check if ID was manually provided and not just the default Date.now timestamp string
+      // (Assuming a manual ID would be like 'P001' or something not 13 digits)
+      const isManualId = updatedProduct.id && !/^\d{13}$/.test(updatedProduct.id);
+      
+      if (!isManualId || products.some(p => p.id === updatedProduct.id)) {
+        // Generate ID based on category
+        const categoryPrefix = updatedProduct.category && updatedProduct.category !== 'Uncategorized' 
+          ? updatedProduct.category.charAt(0).toUpperCase() 
+          : 'P';
+        
+        const existingIds = products.map(p => p.id).filter(id => id.startsWith(categoryPrefix));
+        let maxNum = 0;
+        existingIds.forEach(id => {
+          const numPart = id.substring(1);
+          const num = parseInt(numPart, 10);
+          if (!isNaN(num) && num > maxNum) {
+            maxNum = num;
+          }
+        });
+        
+        let nextNum = maxNum + 1;
+        let newId = `${categoryPrefix}${nextNum.toString().padStart(3, '0')}`;
+        while(products.some(p => p.id === newId)) {
+          nextNum++;
+          newId = `${categoryPrefix}${nextNum.toString().padStart(3, '0')}`;
+        }
+        
+        updatedProduct.id = newId;
+      }
+      setProducts([updatedProduct, ...products]);
+    }
+    cloudStore.upsertProduct(updatedProduct).catch(console.error);
+    setEditingProduct(null);
+    setIsAddingProduct(false);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000);
+  };
+
+  const handleDeleteProduct = (id: string) => {
+    setConfirmAction({
+      title: 'Delete Product',
+      message: 'Are you sure you want to delete this product? This action cannot be undone.',
+      onConfirm: () => {
+        const productToDel = products.find(p => p.id === id);
+        setProducts(products.filter(p => p.id !== id));
+        if (productToDel) {
+          cloudStore.deleteProducts([productToDel]).catch(console.error);
+        }
+        setEditingProduct(null);
+        setConfirmAction(null);
+      }
+    });
+  };
+
+  let displayProducts = [...products];
+
+  // Search
+  if (searchQuery) {
+    const cleanSearchQuery = searchQuery.replace(/#/g, '').toLowerCase();
+    displayProducts = displayProducts.filter(p => 
+      p.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      p.id.replace(/#/g, '').toLowerCase().includes(cleanSearchQuery)
+    );
+  }
+
+  // Category
+  if (selectedCategory !== 'All') {
+    displayProducts = displayProducts.filter(p => p.category?.trim()?.toLowerCase() === selectedCategory.trim().toLowerCase());
+  }
+
+  // Filter
+  switch (selectedFilter) {
+    case 'Visible':
+      displayProducts = displayProducts.filter(p => p.isVisible !== false);
+      break;
+    case 'Hidden':
+      displayProducts = displayProducts.filter(p => p.isVisible === false);
+      break;
+    case 'In Stock':
+      displayProducts = displayProducts.filter(p => (p.stock || 0) > 0);
+      break;
+    case 'Stockouts':
+      displayProducts = displayProducts.filter(p => (p.stock || 0) === 0);
+      break;
+    case 'High -> Low (Stock)':
+      displayProducts.sort((a, b) => (b.stock || 0) - (a.stock || 0));
+      break;
+    case 'Low -> High (Stock)':
+      displayProducts.sort((a, b) => (a.stock || 0) - (b.stock || 0));
+      break;
+    case 'High -> Low (Price)':
+      displayProducts.sort((a, b) => b.price - a.price);
+      break;
+    case 'Low -> High (Price)':
+      displayProducts.sort((a, b) => a.price - b.price);
+      break;
+  }
+
+  // Stats calculation for Products tab
+  const totalItems = displayProducts.length;
+  const totalStock = displayProducts.reduce((acc, p) => acc + (p.stock || 0), 0);
+  const totalBuy = displayProducts.reduce((acc, p) => acc + ((p.buyPrice || 0) * (p.stock || 1)), 0);
+  const totalSell = displayProducts.reduce((acc, p) => acc + (p.price * (p.stock || 1)), 0);
+  const totalProfit = totalSell - totalBuy;
+
+  const cols = windowWidth >= 1280 ? 5 : (windowWidth >= 1024 ? 4 : (windowWidth >= 768 ? 3 : 2));
+  const rowCount = Math.ceil(displayProducts.length / cols);
+  
+  const listRef = useRef<HTMLDivElement>(null);
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      setScrollEl(scrollRef.current);
+    }
+  }, [scrollRef.current, activeTab]);
+  
+  const getScrollElement = React.useCallback(() => scrollEl, [scrollEl]);
+  
+  const virtualizer = useVirtualizer({
+    count: rowCount,
+    getScrollElement,
+    estimateSize: () => 350,
+    overscan: 5,
+  });
+
+  // Orders filtering
+  let displayOrders = paginatedOrders;
+
+  // Stats calculation for Dashboard tab
+  const [rangeStartStr, rangeEndStr] = dateRange.split(' / ');
+  const rangeStart = new Date(rangeStartStr + 'T00:00:00');
+  const rangeEnd = new Date(rangeEndStr + 'T23:59:59.999');
+
+  const filteredOrders = orders.filter(o => {
+    // o.date is like "Monday, 04/08/2026, 05:30 PM"
+    const datePart = o.date ? o.date.split(', ')[1] : null; // "04/08/2026"
+    if (!datePart) return true;
+    const [month, day, year] = datePart.split('/');
+    const orderDate = new Date(Number(year), Number(month) - 1, Number(day));
+    return orderDate >= rangeStart && orderDate <= rangeEnd;
+  });
+
+  const totalOrders = adminStats ? adminStats.totalOrders : filteredOrders.length;
+  const completedOrders = adminStats ? adminStats.completedOrders : filteredOrders.filter(o => o.status === 'Completed').length;
+  const canceledOrders = adminStats ? adminStats.canceledOrders : filteredOrders.filter(o => o.status === 'Canceled').length;
+  
+  const totalSellAmount = adminStats ? adminStats.totalSellAmount : filteredOrders.reduce((acc, o) => acc + (o.subtotal - (o.discount || 0)), 0);
+  const completedSellAmount = adminStats ? adminStats.completedSellAmount : filteredOrders.filter(o => o.status === 'Completed').reduce((acc, o) => acc + (o.subtotal - (o.discount || 0)), 0);
+  
+  // Calculate profit based on orders
+  const rawTotalProfitAmount = filteredOrders.reduce((acc, o) => {
+    if (o.profit !== undefined) return acc + o.profit;
+    const orderCost = o.items.reduce((cost, item) => cost + ((item.variantBuyPrice ?? (item.product.buyPrice || Math.floor((item.variantPrice ?? item.product.price) * 0.4))) * item.quantity), 0);
+    return acc + (o.subtotal - (o.discount || 0) - orderCost - (o.extraCosts || 0) - (o.returnCost || 0));
+  }, 0);
+  
+  const rawCompletedProfitAmount = filteredOrders.filter(o => o.status === 'Completed').reduce((acc, o) => {
+    if (o.profit !== undefined) return acc + o.profit;
+    const orderCost = o.items.reduce((cost, item) => cost + ((item.variantBuyPrice ?? (item.product.buyPrice || Math.floor((item.variantPrice ?? item.product.price) * 0.4))) * item.quantity), 0);
+    return acc + (o.subtotal - (o.discount || 0) - orderCost - (o.extraCosts || 0) - (o.returnCost || 0));
+  }, 0);
+
+  // Return Cost calculation
+  const totalReturnedCost = adminStats ? adminStats.totalReturnedCost : filteredOrders.reduce((acc, o) => {
+    return acc + (o.returnCost || 0);
+  }, 0);
+
+  const totalProfitAmount = adminStats ? adminStats.totalProfitAmount : rawTotalProfitAmount;
+  const completedProfitAmount = adminStats ? adminStats.completedProfitAmount : rawCompletedProfitAmount;
+
+  const totalQuantity = adminStats ? adminStats.totalQuantity : filteredOrders.reduce((acc, o) => acc + o.items.reduce((sum, item) => sum + item.quantity, 0), 0);
+  
+  // Unique items sold
+  const uniqueItemIds = new Set<string>();
+  filteredOrders.forEach(o => o.items.forEach(item => uniqueItemIds.add(item.product.id)));
+  const uniqueItemsCount = adminStats ? adminStats.uniqueItemIds.length : uniqueItemIds.size;
+
+  // Product Sales Calculation
+  const productSales = new Map<string, { product: Product, quantity: number }>();
+  if (adminStats && adminStats.productSales) {
+      Object.entries(adminStats.productSales).forEach(([productId, quantity]) => {
+          const latestProduct = products.find(p => p.id === productId);
+          if (latestProduct) {
+              productSales.set(productId, { product: latestProduct, quantity: quantity as number });
+          }
+      });
+  } else {
+      filteredOrders.forEach(order => {
+        if (order.status !== 'Canceled' && order.status !== 'Returned' && order.status !== 'Complete Return') {
+          order.items.forEach(item => {
+            const existing = productSales.get(item.product.id);
+            if (existing) {
+              existing.quantity += item.quantity;
+            } else {
+              const latestProduct = products.find(p => p.id === item.product.id) || item.product;
+              productSales.set(item.product.id, { product: latestProduct, quantity: item.quantity });
+            }
+          });
+        }
+      });
+  }
+
+  const topProducts = Array.from(productSales.values())
+    .filter(p => p.quantity > 0)
+    .sort((a, b) => b.quantity - a.quantity);
+
+  const toggleProductSelection = (id: string) => {
+    if (topBarMode === 'delete' && !isOwner) {
+      setSelectedProducts(prev => 
+        prev.includes(id) ? [] : [id]
+      );
+      return;
+    }
+    
+    setSelectedProducts(prev => 
+      prev.includes(id) ? prev.filter(pId => pId !== id) : [...prev, id]
+    );
+  };
+
+  const toggleVisibility = (id: string) => {
+    setVisibilityChanges(prev => {
+      const product = products.find(p => p.id === id);
+      const currentVis = prev[id] !== undefined ? prev[id] : (product?.isVisible !== false);
+      return { ...prev, [id]: !currentVis };
+    });
+  };
+
+  const handleDeleteSelected = async () => {
+    const productsToDel = products.filter(p => selectedProducts.includes(p.id));
+    if (productsToDel.length > 0) {
+      try {
+        await cloudStore.deleteProducts(productsToDel);
+        setProducts(products.filter(p => !selectedProducts.includes(p.id)));
+      } catch (error) {
+        console.error('Failed to delete products', error);
+      }
+    }
+    setSelectedProducts([]);
+    setTopBarMode('default');
+    setShowDeleteConfirm(false);
+  };
+
+  const handleUpdateVisibility = () => {
+    const updatedProducts: Product[] = [];
+    const newProducts = products.map(p => {
+      if (visibilityChanges[p.id] !== undefined) {
+        const updated = { ...p, isVisible: visibilityChanges[p.id] };
+        updatedProducts.push(updated);
+        return updated;
+      }
+      return p;
+    });
+    setProducts(newProducts);
+    if (updatedProducts.length > 0) {
+      cloudStore.upsertProducts(updatedProducts).catch(console.error);
+    }
+    setVisibilityChanges({});
+    setTopBarMode('default');
+  };
+
+  const handleMoveProducts = (e: React.MouseEvent, targetProductId: string) => {
+    e.stopPropagation();
+    if (selectedProducts.length === 0) return;
+
+    const itemsToInsert = selectedProducts.map(id => products.find(p => p.id === id)).filter(Boolean) as Product[];
+    const newProducts = products.filter(p => !selectedProducts.includes(p.id));
+    
+    const targetIndex = newProducts.findIndex(p => p.id === targetProductId);
+    
+    if (targetIndex !== -1) {
+      newProducts.splice(targetIndex, 0, ...itemsToInsert);
+    } else {
+      const originalTargetIndex = products.findIndex(p => p.id === targetProductId);
+      const insertIndex = newProducts.findIndex(p => products.findIndex(op => op.id === p.id) >= originalTargetIndex);
+      if (insertIndex !== -1) {
+        newProducts.splice(insertIndex, 0, ...itemsToInsert);
+      } else {
+        newProducts.push(...itemsToInsert);
+      }
+    }
+    
+    setProducts(newProducts);
+    cloudStore.syncAllProducts(newProducts).catch(console.error);
+    setSelectedProducts([]);
+    setTopBarMode('default');
+  };
+
+  const toggleOrderSelection = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setSelectedOrders(prev => prev.includes(id) ? prev.filter(o => o !== id) : [...prev, id]);
+  };
+
+  const toggleSelectAllOrders = () => {
+    if (selectedOrders.length === displayOrders.length && displayOrders.length > 0) {
+      setSelectedOrders([]);
+    } else {
+      setSelectedOrders(displayOrders.map(o => o.id));
+    }
+  };
+
+  const handleBulkJPGDownload = async () => {
+    setShowPrintDropdown(false);
+    for (const orderId of selectedOrders) {
+      const element = bulkPrintRefs.current[orderId];
+      if (element) {
+        await downloadReceiptAsJPG(element, orderId);
+        await new Promise(r => setTimeout(r, 200));
+      }
+    }
+  };
+
+  const handleBulkPrint = async () => {
+    setShowPrintDropdown(false);
+    
+    // Create a hidden iframe for sturdy and stealthy printing
+    const iframeId = 'print-receipts-iframe';
+    const existingIframe = document.getElementById(iframeId);
+    if (existingIframe) {
+      document.body.removeChild(existingIframe);
+    }
+    
+    const iframe = document.createElement('iframe');
+    iframe.id = iframeId;
+    iframe.style.position = 'fixed';
+    iframe.style.bottom = '0';
+    iframe.style.right = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    iframe.style.visibility = 'hidden';
+    iframe.title = 'Print Orders';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow?.document;
+    if (!doc) {
+      console.error('Print iframe creation failed');
+      document.body.removeChild(iframe);
+      return;
+    }
+
+    // Gather Styles from the main document (so Tailwind works perfectly inside)
+    const styleNodes = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'));
+    const stylesHtml = styleNodes.map(node => node.outerHTML).join('');
+
+    // Gather Receipts HTML
+    let receiptsHtml = '';
+    for (const orderId of selectedOrders) {
+      const element = bulkPrintRefs.current[orderId];
+      if (element) {
+        receiptsHtml += `<div class="receipt-wrapper">${element.outerHTML}</div>`;
+      }
+    }
+
+    if (!receiptsHtml) {
+      console.error('No printable content found');
+      document.body.removeChild(iframe);
+      return;
+    }
+
+    // Inject content into the iframe
+    doc.open();
+    doc.write(`
+      <!DOCTYPE html>
+      <html lang="en">
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <base href="${window.location.origin}/" />
+          <title>Print Receipts</title>
+          ${stylesHtml}
+          <style>
+            :root {
+              --theme-primary: ${websiteSettings?.themeColors?.primary || '#ff4d6d'};
+              --theme-primary-hover: color-mix(in srgb, ${websiteSettings?.themeColors?.primary || '#ff4d6d'} 80%, black);
+              --theme-black: ${websiteSettings?.themeColors?.black || '#000000'};
+              --theme-white: ${websiteSettings?.themeColors?.white || '#ffffff'};
+            }
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+            
+            @page {
+              margin: 0;
+            }
+            body { 
+               margin: 0; 
+               padding: 0; 
+               background: white !important; 
+               -webkit-print-color-adjust: exact !important; 
+               print-color-adjust: exact !important;
+               font-family: 'Inter', sans-serif;
+            }
+            
+            .receipt-wrapper {
+              page-break-after: always;
+              width: 100%;
+              margin: 0;
+              padding: 0;
+            }
+            .receipt-wrapper:last-child {
+              page-break-after: auto;
+            }
+            
+            /* Responsive Overrides for perfectly fitting thermal / A4 / any paper size */
+            
+            @media print {
+              html, body {
+                width: 100%;
+                margin: 0;
+                padding: 0;
+              }
+              body {
+                background: white !important;
+              }
+              .receipt-wrapper {
+                page-break-after: always;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          ${receiptsHtml}
+          <script>
+            // We use a small script inside to trigger printing once images load
+            window.onload = () => {
+               // Give a tiny bit of time for external fonts (Inter) to render and SVGs to compute
+               setTimeout(() => {
+                 window.print();
+               }, 400);
+            };
+            
+            window.onafterprint = () => {
+               // Optional: notify parent to remove iframe
+               window.parent.postMessage('print_complete', '*');
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    doc.close();
+
+    // Cleanup the iframe after printing is done or after a safety timeout
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data === 'print_complete') {
+        cleanup();
+      }
+    };
+    
+    const cleanup = () => {
+       window.removeEventListener('message', handleMessage);
+       setTimeout(() => {
+         const staleIframe = document.getElementById(iframeId);
+         if (staleIframe) {
+            document.body.removeChild(staleIframe);
+         }
+       }, 500); // slight delay handles some browsers returning early
+    };
+    
+    window.addEventListener('message', handleMessage);
+    
+    // Fallback cleanup in case print window is closed or event doesn't fire
+    setTimeout(cleanup, 20000);
+  };
+
+  let selectedOrdersSummary = { total: 0, buy: 0, profit: 0, items: 0, uniqueItems: new Set<string>(), quantity: 0 };
+  if (selectedOrders.length > 0) {
+     selectedOrders.forEach(ordId => {
+        const order = orders.find(o => o.id === ordId);
+        if (order) {
+           selectedOrdersSummary.total += (order.subtotal - (order.discount || 0));
+           let orderBuyCost = 0;
+           let orderItemsCount = order.items.length;
+           let orderQty = 0;
+           order.items.forEach(item => {
+              let buyCostItem = item.variantBuyPrice ?? (item.product.buyPrice ?? Math.floor((item.variantPrice ?? item.product.price) * 0.4));
+              orderBuyCost += (buyCostItem * item.quantity);
+              selectedOrdersSummary.uniqueItems.add(item.product.id);
+              orderQty += item.quantity;
+           });
+           selectedOrdersSummary.buy += orderBuyCost;
+           selectedOrdersSummary.items += orderItemsCount;
+           selectedOrdersSummary.quantity += orderQty;
+           
+           if (order.profit !== undefined) {
+             selectedOrdersSummary.profit += order.profit;
+           } else {
+             const productRevenue = order.subtotal - (order.discount || 0);
+             const extraCosts = order.extraCosts || 0;
+             const orderReturnCost = order.returnCost || 0;
+             selectedOrdersSummary.profit += (productRevenue - orderBuyCost - extraCosts - orderReturnCost);
+           }
+        }
+     });
+  }
+
+  if (!currentAdmin) {
+    return (
+      <AdminAuth 
+        adminUsers={adminUsers} 
+        setAdminUsers={setAdminUsers} 
+        setCurrentAdmin={setCurrentAdmin} 
+      />
+    );
+  }
+
+  if (isAddingProduct) {
+    return <ProductEditorModal 
+      isOpen={true} 
+      onClose={() => setIsAddingProduct(false)} 
+      onSave={handleSaveProduct} 
+      categories={categories}
+      priceCalculatorSettings={priceCalculatorSettings}
+      products={products}
+      suppliers={websiteSettings.suppliers || []}
+      perms={perms.product}
+      inputBorderRadius={websiteSettings?.actionButtons?.checkout?.borderRadius}
+    />;
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:pl-[240px]">
+      <AdminLoadingScreen />
+      {/* Toast */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div 
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-[120] bg-[#fafafa] text-[var(--dash-bg)] px-4 py-2 rounded-full font-medium shadow-lg flex items-center gap-2"
+          >
+            <Check size={16} />
+            Product updated
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <ProductEditorModal 
+        isOpen={!!editingProduct} 
+        onClose={() => setEditingProduct(null)} 
+        onSave={handleSaveProduct}
+        onDelete={handleDeleteProduct}
+        initialProduct={editingProduct}
+        categories={categories}
+        priceCalculatorSettings={priceCalculatorSettings}
+        products={products}
+        suppliers={websiteSettings.suppliers || []}
+        perms={perms.product}
+        inputBorderRadius={websiteSettings?.actionButtons?.checkout?.borderRadius}
+      />
+
+      {/* Confirm Action Modal */}
+      <AnimatePresence>
+        {confirmAction && (
+          <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 pointer-events-none">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              onClick={() => setConfirmAction(null)}
+              className="absolute inset-0 bg-[var(--dash-bg)]/60 backdrop-blur-sm pointer-events-auto"
+            />
+            <motion.div 
+              initial={{ scale: 0.95, opacity: 0 }} 
+              animate={{ scale: 1, opacity: 1 }} 
+              exit={{ scale: 0.95, opacity: 0 }} 
+              className="relative w-full max-w-sm bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-2xl overflow-hidden pointer-events-auto shadow-2xl p-6"
+            >
+              <h2 className="text-xl font-bold text-white mb-2">{confirmAction.title}</h2>
+              <p className="text-gray-400 mb-6">{confirmAction.message}</p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => setConfirmAction(null)}
+                  className="flex-1 py-2.5 rounded-xl font-medium text-white bg-[var(--dash-border)] hover:bg-[var(--dash-border)] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={confirmAction.onConfirm}
+                  className="flex-1 py-2.5 rounded-xl font-medium text-white bg-red-600 hover:bg-red-700 transition-colors"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Top Bar */}
+      {activeTab === 'Products' && perms.sections.products && (
+        <div className="flex items-center gap-2 p-4 md:px-8 md:py-5 border-b border-[var(--dash-border)] relative z-50 bg-[var(--dash-bg)]">
+          {topBarMode === 'search' ? (
+          <div className="flex-grow flex items-center gap-2 z-10 relative">
+            <motion.div 
+              layoutId="dashboard-product-search-morph"
+              style={{ borderRadius: 9999 }}
+              transition={{ type: "spring", bounce: 0.05, duration: 0.4 }}
+              className="flex-grow flex items-center bg-white border-[1.5px] border-[var(--theme-primary)] overflow-hidden shadow-sm pointer-events-auto"
+            >
+              <input 
+                type="text" 
+                placeholder="Search products..." 
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full h-12 bg-transparent px-4 text-sm outline-none text-[var(--dash-bg)] placeholder-gray-400"
+                autoFocus
+              />
+              <button 
+                onClick={() => { setTopBarMode('default'); setSearchQuery(''); }}
+                className="p-3 text-gray-400 hover:text-[var(--dash-bg)] transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </motion.div>
+          </div>
+        ) : (
+          <>
+            <motion.button 
+              layoutId="dashboard-product-search-morph" 
+              style={{ borderRadius: 9999 }}
+              transition={{ type: "spring", bounce: 0.05, duration: 0.4 }}
+              onClick={() => { setShowEditMenu(false); setTopBarMode('search'); }} 
+              className="w-10 h-10 bg-transparent flex items-center justify-center relative overflow-hidden border-[1.5px] border-transparent shrink-0"
+            >
+              <Search size={22} className="text-white" />
+            </motion.button>
+            
+            <div className="relative">
+              <button onClick={() => { setShowEditMenu(false); setTopBarMode(topBarMode === 'category' ? 'default' : 'category'); }} className={cn("p-2 rounded-lg border transition-colors", topBarMode === 'category' ? "bg-[var(--dash-border)] border-[#fafafa] text-[#fafafa]" : "bg-[var(--dash-card)] border-[var(--dash-border)] hover:bg-[var(--dash-border)]")}>
+                <LayoutGrid size={20} />
+              </button>
+              <AnimatePresence>
+              {topBarMode === 'category' && (
+                <>
+                <div className="fixed inset-0 z-40" onClick={() => setTopBarMode('default')} />
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute top-full left-0 mt-2 w-64 bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl shadow-xl z-50 max-h-[60vh] overflow-y-auto">
+                  {(() => {
+                    const usedCats = products.map(p => p.category?.trim()).filter(Boolean);
+                    const definedCats = categories.map(c => c.name.trim());
+                    const uniqueCats = Array.from(new Set([...definedCats, ...usedCats]));
+                    return ['All', ...uniqueCats].map(cat => {
+                      const count = cat === 'All' ? products.length : products.filter(p => p.category?.trim()?.toLowerCase() === cat.trim().toLowerCase()).length;
+                      return (
+                      <button 
+                        key={cat}
+                        onClick={() => { 
+                          setSelectedCategory(cat); 
+                          setTopBarMode('default'); 
+                        }}
+                        className={cn("w-full text-left px-4 py-3 hover:bg-[var(--dash-border)] flex items-center gap-3", selectedCategory === cat ? "bg-[var(--dash-border)]" : "")}
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-[#ff8fa3] flex items-center justify-center text-white">
+                          <LayoutGrid size={16} />
+                        </div>
+                        <div>
+                          <div className="text-sm">{cat}</div>
+                          <div className="text-[10px] text-gray-500 flex items-center gap-1">
+                            <Package size={10}/> {count} / <Activity size={10}/> 0 / <ShoppingCart size={10}/> 0
+                          </div>
+                        </div>
+                      </button>
+                    );
+                    });
+                  })()}
+                </motion.div>
+                </>
+              )}
+              </AnimatePresence>
+            </div>
+
+            <div className="relative">
+              <button onClick={() => { setShowEditMenu(false); setTopBarMode(topBarMode === 'filter' ? 'default' : 'filter'); }} className={cn("p-2 rounded-lg border transition-colors", topBarMode === 'filter' ? "bg-[var(--dash-border)] border-[#fafafa] text-[#fafafa]" : "bg-[var(--dash-card)] border-[var(--dash-border)] hover:bg-[var(--dash-border)]")}>
+                <Filter size={20} />
+              </button>
+              <AnimatePresence>
+              {topBarMode === 'filter' && (
+                <>
+                <div className="fixed inset-0 z-40" onClick={() => setTopBarMode('default')} />
+                <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute top-full left-0 mt-2 w-48 bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl shadow-xl z-50 overflow-hidden py-2">
+                  {[
+                    'All', 'Top Selling', 'Label', 'Visible', 'In Stock', 'Stockouts', 'Hidden',
+                    'High -> Low (Stock)', 'Low -> High (Stock)', 'Low -> High (Price)', 'High -> Low (Price)'
+                  ].map(filter => (
+                    <button 
+                      key={filter}
+                      onClick={() => { 
+                        setSelectedFilter(filter); 
+                        setTopBarMode('default'); 
+                      }}
+                      className={cn("w-full text-left px-4 py-2 text-sm hover:bg-[var(--dash-border)] flex items-center justify-between", selectedFilter === filter ? "text-[#fafafa]" : "text-gray-300")}
+                    >
+                      {filter}
+                      {['Visible', 'In Stock', 'Stockouts', 'Hidden'].includes(filter) && (
+                        <span className="text-[10px] bg-[var(--dash-border)] text-[#fafafa] px-2 py-0.5 rounded-full">
+                          {filter === 'Visible' ? products.filter(p => p.isVisible !== false).length :
+                           filter === 'Hidden' ? products.filter(p => p.isVisible === false).length :
+                           filter === 'In Stock' ? products.filter(p => (p.stock || 0) > 0).length :
+                           filter === 'Stockouts' ? products.filter(p => (p.stock || 0) === 0).length : 0}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </motion.div>
+                </>
+              )}
+              </AnimatePresence>
+            </div>
+
+            {topBarMode === 'move' || topBarMode === 'visibility' || topBarMode === 'delete' ? (
+              <>
+                <button className="flex items-center gap-1 px-3 py-2 bg-[var(--dash-card)] rounded-lg border border-[var(--dash-border)] text-white">
+                  {topBarMode === 'move' && <Move size={16} />}
+                  {topBarMode === 'visibility' && <Eye size={16} />}
+                  {topBarMode === 'delete' && <Trash2 size={16} />}
+                  <span className="text-sm capitalize">{topBarMode}</span>
+                </button>
+                <button onClick={() => { setTopBarMode('default'); setSelectedProducts([]); setVisibilityChanges({}); }} className="px-3 py-2 bg-red-900/50 text-red-400 rounded-lg border border-red-900 text-sm">
+                  Reset
+                </button>
+              </>
+            ) : (
+              <div className="relative">
+                <button onClick={() => { setTopBarMode('default'); setShowEditMenu(!showEditMenu); }} className="p-2 bg-[var(--dash-card)] rounded-lg border border-[var(--dash-border)] hover:bg-[var(--dash-border)] transition-colors"><Edit size={20} /></button>
+                <AnimatePresence>
+                {showEditMenu && (
+                  <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowEditMenu(false)} />
+                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute top-full right-0 mt-2 w-40 bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl shadow-xl z-50 overflow-hidden">
+                    <button onClick={() => { setTopBarMode('move'); setShowEditMenu(false); }} className="w-full text-left px-4 py-3 hover:bg-[var(--dash-border)] flex items-center gap-2"><Move size={16}/> Move</button>
+                    <button onClick={() => { setTopBarMode('visibility'); setShowEditMenu(false); }} className="w-full text-left px-4 py-3 hover:bg-[var(--dash-border)] flex items-center gap-2"><Eye size={16}/> Visibility</button>
+                    <button onClick={() => { setTopBarMode('delete'); setShowEditMenu(false); }} className="w-full text-left px-4 py-3 hover:bg-[var(--dash-border)] flex items-center gap-2 text-red-400"><Trash2 size={16}/> Delete</button>
+                  </motion.div>
+                  </>
+                )}
+                </AnimatePresence>
+              </div>
+            )}
+            
+            {(websiteSettings?.preOrder?.pDashboard?.length ?? 0) > 0 && (
+              <div className="relative">
+                <button onClick={() => setShowDashboardSwitcher(!showDashboardSwitcher)} className={cn("p-2 flex items-center gap-1 rounded-lg border transition-colors", showDashboardSwitcher ? "bg-[var(--dash-border)] border-[#fafafa] text-[#fafafa]" : "bg-[var(--dash-card)] border-[var(--dash-border)] hover:bg-[var(--dash-border)] text-gray-400 hover:text-white")}>
+                  <LayoutDashboard size={20} />
+                  <ChevronDown size={14} />
+                </button>
+                <AnimatePresence>
+                {showDashboardSwitcher && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowDashboardSwitcher(false)} />
+                    <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="absolute top-full right-0 mt-2 w-48 bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl shadow-xl z-50 overflow-hidden">
+                      <button 
+                        onClick={() => { setShowDashboardSwitcher(false); }} 
+                        className="w-full text-left px-4 py-3 hover:bg-[var(--dash-border)] flex items-center gap-2 text-white border-b border-[var(--dash-border)]"
+                      >
+                        <LayoutDashboard size={16} className="text-[#fafafa]"/>
+                        Main
+                      </button>
+                      {websiteSettings?.preOrder?.pDashboard?.map(dash => (
+                        <button 
+                          key={dash.id}
+                          onClick={() => { 
+                             setShowDashboardSwitcher(false);
+                             const link = dash.link.startsWith('http') ? dash.link : `https://${dash.link}`;
+                             window.open(link, '_blank');
+                          }} 
+                          className="w-full text-left px-4 py-3 hover:bg-[var(--dash-border)] flex items-center gap-2 text-gray-300"
+                        >
+                          <Globe size={16}/>
+                          {dash.name}
+                        </button>
+                      ))}
+                    </motion.div>
+                  </>
+                )}
+                </AnimatePresence>
+              </div>
+            )}
+
+            <button 
+              onClick={() => setShowZipImport(true)}
+              className="ml-auto px-3 py-2 bg-[var(--dash-card)] rounded-lg border border-[var(--dash-border)] hover:bg-[var(--dash-border)] transition-colors text-white font-medium flex items-center gap-2"
+            >
+              <FileArchive size={18} className="text-[#fafafa]" />
+              <span className="hidden sm:inline">Import ZIP</span>
+            </button>
+
+            <button onClick={onClose} className="p-2 bg-[var(--dash-card)] rounded-lg border border-[var(--dash-border)] hover:bg-[var(--dash-border)] transition-colors text-[#fafafa]"><Globe size={20} /></button>
+          </>
+        )}
+      </div>
+      )}
+
+      {/* Orders Top Bar */}
+      {activeTab === 'Orders' && perms.sections.orders && (
+        <div className="flex flex-col md:flex-row md:items-center gap-3 p-4 md:px-8 border-b border-[var(--dash-border)] relative z-50 bg-[var(--dash-bg)]">
+          <div className="flex items-center gap-2">
+            {isOrderSearchMode ? (
+              <div className="flex-grow flex items-center gap-2 z-10 relative">
+                <motion.div 
+                  layoutId="dashboard-order-search-morph"
+                  style={{ borderRadius: 9999 }}
+                  transition={{ type: "spring", bounce: 0.05, duration: 0.4 }}
+                  className="flex-grow flex items-center bg-white border-[1.5px] border-[var(--theme-primary)] overflow-hidden shadow-sm pointer-events-auto"
+                >
+                  <input 
+                    type="text" 
+                    placeholder="Search by Phone or Id..." 
+                    value={orderSearchQuery}
+                    onChange={e => setOrderSearchQuery(e.target.value)}
+                    className="w-full h-12 bg-transparent px-4 text-sm outline-none text-[var(--dash-bg)] placeholder-gray-400"
+                    autoFocus
+                  />
+                  <button 
+                    onClick={() => { setIsOrderSearchMode(false); setOrderSearchQuery(''); }}
+                    className="p-3 text-gray-400 hover:text-[var(--dash-bg)] transition-colors"
+                  >
+                    <X size={18} />
+                  </button>
+                </motion.div>
+              </div>
+            ) : (
+              <motion.button 
+                layoutId="dashboard-order-search-morph" 
+                style={{ borderRadius: 9999 }}
+                transition={{ type: "spring", bounce: 0.05, duration: 0.4 }}
+                onClick={() => setIsOrderSearchMode(true)} 
+                className="w-10 h-10 bg-transparent flex items-center justify-center relative overflow-hidden border-[1.5px] border-transparent shrink-0"
+              >
+                <Search size={22} className="text-white" />
+              </motion.button>
+            )}
+            
+            {!isOrderSearchMode && (
+              <div className="flex-grow overflow-x-auto no-scrollbar flex gap-2">
+                {['All', 'Pending', 'Unreachable', 'Preparing', 'Shipping', 'Completed', 'Canceled', 'Returned', 'Complete Return'].map(filter => {
+                  const count = filter === 'All' ? orders.length : orders.filter(o => o.status === filter).length;
+                  const isActive = orderFilter === filter;
+                  return (
+                  <button
+                    key={filter}
+                    onClick={() => setOrderFilter(filter as OrderStatus | 'All')}
+                    style={{ borderRadius: websiteSettings?.actionButtons?.placeOrder?.borderRadius || '9999px' }}
+                    className={cn(
+                      "px-3.5 py-1.5 text-sm font-medium whitespace-nowrap transition-all flex items-center gap-2 border",
+                      isActive 
+                        ? "bg-[#fafafa] border-[#fafafa] text-[var(--dash-bg)] shadow-[0_0_15px_rgba(250, 250, 250,0.15)]" 
+                        : "bg-[var(--dash-card)] border-[var(--dash-border)] text-gray-300 hover:bg-[var(--dash-border)] hover:text-white"
+                    )}
+                  >
+                   <span>{filter}</span>
+                   <span className={cn(
+                     "text-[11px] font-bold px-2 py-0.5 rounded-full",
+                     isActive ? "bg-[var(--dash-bg)]/20 text-[var(--dash-bg)]" : "bg-[var(--dash-border)] text-gray-400"
+                   )}>
+                     {count}
+                   </span>
+                  </button>
+                )})}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'Dashboard' && perms.sections.dashboard && (
+        <div className="flex items-stretch gap-2 sm:gap-3 p-3 sm:p-4 border-b border-[var(--dash-border)] relative z-50 bg-[var(--dash-bg)] w-full">
+          <div className="relative shrink-0 flex items-stretch">
+            <button 
+              onClick={() => setShowPresetDropdown(!showPresetDropdown)} 
+              style={{ borderRadius: websiteSettings?.actionButtons?.checkout?.borderRadius || '9999px' }}
+              className="px-3.5 flex items-center justify-center bg-[var(--dash-card)] border border-[var(--dash-border)] hover:bg-[var(--dash-border)] transition-colors text-gray-400 min-h-[40px] sm:min-h-[44px]"
+            >
+              <SlidersHorizontal size={18} className="sm:w-5 sm:h-5" />
+            </button>
+            {showPresetDropdown && (
+              <div className="absolute top-full left-0 mt-2 w-48 bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl shadow-xl z-50 py-2">
+                {['Today', 'Yesterday', 'This month', 'Last month', 'Last 7 days', 'Last 30 days', 'Last 60 days'].map(preset => (
+                  <button 
+                    key={preset}
+                    onClick={() => handlePresetSelect(preset)}
+                    className="w-full text-left px-4 py-3 text-sm hover:bg-[var(--dash-border)] flex items-center justify-between text-gray-300"
+                  >
+                    {preset}
+                    {dateRangePreset === preset && <Check size={16} className="text-[#fafafa]" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="relative flex flex-grow items-stretch gap-2">
+            <button 
+              onClick={() => setShowCalendar(!showCalendar)} 
+              style={{ borderRadius: websiteSettings?.actionButtons?.checkout?.borderRadius || '9999px' }}
+              className="flex-grow flex items-center justify-center gap-1.5 sm:gap-3 px-2 sm:px-4 bg-[var(--dash-card)] border border-[var(--dash-border)] hover:bg-[var(--dash-border)] transition-colors text-white min-h-[40px] sm:min-h-[44px]"
+            >
+              <CalendarIcon size={16} className="text-gray-400 shrink-0 sm:w-[18px] sm:h-[18px]" />
+              <span className="text-[11px] sm:text-sm font-medium tracking-tight sm:tracking-wide whitespace-nowrap">{dateRange}</span>
+            </button>
+            <button 
+              onClick={handleApplyDateRange}
+              style={{ borderRadius: websiteSettings?.actionButtons?.checkout?.borderRadius || '9999px' }}
+              className="px-3 sm:px-5 bg-[#fafafa] text-[var(--dash-bg)] font-bold hover:bg-[#e4e4e7] transition-colors flex items-center justify-center min-h-[40px] sm:min-h-[44px] whitespace-nowrap shrink-0 border border-transparent"
+            >
+              Apply
+            </button>
+            
+            {showCalendar && (
+              <div className="absolute top-full left-0 mt-2 w-[320px] bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-2xl shadow-xl z-50 p-5 animate-in fade-in slide-in-from-top-2 duration-200">
+                <h3 className="text-white font-medium mb-4 flex items-center gap-2">
+                  <CalendarIcon size={16} className="text-[#fafafa]" />
+                  Custom Date Range
+                </h3>
+                <div className="flex flex-col gap-4">
+                  <DatePicker 
+                    label="From Date" 
+                    value={calStart} 
+                    onChange={(d) => {
+                      setCalStart(d);
+                      if (calEnd && d > calEnd) setCalEnd(d);
+                    }} 
+                  />
+                  <DatePicker 
+                    label="To Date" 
+                    value={calEnd} 
+                    onChange={(d) => {
+                      setCalEnd(d);
+                      if (calStart && d < calStart) setCalStart(d);
+                    }} 
+                  />
+                  <button 
+                    onClick={handleApplyDateRange}
+                    style={{ borderRadius: websiteSettings?.actionButtons?.checkout?.borderRadius || '9999px' }}
+                    className="w-full mt-2 py-3 bg-[#fafafa] text-[var(--dash-bg)] font-bold hover:bg-[#e4e4e7] transition-colors shadow-lg shadow-[#fafafa]/20"
+                  >
+                    Apply Range
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <AnimatePresence>
+        {(topBarMode === 'search' || isOrderSearchMode) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => {
+              setTopBarMode('default');
+              setIsOrderSearchMode(false);
+            }}
+            className="absolute inset-0 bg-transparent z-40 pointer-events-auto cursor-pointer"
+          />
+        )}
+      </AnimatePresence>
+
+      <div ref={scrollRef} className={cn("flex-grow min-h-0 overflow-y-auto relative z-0 md:p-8", activeTab === 'Dashboard' ? 'px-1.5 pt-1 pb-20' : 'px-4 pt-4 pb-20')}>
+        <div className="max-w-7xl mx-auto w-full">
+        {/* Stats - Only show on Dashboard tab */}
+        {activeTab === 'Dashboard' && perms.sections.dashboard && (
+          <>
+            {/* Overview Section */}
+            {(perms.analytics.completedSell || perms.analytics.completedProfit) && (
+               <div className="mb-1 md:mb-6">
+                 <DashboardOverviewCard 
+                    completedSell={perms.analytics.completedSell ? formatPrice(completedSellAmount) : ''} 
+                    completedProfit={perms.analytics.completedProfit ? formatPrice(completedProfitAmount) : ''} 
+                 />
+               </div>
+            )}
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-1.5 gap-y-1 md:gap-4 mb-4 md:mb-8">
+              {perms.analytics.totalSell && <DashboardStatCard title="Total sell" value={formatPrice(totalSellAmount)} icon={ShoppingBag} color="green" />}
+              {perms.analytics.completedProfit && <DashboardStatCard title="Profit" value={formatPrice(totalProfitAmount)} icon={CircleDollarSign} color="green" />}
+              {perms.analytics.completedProfit && <DashboardStatCard title="Returned Cost" value={formatPrice(totalReturnedCost)} icon={Undo2} color="orange" />}
+              <DashboardStatCard title="Extra Costs" value={formatPrice(0)} icon={MinusCircle} color="red" />
+              {perms.analytics.totalOrders && <DashboardStatCard title="Total Orders" value={totalOrders.toString()} icon={ClipboardList} color="blue" />}
+              {perms.analytics.completedOrders && <DashboardStatCard title="Completed Orders" value={completedOrders.toString()} icon={ClipboardCheck} color="blue" />}
+              <DashboardStatCard title="Canceled Orders" value={canceledOrders.toString()} icon={XCircle} color="purple" />
+              <DashboardStatCard title="Total Items" value={products.length.toString()} icon={Package} color="orange" />
+              <DashboardStatCard title="Unique Items" value={uniqueItemsCount.toString()} icon={Tag} color="teal" />
+              <DashboardStatCard title="Total Quantity" value={totalQuantity.toString()} icon={ShoppingCart} color="teal" />
+              <DashboardStatCard title="Free Delivery" value="0" icon={Truck} color="purple" />
+            </div>
+
+            {/* Top Products */}
+            {perms.analytics.topSellingProducts && topProducts.length > 0 && (
+              <div className="mb-6 border-t border-[var(--dash-border)] pt-8">
+                <h3 className="text-xl font-bold text-white mb-6 flex items-center justify-center">Items</h3>
+                <div className="grid grid-cols-3 gap-2 md:grid-cols-4 lg:grid-cols-6 md:gap-4">
+                  {topProducts.map(({ product, quantity }) => (
+                    <div 
+                      key={product.id} 
+                      className="relative overflow-hidden rounded-xl bg-[var(--dash-card)] border border-[var(--dash-border)] aspect-square"
+                    >
+                      {perms.analytics.productImages && (
+                        <img 
+                          src={product.thumbnail || product.image} 
+                          alt={product.title} 
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      )}
+                      <div className="absolute top-1 right-1 bg-[#fafafa] text-[var(--dash-bg)] text-xs font-bold px-2 py-0.5 rounded-full z-10 shadow-md">
+                        {quantity}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Products Grid */}
+        {activeTab === 'Products' && perms.sections.products && (
+          <div ref={listRef} className="w-full relative px-1 pb-1" style={{ height: `${virtualizer.getTotalSize()}px` }}>
+            {virtualizer.getVirtualItems().map((virtualRow) => (
+              <div
+                key={virtualRow.index}
+                ref={virtualizer.measureElement}
+                data-index={virtualRow.index}
+                className={`absolute top-0 left-0 w-full grid grid-cols-2 gap-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 md:gap-4 md:px-4`}
+                style={{
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                  {Array.from({ length: cols }).map((_, i) => {
+                    const productIndex = virtualRow.index * cols + i;
+                    const product = displayProducts[productIndex];
+                    if (!product) return <div key={i} />;
+
+                    const isOutOfStock = product.variants && product.variants.length > 0 
+                      ? !product.variants.some(v => v.stock !== undefined && v.stock !== null && Number(v.stock) > 0)
+                      : (product.stock === undefined || product.stock === null || Number(product.stock) <= 0);
+
+            return (
+            <div 
+              key={product.id} 
+              className={cn(
+                "rounded-xl overflow-hidden border flex flex-col relative cursor-pointer transition-all",
+                isOutOfStock 
+                  ? "bg-[var(--dash-card)] border-[var(--dash-border)]" 
+                  : "bg-[var(--dash-card)] border-[var(--dash-border)]"
+              )}
+              onClick={() => {
+                if (topBarMode === 'default') {
+                  setEditingProduct(product);
+                } else if (topBarMode === 'move' || topBarMode === 'delete') {
+                  toggleProductSelection(product.id);
+                } else if (topBarMode === 'visibility') {
+                  if (!isOutOfStock) {
+                    toggleVisibility(product.id);
+                  }
+                }
+              }}
+            >
+              <div className="relative aspect-square w-full overflow-hidden bg-[var(--dash-card)]">
+                <img src={product.thumbnail || product.image} alt={product.title} className={cn("absolute inset-0 w-full h-full object-cover", (product.isVisible === false || isOutOfStock) ? "opacity-75 grayscale" : "")} />
+                
+                {/* Stock Out Overlay/Label */}
+                <AnimatePresence>
+                {isOutOfStock && (
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-[var(--dash-bg)]/20 pointer-events-none"
+                  >
+                     <div className="w-8 h-8 rounded-full border border-[#ff4d4f] flex items-center justify-center bg-[var(--dash-bg)]/90 text-[#ff4d4f] shadow-lg shadow-[#ff4d4f]/20 backdrop-blur-sm">
+                        <PackageX size={14} strokeWidth={2} />
+                     </div>
+                  </motion.div>
+                )}
+                </AnimatePresence>
+                
+                {/* Mode Specific Overlays */}
+                {(topBarMode === 'move' || topBarMode === 'delete') && (
+                  <div 
+                    className="absolute top-2 left-2 w-6 h-6 rounded border-2 border-[var(--dash-border)] bg-[var(--dash-bg)]/50 flex items-center justify-center z-10"
+                  >
+                    {selectedProducts.includes(product.id) && <Check size={16} className="text-[#fafafa]" />}
+                  </div>
+                )}
+
+                {topBarMode === 'visibility' && (
+                  <div 
+                    className={cn("absolute top-2 left-2 w-8 h-8 rounded flex items-center justify-center z-10", 
+                      (visibilityChanges[product.id] !== undefined ? visibilityChanges[product.id] : product.isVisible !== false) 
+                        ? "bg-[#fafafa] text-[var(--dash-bg)]" 
+                        : "bg-red-500 text-white"
+                    )}
+                  >
+                    {(visibilityChanges[product.id] !== undefined ? visibilityChanges[product.id] : product.isVisible !== false) ? <Eye size={16} /> : <EyeOff size={16} />}
+                  </div>
+                )}
+
+                {topBarMode === 'move' && (
+                  <button 
+                    onClick={(e) => handleMoveProducts(e, product.id)}
+                    className="absolute bottom-2 left-2 bg-[var(--dash-bg)]/80 text-white text-xs font-medium px-3 py-1.5 rounded z-10"
+                  >
+                    Insert
+                  </button>
+                )}
+
+                {/* Default Overlays */}
+                {topBarMode === 'default' && (
+                  <>
+                    <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+                      {product.isNew && <div className="bg-[var(--dash-bg)]/80 text-white text-[10px] font-bold px-2 py-1 rounded w-fit">NEW</div>}
+                    </div>
+                    <div className="absolute top-2 right-2 flex flex-col items-end gap-1 z-10">
+                      <div className="bg-[var(--dash-bg)]/80 text-white text-[10px] font-bold px-2 py-1 rounded w-fit flex items-center gap-1">
+                        ID: {product.id} <CopyButton text={product.id} className="p-0 text-gray-300 hover:text-white" />
+                      </div>
+                    </div>
+                  </>
+                )}
+                
+                <div className="absolute bottom-2 right-2 bg-[#ff4d6d] text-white text-xs font-bold px-2 py-1 rounded z-10">
+                  ¥{product.autoPrice || 0}
+                </div>
+                {topBarMode !== 'move' && !isOutOfStock && (
+                  <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border z-10 shadow-md bg-[#fafafa] text-[var(--dash-bg)] border-[#fafafa]/20">
+                    <Package size={14} />
+                    {perms.product.stock ? (product.stock || 0) : '***'}
+                  </div>
+                )}
+              </div>
+              <div className="grid grid-cols-3 text-center text-[10px] border-t border-[var(--dash-border)] divide-x divide-[var(--dash-border)]">
+                <div className="py-1">
+                  <div className="text-gray-500">BUY</div>
+                  <div className="font-medium text-white">{perms.product.buyPrice ? (product.buyPrice || Math.floor(product.price * 0.4)) : '***'}</div>
+                </div>
+                <div className="py-1">
+                  <div className="text-gray-500">SELL</div>
+                  <div className="font-medium text-white">{perms.product.sellPrice ? product.price : '***'}</div>
+                </div>
+                <div className="py-1">
+                  <div className="text-gray-500">PROFIT</div>
+                  <div className="font-medium text-white">{perms.product.profit ? product.price - (product.buyPrice || Math.floor(product.price * 0.4)) : '***'}</div>
+                </div>
+              </div>
+            </div>
+            );
+                  })}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Orders List */}
+        {activeTab === 'Orders' && perms.sections.orders && (
+          <div className="flex flex-col gap-1 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-4 md:px-4">
+            {displayOrders.length === 0 ? (
+              <div className="text-center text-gray-500 mt-10">No orders found</div>
+            ) : (
+              displayOrders.map(order => (
+                <div key={order.id} className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-4 flex flex-col gap-3">
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-3">
+                      <div onClick={(e) => toggleOrderSelection(order.id, e)} className="cursor-pointer">
+                        {selectedOrders.includes(order.id) ? (
+                          <div className="w-5 h-5 rounded-full bg-[#fafafa] flex items-center justify-center">
+                            <Check size={12} className="text-[var(--dash-bg)]" />
+                          </div>
+                        ) : (
+                          <div className="w-5 h-5 rounded-full border border-gray-500 flex items-center justify-center" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-bold text-white flex items-center gap-2">
+                          {perms.order.customerName ? order.userInfo.name : '***'}
+                          <span className="text-gray-500 font-normal text-[10px] flex items-center gap-0.5">#{order.id} <CopyButton text={order.id} className="p-0.5 text-gray-500 hover:text-white" /></span>
+                        </div>
+                        <div className="text-xs text-gray-500">{order.date}</div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex items-center gap-2 text-xs mb-1">
+                        {order.status === 'Pending' && <span className="text-blue-400 flex items-center gap-1"><span className="text-[10px]">🎉</span> pending</span>}
+                        {order.status === 'Canceled' && <span className="text-red-500 flex items-center gap-1"><X size={12}/> canceled</span>}
+                        {order.status === 'Unreachable' && <span className="text-gray-400 flex items-center gap-1"><EyeOff size={12}/> unreachable</span>}
+                        {order.status === 'Returned' && <span className="text-red-400 flex items-center gap-1"><Package size={12}/> returned</span>}
+                        {order.status === 'Complete Return' && <span className="text-red-500 flex items-center gap-1"><Package size={12}/> <Check size={10}/> complete return</span>}
+                        {order.status === 'Shipping' && <span className="text-pink-400 flex items-center gap-1"><Package size={12}/> shipping</span>}
+                        {order.status === 'Completed' && <span className="text-green-400 flex items-center gap-1"><Check size={12}/> completed</span>}
+                        {order.status === 'Preparing' && <span className="text-orange-400 flex items-center gap-1"><Package size={12}/> preparing</span>}
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newStatus: "Paid" | "Unpaid" = order.paymentStatus === 'Paid' ? 'Unpaid' : 'Paid';
+                            const updated = { ...order, paymentStatus: newStatus } as Order;
+                            setOrders(orders.map(o => o.id === order.id ? updated : o));
+                            setPaginatedOrders(prev => prev.map(o => o.id === order.id ? updated : o));
+                            cloudStore.upsertOrder(updated, 'standard').catch(console.error);
+                          }}
+                          className={cn(
+                            "w-[18px] h-[18px] rounded-full flex items-center justify-center transition-all duration-300 ml-1 shadow-sm",
+                            order.paymentStatus === 'Paid' ? "bg-green-500" : "bg-red-500"
+                          )}
+                        >
+                          {order.paymentStatus === 'Paid' ? (
+                            <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
+                              <Check size={12} className="text-white" strokeWidth={3} />
+                            </motion.div>
+                          ) : (
+                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                          )}
+                        </button>
+                      </div>
+                      {order.trackingNumber && (
+                        <div className="text-[10px] text-blue-400 underline">
+                          {order.trackingNumber}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-between items-end mt-2 relative min-h-[32px]">
+                    <div className="flex flex-col z-10">
+                      <div className="font-bold text-white text-lg leading-none">{perms.order.customerOrderAmount ? formatPrice(order.total) : '***'}</div>
+                      {order.steadfast && (order.steadfast.consignmentId || order.steadfast.trackingCode) && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <Truck size={12} className="text-[#fafafa]" />
+                          <span className="text-[11px] font-bold text-[#fafafa] tracking-wide font-mono uppercase">
+                            #{order.steadfast.consignmentId ? String(order.steadfast.consignmentId).replace(/(.{3})/g, '$1-').replace(/-$/, '') : order.steadfast.trackingCode}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="absolute left-1/2 -translate-x-1/2 bottom-0 flex flex-col items-center justify-end z-0 w-[140px]">
+                      {(() => {
+                        if (order.bdCourierStatus === 'failed') {
+                          return (
+                            <button onClick={() => checkBdCourierFraud(order.id)} title="Retry Fraud Check" className="p-1 text-gray-500 hover:text-white transition-colors border border-[var(--dash-border)] bg-[var(--dash-bg)] rounded-full mb-1">
+                              <RefreshCw size={14} className={isSyncingBdCourier ? "animate-spin" : ""} />
+                            </button>
+                          );
+                        }
+                        
+                        const reports = order.bdCourierData?.reports || [];
+                        const hasWarning = reports.length > 0;
+
+                        let completed = 0;
+                        let totalResolved = 0;
+                        let percentage = 0;
+
+                        if (order.bdCourierData?.summary) {
+                          completed = order.bdCourierData.summary.success_parcel || 0;
+                          totalResolved = order.bdCourierData.summary.total_parcel || 0;
+                          percentage = order.bdCourierData.summary.success_ratio || 0;
+                        } else {
+                          // Fallback to local history
+                          const customerOrders = orders.filter(o => o.userInfo.phone === order.userInfo.phone);
+                          completed = customerOrders.filter(o => o.status === 'Completed').length;
+                          const failed = customerOrders.filter(o => o.status === 'Canceled' || o.status === 'Returned' || o.status === 'Complete Return' || o.status === 'Unreachable').length;
+                          totalResolved = completed + failed;
+                          if (totalResolved > 0) percentage = (completed / totalResolved) * 100;
+                        }
+
+                        const percentageFormatted = percentage % 1 === 0 ? percentage : Number(percentage.toFixed(2));
+
+                        if (totalResolved > 0) {
+                          return (
+                            <div className="flex flex-col items-center gap-1 w-[80px] pb-0.5">
+                              <div className="flex items-center justify-center relative w-full">
+                                {hasWarning && (
+                                  <button onClick={(e) => {
+                                      e.stopPropagation();
+                                      alert(reports.map(r => `${r.courierName}: ${r.details}`).join('\n'));
+                                    }} 
+                                    className="text-red-500 hover:text-red-400 absolute left-[-16px]" title="Fraud Warning"
+                                  >
+                                    <ShieldAlert size={12} />
+                                  </button>
+                                )}
+                                <div className="text-[9px] font-mono font-medium text-gray-300 tracking-tight flex items-center justify-center whitespace-nowrap">
+                                  {completed} / {totalResolved} <span className="mx-1 text-gray-500">•</span> <span className="font-bold text-white">{percentageFormatted}%</span>
+                                </div>
+                                {order.bdCourierStatus === 'pending' && (
+                                   <RefreshCw size={10} className="animate-spin text-gray-500 absolute right-[-14px]" />
+                                )}
+                              </div>
+                              <div className="w-full h-[3px] bg-[var(--dash-border)] rounded-full overflow-hidden">
+                                <div 
+                                  className={cn("h-full rounded-full transition-all duration-500", percentage > 50 ? "bg-[#fafafa]" : "bg-red-500")} 
+                                  style={{ width: `${percentage}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        } else if (order.bdCourierStatus === 'pending') {
+                           return <RefreshCw size={14} className="animate-spin text-gray-500 mb-1" />;
+                        }
+                        
+                        return null;
+                      })()}
+                    </div>
+                    
+                    <div className="flex justify-end z-10 pl-2">
+                      <button 
+                        onClick={() => setSelectedOrder(order)}
+                        className="text-[13px] text-gray-300 flex items-center gap-1 hover:text-white"
+                      >
+                        Details <ChevronRight size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+
+            {activeTab === 'Orders' && paginatedOrdersHasMore && displayOrders.length > 0 && (
+              <div className="col-span-full flex justify-center mt-6 mb-8">
+                <button 
+                  onClick={handleLoadMoreOrders}
+                  disabled={isLoadingOrders}
+                  className="px-6 py-2.5 bg-[#fafafa] text-[var(--dash-bg)] rounded-xl font-bold text-sm hover:bg-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-lg"
+                >
+                  {isLoadingOrders ? (
+                    <>
+                      <div className="w-4 h-4 rounded-full border-2 border-[var(--dash-bg)] border-t-transparent animate-spin" />
+                      Loading...
+                    </>
+                  ) : (
+                    'Load More Orders'
+                  )}
+                </button>
+              </div>
+            )}
+            {activeTab === 'Orders' && selectedOrders.length > 0 && (
+              <div className="fixed bottom-[80px] right-4 z-40 bg-[#fafafa] text-[var(--dash-bg)] rounded-xl flex flex-col shadow-2xl overflow-visible">
+                {showOrderSummary && (
+                  <div className="absolute bottom-full right-0 mb-2 bg-[var(--dash-card)] text-white p-4 rounded-xl border border-[#fafafa] text-sm flex flex-col gap-2 w-56 shadow-[0_8px_30px_rgb(250, 250, 250,0.2)]">
+                    <div className="flex justify-between font-bold text-[#fafafa] border-b border-[var(--dash-border)] pb-2 mb-1">
+                      <span>Summary</span>
+                      <span>{selectedOrders.length}</span>
+                    </div>
+                    <div className="flex justify-between"><span>Total:</span> <span>৳{selectedOrdersSummary.total}</span></div>
+                    <div className="flex justify-between text-gray-400"><span>Buy:</span> <span>৳{selectedOrdersSummary.buy}</span></div>
+                    <div className="flex justify-between text-[#fafafa] font-bold"><span>Profit:</span> <span>৳{selectedOrdersSummary.profit}</span></div>
+                    <div className="flex justify-between mt-1 pt-2 border-t border-[var(--dash-border)]">
+                      <span>Items:</span> <span>{selectedOrdersSummary.items}</span>
+                    </div>
+                    <div className="flex justify-between"><span>Unique Items:</span> <span>{selectedOrdersSummary.uniqueItems.size}</span></div>
+                    <div className="flex justify-between"><span>Quantity:</span> <span>{selectedOrdersSummary.quantity}</span></div>
+                  </div>
+                )}
+                <div className="relative flex items-center h-10">
+                  <button onClick={toggleSelectAllOrders} className="flex px-4 h-full items-center gap-2 font-bold text-sm border-r border-[#e4e4e7] hover:bg-[#e4e4e7] transition-colors rounded-l-xl flex-shrink-0">
+                    <CheckSquare size={16} className="text-[var(--dash-bg)]" />
+                    Select All
+                  </button>
+                  <div className="h-full border-r border-[#e4e4e7]">
+                    <button 
+                      onClick={() => setShowPrintDropdown(!showPrintDropdown)} 
+                      className="px-3 h-full hover:bg-[#e4e4e7] transition-colors flex items-center justify-center w-full"
+                    >
+                      <Printer size={18} />
+                    </button>
+                  </div>
+                  <button onClick={() => setShowOrderSummary(!showOrderSummary)} className="px-3 h-full hover:bg-[#e4e4e7] transition-colors rounded-r-xl w-10 flex items-center justify-center flex-shrink-0">
+                    {showOrderSummary ? <ChevronDown size={18}/> : <ChevronUp size={18} />}
+                  </button>
+                  <AnimatePresence>
+                    {showPrintDropdown && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute bottom-full right-0 mb-2 w-48 bg-[var(--dash-card)] border border-[#fafafa] rounded-xl overflow-hidden shadow-[0_8px_30px_rgb(250, 250, 250,0.3)] origin-bottom-right"
+                      >
+                         <button onClick={handleBulkJPGDownload} className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[var(--dash-border)] text-white transition-colors">
+                           <Download size={18} className="text-[#fafafa] shrink-0" />
+                           <div className="flex flex-col flex-1">
+                             <span className="font-bold text-sm leading-none mb-1">JPG Download</span>
+                             <span className="text-[10px] leading-none text-gray-400">Save as image</span>
+                           </div>
+                         </button>
+                         <button onClick={handleBulkPrint} className="w-full flex items-center gap-3 px-4 py-3 text-left border-t border-[var(--dash-border)] hover:bg-[var(--dash-border)] text-white transition-colors">
+                           <Printer size={18} className="text-[#fafafa] shrink-0" />
+                           <div className="flex flex-col flex-1">
+                             <span className="font-bold text-sm leading-none mb-1">Print Options</span>
+                             <span className="text-[10px] leading-none text-gray-400">Physical printer</span>
+                           </div>
+                         </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        {/* Settings Tab */}
+        {activeTab === 'Settings' && perms.sections.settings && (
+          <div className="max-w-2xl mx-auto w-full flex flex-col gap-2.5 md:gap-3.5 px-1.5 md:px-4 py-2">
+            {/* Header */}
+            <div className="mb-1">
+              <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">Settings</h1>
+              <p className="text-[12px] md:text-sm text-slate-400 mt-0.5">Manage your store and preferences</p>
+            </div>
+
+            {/* Group 1: Maintenance */}
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl overflow-hidden shadow-lg shadow-black/10">
+              <div className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5">
+                <div className="flex items-center gap-3.5">
+                  <div className="text-indigo-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <RefreshCw size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Maintenance</span>
+                </div>
+                <button 
+                  onClick={() => {
+                    const newVal = !isMaintenanceMode;
+                    setIsMaintenanceMode(newVal);
+                    cloudStore.saveSetting('isMaintenanceMode', newVal).catch(console.error);
+                  }}
+                  className={cn(
+                    "w-10 h-5.5 md:w-11 md:h-6 rounded-full relative flex items-center px-0.5 transition-colors duration-200 outline-none",
+                    isMaintenanceMode ? "bg-[#8b5cf6]" : "bg-slate-800"
+                  )}
+                >
+                  <div className={cn(
+                    "w-4.5 h-4.5 md:w-5 md:h-5 rounded-full bg-white shadow-md transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)]",
+                    isMaintenanceMode ? "translate-x-4.5 md:translate-x-5" : "translate-x-0"
+                  )} />
+                </button>
+              </div>
+            </div>
+
+            {/* Group 2: Catalog Settings */}
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl overflow-hidden shadow-lg shadow-black/10 flex flex-col divide-y divide-[var(--dash-border)]/40">
+              {/* Pre Order */}
+              <div 
+                onClick={() => setSettingsView('preOrder')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-blue-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <Package size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Pre Order</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+
+              {/* Categories */}
+              <div 
+                onClick={() => setSettingsView('categories')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-purple-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <Tag size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Categories</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+
+              {/* Image Settings */}
+              <div 
+                onClick={() => setSettingsView('imageSettings')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-sky-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <ImageIcon size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Image Settings</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+
+              {/* SEO & Branding Settings */}
+              <div 
+                onClick={() => setSettingsView('seoSettings')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-indigo-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <Globe size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">SEO & Branding Settings</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+            </div>
+
+            {/* Group 3: Operations */}
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl overflow-hidden shadow-lg shadow-black/10 flex flex-col divide-y divide-[var(--dash-border)]/40">
+              {/* Suppliers */}
+              <div 
+                onClick={() => setSettingsView('suppliers')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-orange-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <Factory size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Suppliers</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+
+              {/* Bulk Edit */}
+              <div 
+                onClick={() => setSettingsView('bulkPrice')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-blue-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <Calculator size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Bulk Edit</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+
+              {/* Discounts */}
+              <div 
+                onClick={() => setSettingsView('discounts')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-emerald-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <BadgePercent size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Discounts</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+
+              {/* Qty Rules */}
+              <div 
+                onClick={() => setSettingsView('qtyRules')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-cyan-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <PackagePlus size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Qty Rules</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+            </div>
+
+            {/* Group 4: Orders & Customers */}
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl overflow-hidden shadow-lg shadow-black/10 flex flex-col divide-y divide-[var(--dash-border)]/40">
+              {/* Customers */}
+              {perms.sections.customers && (
+                <div 
+                  onClick={() => setSettingsView('customers')}
+                  className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+                >
+                  <div className="flex items-center gap-3.5">
+                    <div className="text-blue-500 shrink-0 flex items-center justify-center w-6 h-6">
+                      <User size={20} strokeWidth={1.75} />
+                    </div>
+                    <span className="text-white text-sm md:text-base font-medium tracking-wide">Customers</span>
+                  </div>
+                  <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+                </div>
+              )}
+
+              {/* Incomplete Orders */}
+              <div 
+                onClick={() => setSettingsView('incompleteOrders')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-orange-500 shrink-0 flex items-center justify-center w-6 h-6">
+                    <AlertCircle size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Incomplete Orders</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+
+              {/* Anti Spam */}
+              <div 
+                onClick={() => setSettingsView('antiSpam')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-red-500 shrink-0 flex items-center justify-center w-6 h-6">
+                    <ShieldAlert size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Anti-Spam</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+
+              {/* Minimum Order */}
+              <div 
+                onClick={() => setSettingsView('minOrder')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-rose-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <ShoppingCart size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Minimum Order</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+            </div>
+
+            {/* Group 5: Design & Social */}
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl overflow-hidden shadow-lg shadow-black/10 flex flex-col divide-y divide-[var(--dash-border)]/40">
+              {/* Website */}
+              <div 
+                onClick={() => setSettingsView('website')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-pink-500 shrink-0 flex items-center justify-center w-6 h-6">
+                    <Globe size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Website</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+
+              {/* Social Media */}
+              <div 
+                onClick={() => setSettingsView('socialMedia')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-blue-500 shrink-0 flex items-center justify-center w-6 h-6">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Social Media</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+
+              {/* Notification */}
+              <div 
+                onClick={() => setSettingsView('notification')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-cyan-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Notification</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+
+              {/* Customise */}
+              <div 
+                onClick={() => setSettingsView('customise')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-pink-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <Palette size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Customise</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+            </div>
+
+            {/* Group 6: System Config */}
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl overflow-hidden shadow-lg shadow-black/10 flex flex-col divide-y divide-[var(--dash-border)]/40">
+              {/* Account Settings */}
+              <div 
+                onClick={() => setSettingsView('account')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-emerald-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <Settings size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Account Settings</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+
+              {/* Account Control */}
+              <div 
+                onClick={() => setSettingsView('accountControl')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-indigo-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <Settings size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Account Control</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+
+              {/* Payment Gateways */}
+              <div className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 select-none">
+                <div className="flex items-center gap-3.5">
+                  <div className="text-purple-500 shrink-0 flex items-center justify-center w-6 h-6">
+                    <CreditCard size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Payment Gateways</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500" />
+              </div>
+
+              {/* Courier */}
+              <div 
+                onClick={() => setSettingsView('courier')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-emerald-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <Truck size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Courier</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+            </div>
+
+            {/* Group 7: Calculator, Analytics, & Logout */}
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl overflow-hidden shadow-lg shadow-black/10 flex flex-col divide-y divide-[var(--dash-border)]/40">
+              {/* Price Calculator */}
+              <div 
+                onClick={() => setSettingsView('priceCalculator')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-yellow-500 shrink-0 flex items-center justify-center w-6 h-6">
+                    <JapaneseYen size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Price Calculator</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+
+              {/* Marketing */}
+              <div 
+                onClick={() => setSettingsView('marketing')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-blue-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <Target size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Marketing</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+
+              {/* Store Sync */}
+              <div 
+                onClick={() => setSettingsView('apiSync')}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-emerald-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <Database size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-white text-sm md:text-base font-medium tracking-wide">Store API Sync</span>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
+
+              {/* Logout */}
+              <div 
+                onClick={() => {
+                  setCurrentAdmin(null);
+                  window.location.href = '/';
+                }}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-red-500/[0.05] active:bg-red-500/[0.1] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-red-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <LogOut size={20} strokeWidth={1.75} />
+                  </div>
+                  <span className="text-red-400 text-sm md:text-base font-medium tracking-wide">Logout</span>
+                </div>
+                <ChevronRight size={16} className="text-red-500/50 group-hover:text-red-400 transition-colors shrink-0" />
+              </div>
+            </div>
+
+          </div>
+        )}
+        </div>
+      </div>
+
+      {/* Bottom Nav / Sidebar */}
+      <style>{`
+        :root {
+          --glass-border: rgba(255, 255, 255, ${websiteSettings?.dashboardNav?.borderWhiteness !== undefined ? websiteSettings.dashboardNav.borderWhiteness / 100 : 0.40});
+        }
+        @media (max-width: 767px) {
+          .mobile-dashboard-nav {
+             bottom: ${websiteSettings?.dashboardNav?.bottomOffset ?? 10}px !important;
+             height: ${websiteSettings?.dashboardNav?.height ?? 64}px !important;
+             width: ${websiteSettings?.dashboardNav?.width ?? 92}% !important;
+             left: 50% !important;
+             transform: translateX(-50%) !important;
+             backdrop-filter: blur(${websiteSettings?.dashboardNav?.blur ?? 4}px) saturate(1.8) !important;
+             -webkit-backdrop-filter: blur(${websiteSettings?.dashboardNav?.blur ?? 4}px) saturate(1.8) !important;
+          }
+          .mobile-fab-glass {
+             backdrop-filter: blur(${websiteSettings?.dashboardNav?.blur ?? 4}px) saturate(1.8) !important;
+             -webkit-backdrop-filter: blur(${websiteSettings?.dashboardNav?.blur ?? 4}px) saturate(1.8) !important;
+             bottom: calc(${websiteSettings?.dashboardNav?.bottomOffset ?? 10}px + ${websiteSettings?.dashboardNav?.height ?? 64}px + 16px) !important;
+          }
+        }
+      `}</style>
+      <div className="mobile-dashboard-nav fixed bg-[var(--dash-bg)]/70 border-2 border-[var(--glass-border)] shadow-[0_8px_32px_rgba(0,0,0,0.5)] shadow-black/50 rounded-[32px] flex justify-around items-center px-2 z-40 md:top-0 md:bottom-0 md:left-0 md:right-auto md:w-[240px] md:h-screen md:flex-col md:justify-start md:border-y-0 md:border-l-0 md:border-[var(--dash-border)] md:border-r md:px-4 md:py-8 md:gap-2 md:rounded-none md:bg-[var(--dash-bg)] md:backdrop-blur-none md:transform-none md:saturate-100 md:shadow-none overflow-y-auto">
+        <div className="hidden md:flex items-center gap-3 mb-8 px-4 mt-2">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#fafafa] to-[#d4d4d8] flex items-center justify-center shadow-lg shadow-[#fafafa]/20">
+             <LayoutDashboard size={18} className="text-[var(--dash-bg)]" fill="currentColor" />
+          </div>
+          <span className="text-white font-bold text-xl tracking-tight">Admin<span className="text-[#fafafa]">Panel</span></span>
+        </div>
+        {perms.sections.dashboard && <NavButton icon={LayoutDashboard} label="Dashboard" active={activeTab === 'Dashboard'} onClick={() => handleTabChange('Dashboard')} />}
+        {perms.sections.products && <NavButton icon={Package} label="Products" active={activeTab === 'Products'} onClick={() => handleTabChange('Products')} />}
+        {perms.sections.orders && <NavButton icon={ShoppingCart} label="Orders" active={activeTab === 'Orders'} onClick={() => handleTabChange('Orders')} />}
+        {perms.sections.settings && <NavButton icon={Settings} label="Settings" active={activeTab === 'Settings'} onClick={() => handleTabChange('Settings')} />}
+        
+        <div className="hidden md:block flex-1" />
+        
+        {!perms.sections.settings && (
+          <NavButton 
+            icon={LogOut} 
+            label="Log Out" 
+            active={false} 
+            onClick={() => {
+              setCurrentAdmin(null);
+            }} 
+          />
+        )}
+      </div>
+
+      {/* FABs */}
+      {topBarMode === 'default' && activeTab === 'Products' && (
+        <button 
+          onClick={() => setIsAddingProduct(true)}
+          className="mobile-fab-glass fixed md:bottom-8 right-6 md:right-8 w-14 h-14 md:w-16 md:h-16 bg-[var(--dash-bg)]/70 md:bg-[#fafafa] text-[#fafafa] md:text-[var(--dash-bg)] border-2 border-[var(--glass-border)] md:border-none shadow-[0_8px_32px_rgba(0,0,0,0.5)] md:shadow-lg shadow-black/50 rounded-full flex items-center justify-center hover:bg-[var(--dash-border)] md:hover:bg-[#e4e4e7] transition-colors md:backdrop-blur-none z-50"
+        >
+          <Plus size={28} strokeWidth={2.5} className="md:w-8 md:h-8" />
+        </button>
+      )}
+
+      {topBarMode === 'delete' && (
+        <div className="mobile-fab-glass fixed md:bottom-8 right-6 md:right-8 flex items-center gap-3 z-50 p-2 md:p-0 bg-[var(--dash-bg)]/70 md:bg-transparent border-2 border-[var(--glass-border)] md:border-none shadow-[0_8px_32px_rgba(0,0,0,0.5)] shadow-black/50 md:shadow-none rounded-[32px] md:rounded-none">
+          {isOwner && (
+            <button 
+              onClick={() => {
+                if (selectedProducts.length === products.length) {
+                  setSelectedProducts([]);
+                } else {
+                  setSelectedProducts(products.map(p => p.id));
+                }
+              }}
+              className="px-6 h-12 bg-blue-600 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors font-bold text-sm"
+            >
+              {selectedProducts.length === products.length ? 'Deselect All' : 'Select All'}
+            </button>
+          )}
+          {selectedProducts.length > 0 && (
+            <button 
+              onClick={() => setShowDeleteConfirm(true)}
+              className="px-6 h-12 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors font-bold text-sm"
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[200] bg-[var(--dash-bg)]/80 flex items-center justify-center p-4">
+          <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-2xl p-6 max-w-sm w-full">
+            <h3 className="text-xl font-bold text-white mb-2">Delete Products</h3>
+            <p className="text-gray-400 mb-6">Are you sure you want to delete {selectedProducts.length} products? This action cannot be undone.</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-3 rounded-xl border border-[var(--dash-border)] text-white font-medium hover:bg-[var(--dash-border)] transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteSelected}
+                className="flex-1 py-3 rounded-xl bg-red-500 text-white font-medium hover:bg-red-600 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {topBarMode === 'visibility' && Object.keys(visibilityChanges).length > 0 && (
+        <button 
+          onClick={handleUpdateVisibility}
+          className="mobile-fab-glass fixed md:bottom-8 right-6 md:right-8 px-6 h-[56px] border-2 border-[var(--glass-border)] md:border-none shadow-[0_8px_32px_rgba(0,0,0,0.5)] md:shadow-lg shadow-black/50 md:shadow-none bg-[var(--dash-bg)]/70 md:bg-[#fafafa] text-[#fafafa] md:text-[var(--dash-bg)] rounded-[28px] md:rounded-2xl flex items-center justify-center hover:bg-[var(--dash-border)] md:hover:bg-[#e4e4e7] transition-colors z-[45] font-bold md:backdrop-blur-none"
+        >
+          Update
+        </button>
+      )}
+
+      {showZipImport && (
+        <ZipImportModal
+          onClose={() => setShowZipImport(false)}
+          categories={categories}
+          suppliers={websiteSettings.suppliers || []}
+          existingProducts={products}
+          onImportComplete={(newProducts) => {
+            setProducts(prev => [...newProducts, ...prev]);
+            cloudStore.upsertProducts(newProducts).catch(console.error);
+            setShowZipImport(false);
+          }}
+        />
+      )}
+
+      {/* Order Details Modal */}
+      {selectedOrder && (
+        <OrderDetailsModal
+          order={selectedOrder}
+          orders={orders}
+          products={products}
+          perms={perms.order}
+          courierSettings={courierSettings}
+          websiteSettings={websiteSettings}
+          onClose={() => setSelectedOrder(null)}
+          onUpdate={(updatedOrder) => {
+            const oldOrder = orders.find(o => o.id === updatedOrder.id) || paginatedOrders.find(o => o.id === updatedOrder.id) || selectedOrder;
+            if (oldOrder) {
+              setProducts(prev => {
+                const { updatedProducts, changedProducts, diffItems } = adjustOrderStockDiff(prev, oldOrder, updatedOrder);
+                if (changedProducts.length > 0) {
+                  cloudStore.upsertProducts(changedProducts).catch(console.error);
+                }
+                if (diffItems.length > 0) {
+                  notifyMasterStockSyncDiff(diffItems, websiteSettings);
+                }
+                return updatedProducts;
+              });
+            }
+            setOrders(orders.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+            setPaginatedOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+            cloudStore.upsertOrder(updatedOrder, 'standard').catch(console.error);
+            setSelectedOrder(updatedOrder);
+          }}
+          onDelete={(orderId) => {
+            const orderToDel = orders.find(o => o.id === orderId);
+            setOrders(orders.filter(o => o.id !== orderId));
+            setPaginatedOrders(prev => prev.filter(o => o.id !== orderId));
+            if (orderToDel) cloudStore.deleteOrder(orderToDel, 'standard').catch(console.error);
+            setSelectedOrder(null);
+          }}
+        />
+      )}
+
+      {settingsView === 'categories' && perms.sections.settings && (
+        <CategoriesManager categories={categories} setCategories={setCategories} onClose={() => setSettingsView('main')} themePrimary={websiteSettings.themeColors?.primary} />
+      )}
+      {settingsView === 'imageSettings' && perms.sections.settings && (
+        <ImageSettingsManager onClose={() => setSettingsView('main')} themePrimary={websiteSettings.themeColors?.primary} />
+      )}
+      {settingsView === 'seoSettings' && perms.sections.settings && (
+        <SeoSettingsManager settings={websiteSettings} setSettings={setWebsiteSettings} onClose={() => setSettingsView('main')} />
+      )}
+      {settingsView === 'website' && perms.sections.settings && (
+        <WebsiteManager settings={websiteSettings} setSettings={setWebsiteSettings} onClose={() => setSettingsView('main')} />
+      )}
+      {settingsView === 'socialMedia' && perms.sections.settings && (
+        <SocialMediaManager websiteSettings={websiteSettings} setWebsiteSettings={setWebsiteSettings} onClose={() => setSettingsView('main')} />
+      )}
+      {settingsView === 'apiSync' && perms.sections.settings && (
+        <ApiSyncManager settings={websiteSettings} setSettings={setWebsiteSettings} onClose={() => setSettingsView('main')} />
+      )}
+      {settingsView === 'marketing' && perms.sections.settings && (
+        <MarketingManager settings={marketingSettings} setSettings={setMarketingSettings} onClose={() => setSettingsView('main')} themePrimary={websiteSettings.themeColors?.primary} />
+      )}
+      {settingsView === 'courier' && perms.sections.settings && (
+        <CourierManager settings={courierSettings} setSettings={setCourierSettings} onClose={() => setSettingsView('main')} themePrimary={websiteSettings.themeColors?.primary} />
+      )}
+      {settingsView === 'customers' && perms.sections.settings && perms.sections.customers && (
+        <CustomersManager orders={orders} setOrders={setOrders} customers={customers} setCustomers={setCustomers} websiteSettings={websiteSettings} setWebsiteSettings={setWebsiteSettings} onClose={() => setSettingsView('main')} isOwner={isOwner} />
+      )}
+      {settingsView === 'incompleteOrders' && perms.sections.settings && (
+        <IncompleteOrdersManager 
+          orders={orders}
+          incompleteOrders={incompleteOrders || []} 
+          setIncompleteOrders={setIncompleteOrders}
+          websiteSettings={websiteSettings} 
+          setWebsiteSettings={setWebsiteSettings}
+          setOrders={setOrders}
+          onClose={() => setSettingsView('main')} 
+        />
+      )}
+      {settingsView === 'antiSpam' && perms.sections.settings && (
+        <AntiSpamManager websiteSettings={websiteSettings} setWebsiteSettings={setWebsiteSettings} onClose={() => setSettingsView('main')} />
+      )}
+      {settingsView === 'minOrder' && perms.sections.settings && (
+        <MinOrderManager websiteSettings={websiteSettings} setWebsiteSettings={setWebsiteSettings} onClose={() => setSettingsView('main')} />
+      )}
+      {settingsView === 'bulkPrice' && perms.sections.settings && (
+        <BulkPriceManager 
+          products={products}
+          setProducts={setProducts}
+          categories={categories}
+          suppliers={websiteSettings.suppliers || []}
+          onClose={() => setSettingsView('main')}
+        />
+      )}
+      {settingsView === 'priceCalculator' && perms.sections.settings && (
+        <PriceCalculatorManager settings={priceCalculatorSettings} setSettings={setPriceCalculatorSettings} onClose={() => setSettingsView('main')} themePrimary={websiteSettings.themeColors?.primary} />
+      )}
+      {settingsView === 'suppliers' && perms.sections.settings && (
+        <SupplierManager settings={websiteSettings} setSettings={setWebsiteSettings} onClose={() => setSettingsView('main')} />
+      )}
+      {settingsView === 'qtyRules' && perms.sections.settings && (
+        <QtyRulesManager settings={websiteSettings} setSettings={setWebsiteSettings} onClose={() => setSettingsView('main')} />
+      )}
+      {settingsView === 'customise' && perms.sections.settings && (
+        <CustomiseManager settings={websiteSettings} setSettings={setWebsiteSettings} onClose={() => setSettingsView('main')} />
+      )}
+      {settingsView === 'notification' && perms.sections.settings && (
+        <NotificationManager websiteSettings={websiteSettings} setWebsiteSettings={setWebsiteSettings} onClose={() => setSettingsView('main')} />
+      )}
+      {settingsView === 'accountControl' && perms.sections.settings && (
+        <AccountControlManager adminUsers={adminUsers} setAdminUsers={setAdminUsers} currentAdmin={currentAdmin} onClose={() => setSettingsView('main')} />
+      )}
+      {settingsView === 'account' && perms.sections.settings && (
+        <AccountManager adminUsers={adminUsers} setAdminUsers={setAdminUsers} currentAdmin={currentAdmin} setCurrentAdmin={setCurrentAdmin} websiteSettings={websiteSettings} setWebsiteSettings={setWebsiteSettings} onClose={() => setSettingsView('main')} />
+      )}
+      {settingsView === 'discounts' && perms.sections.settings && (
+        <DiscountManager websiteSettings={websiteSettings} setWebsiteSettings={setWebsiteSettings} products={products} categories={categories} onClose={() => setSettingsView('main')} />
+      )}
+      {settingsView === 'preOrder' && perms.sections.settings && (
+        <PreOrderManager websiteSettings={websiteSettings} setWebsiteSettings={setWebsiteSettings} onClose={() => setSettingsView('main')} />
+      )}
+      {activeTab === 'Orders' && selectedOrders.length > 0 && (
+        <div className="fixed left-[-9999px] top-0 pointer-events-none z-[-100]">
+          {selectedOrders.map(orderId => {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return null;
+            return (
+              <Receipt 
+                key={`print-${orderId}`} 
+                order={order} 
+                settings={websiteSettings} 
+                ref={el => bulkPrintRefs.current[orderId] = el as HTMLDivElement} 
+              />
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DashboardOverviewCard({ completedSell, completedProfit }: { completedSell: string, completedProfit: string }) {
+  return (
+    <div className="w-full bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl py-3.5 px-4 md:p-8 relative overflow-hidden flex flex-col min-h-[110px] md:min-h-[160px] shadow-lg shadow-black/10">
+       <div className="flex items-center gap-2 text-slate-100 mb-2.5 md:mb-6 relative z-10">
+          <TrendingUp className="w-4.5 h-4.5 md:w-5.5 md:h-5.5 text-indigo-400" />
+          <span className="font-semibold text-sm md:text-xl tracking-wide">Overview</span>
+       </div>
+       
+       <div className="grid grid-cols-2 gap-2 md:gap-8 relative z-10 w-full">
+          {completedSell && (
+            <div className="pr-2 border-r border-[var(--dash-border)]/40">
+              <div className="text-slate-400 text-[11px] md:text-base mb-1 font-medium tracking-wide">Completed Sell</div>
+              <div className="text-xl md:text-4xl font-extrabold text-white tracking-wide">{completedSell}</div>
+            </div>
+          )}
+          {completedProfit && (
+            <div className="pl-2">
+              <div className="text-slate-400 text-[11px] md:text-base mb-1 font-medium tracking-wide">Completed profit</div>
+              <div className="text-xl md:text-4xl font-extrabold text-white tracking-wide">{completedProfit}</div>
+            </div>
+          )}
+       </div>
+    </div>
+  );
+}
+
+function DashboardStatCard({ title, value, icon: Icon, color }: { title: string, value: string, icon: any, color: 'green' | 'orange' | 'red' | 'blue' | 'purple' | 'teal' }) {
+  const colors = {
+    green: {
+      border: 'border-l-emerald-500',
+      iconBg: 'bg-emerald-500/10',
+      iconBorder: 'border border-emerald-500/20',
+      iconColor: 'text-emerald-500'
+    },
+    orange: {
+      border: 'border-l-amber-500',
+      iconBg: 'bg-amber-500/10',
+      iconBorder: 'border border-amber-500/20',
+      iconColor: 'text-amber-500'
+    },
+    red: {
+      border: 'border-l-rose-500',
+      iconBg: 'bg-rose-500/10',
+      iconBorder: 'border border-rose-500/20',
+      iconColor: 'text-rose-500'
+    },
+    blue: {
+      border: 'border-l-blue-500',
+      iconBg: 'bg-blue-500/10',
+      iconBorder: 'border border-blue-500/20',
+      iconColor: 'text-blue-500'
+    },
+    purple: {
+      border: 'border-l-purple-500',
+      iconBg: 'bg-purple-500/10',
+      iconBorder: 'border border-purple-500/20',
+      iconColor: 'text-purple-500'
+    },
+    teal: {
+      border: 'border-l-teal-500',
+      iconBg: 'bg-teal-500/10',
+      iconBorder: 'border border-teal-500/20',
+      iconColor: 'text-teal-500'
+    }
+  };
+  
+  const c = colors[color] || colors.blue;
+
+  return (
+    <div className={`bg-[var(--dash-card)] border-y border-r border-[var(--dash-border)]/70 rounded-2xl ${c.border} border-l-2 py-3 px-2.5 md:p-6 relative overflow-hidden flex items-center gap-2.5 md:gap-5 min-h-[72px] md:min-h-[112px] shadow-sm`}>
+      <div className={`p-1.5 md:p-3 rounded-full flex-shrink-0 flex items-center justify-center ${c.iconBg} ${c.iconBorder} ${c.iconColor}`}>
+         <Icon className="w-4.5 h-4.5 md:w-6 md:h-6" strokeWidth={2} />
+      </div>
+      <div className="flex flex-col justify-center min-w-0">
+        <div className="text-slate-400 text-[10.5px] md:text-sm font-medium tracking-wide truncate mb-0.5">{title}</div>
+        <div className="text-base md:text-2xl font-bold text-white tracking-wide truncate">{value}</div>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ title, value }: { title: string, value: string }) {
+  return (
+    <div className="bg-[var(--dash-card)] p-3 rounded-xl border border-[var(--dash-border)]">
+      <div className="text-gray-500 text-xs mb-1">{title}</div>
+      <div className="text-[#fafafa] font-bold text-lg">{value}</div>
+    </div>
+  );
+}
+
+function NavButton({ icon: Icon, label, active, onClick }: { icon: any, label: string, active: boolean, onClick: () => void }) {
+  return (
+    <button onClick={onClick} className={cn(
+      "relative flex flex-col md:flex-row items-center justify-center h-full md:h-auto flex-1 md:flex-none md:justify-start gap-1 md:gap-4 md:w-full md:px-5 md:py-3.5 transition-all md:rounded-xl group", 
+      active ? "text-[#fafafa] md:bg-[#fafafa]/10" : "text-gray-500 md:text-gray-400 hover:text-gray-300 md:hover:bg-[var(--dash-card)] md:hover:text-white"
+    )}>
+      <div className={cn("md:p-2 md:rounded-lg transition-colors flex items-center justify-center", active ? "md:bg-[#fafafa] md:text-[var(--dash-bg)]" : "md:bg-[var(--dash-border)] md:text-gray-400 group-hover:md:bg-[var(--dash-border)]")}>
+         <Icon size={22} className="md:w-[24px] md:h-[24px]" strokeWidth={active ? 2.5 : 2} />
+      </div>
+      <span className={cn("text-[11px] md:text-sm font-medium md:font-semibold", active ? "font-bold" : "")}>{label}</span>
+      {active && <div className="hidden md:block absolute right-0 w-1.5 h-8 bg-[#fafafa] rounded-l-full" />}
+    </button>
+  );
+}
+
+function CategoriesManager({ categories, setCategories, onClose, themePrimary }: { categories: Category[], setCategories: React.Dispatch<React.SetStateAction<Category[]>>, onClose: () => void, themePrimary?: string }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  
+  const scrollRef = useScrollRestore('dashboard-categories');
+
+  const handleSave = (category: Category) => {
+    let updated: Category[];
+    if (editingCategory) {
+      updated = categories.map(c => c.id === category.id ? category : c);
+    } else {
+      updated = [...categories, category];
+    }
+    setCategories(updated);
+    cloudStore.saveSetting('categories', updated).catch(console.error);
+    setIsEditing(false);
+    setEditingCategory(null);
+  };
+
+  const handleDelete = (id: string) => {
+    const updated = categories.filter(c => c.id !== id);
+    setCategories(updated);
+    cloudStore.saveSetting('categories', updated).catch(console.error);
+    setIsEditing(false);
+    setEditingCategory(null);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+      {/* Top Bar */}
+      <div className="flex items-center justify-between px-4 py-4 md:px-8 md:py-5 border-b border-[var(--dash-border)] bg-[var(--dash-bg)]">
+        <button onClick={onClose} className="p-2 -ml-2 text-gray-400 hover:text-white">
+          <ChevronLeft size={24} />
+        </button>
+        <h1 className="text-xl font-bold text-white absolute left-1/2 -translate-x-1/2">Categories</h1>
+        <div className="w-10"></div>
+      </div>
+
+      <div className="p-4">
+        <button 
+          onClick={() => { setEditingCategory(null); setIsEditing(true); }}
+          className="bg-transparent border border-[var(--dash-border)] text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 w-fit hover:bg-[var(--dash-card)]"
+        >
+          <Plus size={16} /> Add New
+        </button>
+      </div>
+
+      {/* Categories Grid */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pt-0">
+        <div className="max-w-3xl mx-auto w-full">
+        <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-4">
+          {categories.map(cat => (
+            <div 
+              key={cat.id} 
+              className="flex flex-col items-center gap-2 cursor-pointer group"
+              onClick={() => { setEditingCategory(cat); setIsEditing(true); }}
+            >
+              <div className="w-[72px] h-[72px] rounded-full bg-[var(--dash-card)] flex items-center justify-center overflow-hidden group-hover:ring-2 ring-[#fafafa] transition-all">
+                <div className="w-[60px] h-[60px] rounded-full overflow-hidden bg-gray-100 flex items-center justify-center">
+                  {cat.icon ? (
+                    <img src={cat.icon} alt={cat.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-gray-400 font-bold text-xl">{cat.name.charAt(0)}</span>
+                  )}
+                </div>
+              </div>
+              <div className="text-white text-xs font-medium text-center">{cat.name}</div>
+            </div>
+          ))}
+        </div>
+        </div>
+      </div>
+
+      {isEditing && (
+        <CategoryEditorModal 
+          category={editingCategory}
+          onSave={handleSave}
+          onClose={() => { setIsEditing(false); setEditingCategory(null); }}
+          onDelete={editingCategory ? () => handleDelete(editingCategory.id) : undefined}
+          themePrimary={themePrimary}
+        />
+      )}
+    </div>
+  );
+}
+
+function CategoryEditorModal({ category, onSave, onClose, onDelete, themePrimary }: { category: Category | null, onSave: (c: Category) => void, onClose: () => void, onDelete?: () => void, themePrimary?: string }) {
+  const [name, setName] = useState(category?.name || '');
+  const [icon, setIcon] = useState(category?.icon || '');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 400;
+          const MAX_HEIGHT = 400;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob(async (blob) => {
+            if (blob) {
+              try {
+                const url = await cloudStore.uploadFile(blob, `cat_${Date.now()}.jpg`);
+                setIcon(url);
+              } catch (e) {
+                console.error('Category image upload failed', e);
+                setIcon(canvas.toDataURL('image/jpeg', 0.8));
+              }
+            }
+          }, 'image/jpeg', 0.8);
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.readAsDataURL(file as Blob);
+    }
+  };
+
+  const handleSave = () => {
+    if (!name.trim()) return;
+    onSave({
+      id: category?.id || `cat_${Date.now()}`,
+      name: name.trim(),
+      icon: icon.trim() || undefined
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-[110] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+      {/* Top Bar */}
+      <div className="flex items-center justify-between px-4 md:px-8 py-4 md:py-5 bg-[var(--dash-bg)] border-b border-[var(--dash-border)]">
+        <button onClick={onClose} className="p-2 -ml-2 text-gray-400 hover:text-white">
+          <ChevronLeft size={24} />
+        </button>
+        <h1 className="text-xl font-bold text-white absolute left-1/2 -translate-x-1/2">{category ? 'Edit Category' : 'Add Category'}</h1>
+        {onDelete ? (
+          <button onClick={onDelete} className="p-2 -mr-2 text-red-500 hover:text-red-400">
+            <Trash2 size={20} />
+          </button>
+        ) : (
+          <div className="w-10"></div>
+        )}
+      </div>
+
+      <div className="p-4 flex-1 overflow-y-auto md:p-8 max-w-3xl mx-auto w-full">
+        <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-4 flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-[#ff4d6d]">Title *</label>
+            <input 
+              type="text" 
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Necklace"
+              className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg px-3 py-3 text-white focus:outline-none focus:border-[#fafafa] transition-colors"
+            />
+            <div className="text-xs text-gray-500">
+              https://paikarix.com/c/{name.toLowerCase().replace(/\s+/g, '-')}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2 mt-2">
+            <label className="text-sm font-medium text-gray-400">Icon (optional)</label>
+            <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-4 min-h-[160px] flex items-start justify-start relative">
+              {icon ? (
+                <div className="relative inline-block">
+                  <img src={icon} alt="Preview" className="w-24 h-24 object-cover rounded-lg bg-white" />
+                  <button 
+                    onClick={() => setIcon('')}
+                    className="absolute -top-2 -right-2 w-6 h-6 bg-[#ff4d6d] rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-md"
+                  >
+                    <X size={14} />
+                  </button>
+                  <div className="absolute bottom-0 left-0 right-0 bg-[#fafafa] text-[var(--dash-bg)] text-[10px] font-bold text-center py-1 rounded-b-lg">
+                    - 97% = 1.57 KB
+                  </div>
+                </div>
+              ) : (
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-24 h-24 border-2 border-dashed border-[var(--dash-border)] rounded-lg flex flex-col items-center justify-center text-gray-500 hover:text-[#fafafa] hover:border-[#fafafa] transition-colors"
+                >
+                  <ImageIcon size={24} className="mb-1" />
+                  <span className="text-xs">Upload</span>
+                </button>
+              )}
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*"
+                onChange={handleImageUpload}
+              />
+            </div>
+          </div>
+
+          <button 
+            onClick={handleSave}
+            disabled={!name.trim()}
+            style={{ backgroundColor: themePrimary || 'var(--theme-primary, #ff4d6d)', color: '#ffffff' }}
+            className="w-full py-3 mt-4 rounded-lg font-bold text-base md:text-lg hover:brightness-95 active:scale-98 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md cursor-pointer"
+          >
+            {category ? 'Update' : 'Add'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteSettings, setSettings: React.Dispatch<React.SetStateAction<WebsiteSettings>>, onClose: () => void }) {
+  const [draftSettings, setDraftSettings] = useState<WebsiteSettings>(() => JSON.parse(JSON.stringify(settings)));
+  const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      setSettings(draftSettings);
+      await cloudStore.saveSetting('websiteSettings', draftSettings);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const processFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        // 16:5 aspect ratio
+        const targetRatio = 16 / 5;
+        let width = img.width;
+        let height = img.height;
+        const currentRatio = width / height;
+
+        if (currentRatio > targetRatio) {
+          width = height * targetRatio;
+        } else {
+          height = width / targetRatio;
+        }
+
+        // Max width 1600px for performance
+        if (width > 1600) {
+          width = 1600;
+          height = 1600 / targetRatio;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        
+        // Center crop
+        const srcX = (img.width - width) / 2;
+        const srcY = (img.height - height) / 2;
+        
+        ctx?.drawImage(img, srcX, srcY, width, height, 0, 0, width, height);
+        
+        canvas.toBlob(async (blob) => {
+          if (blob) {
+            try {
+              const url = await cloudStore.uploadFile(blob, `banner_${Date.now()}.jpg`);
+              setDraftSettings(prev => ({ ...prev, banners: [...(prev.banners || []), url] }));
+            } catch (e) {
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+              setDraftSettings(prev => ({ ...prev, banners: [...(prev.banners || []), dataUrl] }));
+            }
+          }
+        }, 'image/jpeg', 0.8);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      processFile(e.target.files[0]);
+    }
+  };
+
+  const removeBanner = (index: number) => {
+    setDraftSettings(prev => ({
+      ...prev,
+      banners: (prev.banners || []).filter((_, i) => i !== index)
+    }));
+  };
+
+  const addDeliveryCharge = () => {
+    setDraftSettings(prev => ({
+      ...prev,
+      deliveryCharges: [...(prev.deliveryCharges || []), { id: Date.now().toString(), area: '', price: 0, time: '' }]
+    }));
+  };
+
+  const updateDeliveryCharge = (id: string, field: keyof DeliveryCharge, value: string | number) => {
+    setDraftSettings(prev => ({
+      ...prev,
+      deliveryCharges: (prev.deliveryCharges || []).map(dc => dc.id === id ? { ...dc, [field]: value } : dc)
+    }));
+  };
+
+  const removeDeliveryCharge = (id: string) => {
+    setDraftSettings(prev => ({
+      ...prev,
+      deliveryCharges: (prev.deliveryCharges || []).filter(dc => dc.id !== id)
+    }));
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+      {/* Top Bar */}
+      <div className="flex items-center justify-between px-4 py-4 md:px-8 md:py-5 border-b border-[var(--dash-border)] bg-[var(--dash-bg)]">
+        <button onClick={onClose} className="p-2 -ml-2 text-gray-400 hover:text-white">
+          <ChevronLeft size={24} />
+        </button>
+        <h1 className="text-xl font-bold text-white absolute left-1/2 -translate-x-1/2">Website</h1>
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          style={{ backgroundColor: draftSettings.themeColors?.primary || 'var(--theme-primary, #ff4d6d)', color: '#ffffff' }}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs md:text-sm hover:brightness-95 active:scale-98 transition-all disabled:opacity-50 shadow-md cursor-pointer"
+        >
+          {saved ? <Check size={16} /> : <Save size={16} />}
+          {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save'}
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 md:p-8 max-w-4xl mx-auto w-full">
+        {/* Stock Out Control */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-white">Stock Out Section</h2>
+            <button 
+              onClick={() => setDraftSettings(prev => ({ 
+                ...prev, 
+                stockOutFeature: { 
+                  enabled: !prev.stockOutFeature?.enabled, 
+                  minOrdersRequired: prev.stockOutFeature?.minOrdersRequired || 0 
+                } 
+              }))}
+              className={cn("w-12 h-6 rounded-full transition-colors relative group", draftSettings.stockOutFeature?.enabled ? "bg-[#fafafa]" : "bg-gray-600")}
+            >
+              <div className={cn("w-5 h-5 rounded-full absolute top-0.5 transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] shadow-sm", draftSettings.stockOutFeature?.enabled ? "bg-[var(--dash-card)] translate-x-6 group-active:w-7 group-active:translate-x-4" : "bg-white translate-x-0.5 group-active:w-7")} />
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1">Minimum Orders Required to Access</label>
+              <input 
+                type="number"
+                value={draftSettings.stockOutFeature?.minOrdersRequired || 0}
+                onChange={(e) => setDraftSettings(prev => ({
+                  ...prev,
+                  stockOutFeature: {
+                    enabled: prev.stockOutFeature?.enabled ?? true,
+                    minOrdersRequired: parseInt(e.target.value) || 0
+                  }
+                }))}
+                min="0"
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-[#fafafa]"
+              />
+              <p className="text-xs text-gray-500 mt-2 leading-relaxed">Customers must complete this many orders to view the stock-out section. Set to 0 to allow everyone.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Pixel Event Batching Section */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-4">
+          <h2 className="text-lg font-bold text-white mb-4">Pixel Event Batching</h2>
+          <div>
+            <label className="block text-sm font-medium text-gray-400 mb-1">Batching Interval (Seconds)</label>
+            <input 
+              type="number"
+              value={draftSettings.eventBatchingInterval || 35}
+              onChange={(e) => setDraftSettings(prev => ({ ...prev, eventBatchingInterval: parseInt(e.target.value) || 35 }))}
+              min="5"
+              className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-[#fafafa]"
+              placeholder="e.g. 35"
+            />
+            <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+              Groups all Meta/TikTok Pixel events and sends them together every X seconds. Reduces Cloudflare requests. Events are instantly flushed on checkout, purchase, or exit.
+            </p>
+          </div>
+        </div>
+
+        {/* Smart Product Display Section */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-white mb-1">Smart Product Display</h2>
+              <p className="text-xs text-gray-400">Automatically arrange products: Top Selling ➔ New ➔ Lowest Selling</p>
+            </div>
+            <button 
+              onClick={() => setDraftSettings(prev => ({ ...prev, smartProductDisplay: !prev.smartProductDisplay }))}
+              className={cn("w-12 h-6 rounded-full transition-colors relative group", draftSettings.smartProductDisplay ? "bg-[#fafafa]" : "bg-gray-600")}
+            >
+              <div className={cn("w-5 h-5 rounded-full absolute top-0.5 transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] shadow-sm", draftSettings.smartProductDisplay ? "bg-[var(--dash-card)] translate-x-6 group-active:w-7 group-active:translate-x-4" : "bg-white translate-x-0.5 group-active:w-7")} />
+            </button>
+          </div>
+        </div>
+
+        {/* Banner Section */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-white">Banner</h2>
+            <button 
+              onClick={() => setDraftSettings(prev => ({ ...prev, bannerEnabled: !prev.bannerEnabled }))}
+              className={cn("w-12 h-6 rounded-full transition-colors relative group", draftSettings.bannerEnabled ? "bg-[#fafafa]" : "bg-gray-600")}
+            >
+              <div className={cn("w-5 h-5 rounded-full absolute top-0.5 transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] shadow-sm", draftSettings.bannerEnabled ? "bg-[var(--dash-card)] translate-x-6 group-active:w-7 group-active:translate-x-4" : "bg-white translate-x-0.5 group-active:w-7")} />
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-4 mb-4">
+            {(draftSettings.banners || []).map((banner, idx) => (
+              <div key={idx} className="relative w-32 h-32 rounded-lg overflow-hidden border border-[var(--dash-border)]">
+                <img src={banner} alt={`Banner ${idx}`} className="w-full h-full object-cover" />
+                <button 
+                  onClick={() => removeBanner(idx)}
+                  className="absolute top-1 right-1 w-6 h-6 bg-[#ff4d6d] rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-md z-10"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div 
+            className={cn(
+              "border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center transition-colors cursor-pointer",
+              isDragging ? "border-[#fafafa] text-[#fafafa] bg-[#fafafa]/10" : "border-[var(--dash-border)] text-gray-400 hover:text-[#fafafa] hover:border-[#fafafa]"
+            )}
+            onClick={() => fileInputRef.current?.click()}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+          >
+            <ImageIcon size={32} className="mb-2" />
+            <span className="text-sm">Click to upload</span>
+            <span className="text-xs">or drag and drop</span>
+            <div className="mt-4 pt-4 border-t border-[var(--dash-border)] w-full text-center text-xs">
+              Image Urls
+            </div>
+          </div>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            accept="image/*"
+            onChange={handleImageUpload}
+          />
+          
+          <div className="mt-4 pt-4 border-t border-[var(--dash-border)]">
+            <label className="block text-sm font-medium text-gray-400 mb-1">Banner Corner Radius</label>
+            <input 
+              type="text"
+              value={draftSettings.bannerBorderRadius || '16px'}
+              onChange={(e) => setDraftSettings(prev => ({ ...prev, bannerBorderRadius: e.target.value }))}
+              placeholder="e.g. 12px, 1rem, 50%"
+              className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg p-3 text-sm text-white focus:outline-none focus:border-[#fafafa]"
+            />
+            <p className="text-xs text-gray-500 mt-2">Set the corner radius for banners on the website.</p>
+          </div>
+        </div>
+
+        {/* Logo Section */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-white">Logo</h2>
+          </div>
+          <div className="flex flex-col gap-4">
+            {draftSettings.logoUrl ? (
+              <div className="relative w-full max-w-[200px] h-20 rounded-lg overflow-hidden border border-[var(--dash-border)] bg-white flex items-center justify-center">
+                <img src={draftSettings.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
+                <button 
+                  onClick={() => setDraftSettings(prev => ({ ...prev, logoUrl: undefined }))}
+                  className="absolute top-1 right-1 w-6 h-6 bg-[#ff4d6d] rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-md z-10"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <div 
+                className="border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center transition-colors cursor-pointer border-[var(--dash-border)] text-gray-400 hover:text-[#fafafa] hover:border-[#fafafa]"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/png, image/jpeg, image/svg+xml';
+                  input.onchange = (e: any) => {
+                    if (e.target.files && e.target.files.length > 0) {
+                      const file = e.target.files[0];
+                      cloudStore.uploadFile(file, `logo_${Date.now()}_${file.name}`)
+                        .then(url => {
+                          setDraftSettings(prev => ({ ...prev, logoUrl: url }));
+                        })
+                        .catch(() => {
+                          const reader = new FileReader();
+                          reader.onload = (event) => {
+                            setDraftSettings(prev => ({ ...prev, logoUrl: event.target?.result as string }));
+                          };
+                          reader.readAsDataURL(file);
+                        });
+                    }
+                  };
+                  input.click();
+                }}
+              >
+                <ImageIcon size={32} className="mb-2" />
+                <span className="text-sm">Click to upload logo</span>
+                <span className="text-xs">PNG, JPG, SVG</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Receipt Settings Section */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-4">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-lg font-bold text-white">Receipt Settings</h2>
+              <p className="text-xs text-gray-400 font-normal">Used in generated receipt images/PDFs</p>
+            </div>
+          </div>
+          <div className="flex flex-col gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-400 mb-1">Receipt Hotline (e.g., 09658133593)</label>
+              <input
+                type="text"
+                value={draftSettings.shopPhone || ''}
+                onChange={(e) => setDraftSettings(prev => ({ ...prev, shopPhone: e.target.value }))}
+                className="w-full bg-[var(--dash-card)] text-white border border-[var(--dash-border)] rounded-lg px-4 py-2 focus:outline-none focus:border-[#fafafa] text-sm"
+                placeholder="09658133593"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-xs font-medium text-gray-400 mb-2">Receipt QR Code</label>
+              {draftSettings.receiptQrCodeUrl ? (
+                <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-[var(--dash-border)] bg-white flex items-center justify-center">
+                  <img src={draftSettings.receiptQrCodeUrl} alt="QR Code" className="max-w-full max-h-full object-contain" />
+                  <button 
+                    onClick={() => setDraftSettings(prev => ({ ...prev, receiptQrCodeUrl: undefined }))}
+                    className="absolute top-1 right-1 w-6 h-6 bg-[#ff4d6d] rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-md z-10"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div 
+                  className="border-2 border-dashed w-full max-w-[200px] h-24 rounded-xl p-4 flex flex-col items-center justify-center transition-colors cursor-pointer border-[var(--dash-border)] text-gray-400 hover:text-[#fafafa] hover:border-[#fafafa]"
+                  onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = 'image/png, image/jpeg, image/svg+xml';
+                    input.onchange = (e: any) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        const file = e.target.files[0];
+                        cloudStore.uploadFile(file, `qr_${Date.now()}_${file.name}`)
+                          .then(url => {
+                            setDraftSettings(prev => ({ ...prev, receiptQrCodeUrl: url }));
+                          })
+                          .catch(() => {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              setDraftSettings(prev => ({ ...prev, receiptQrCodeUrl: event.target?.result as string }));
+                            };
+                            reader.readAsDataURL(file);
+                          });
+                      }
+                    };
+                    input.click();
+                  }}
+                >
+                  <ImageIcon size={24} className="mb-2" />
+                  <span className="text-xs">Upload QR</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Product Image Hover Section */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-white">Product Image Hover</h2>
+              <p className="text-sm text-gray-400 mt-1">Show second image on hover in website</p>
+            </div>
+            <button 
+              onClick={() => setDraftSettings(prev => ({ ...prev, productImageHover: !prev.productImageHover }))}
+              className={cn("w-12 h-6 rounded-full transition-colors relative group", draftSettings.productImageHover ? "bg-[#fafafa]" : "bg-gray-600")}
+            >
+              <div className={cn("w-5 h-5 rounded-full absolute top-0.5 transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] shadow-sm", draftSettings.productImageHover ? "bg-[var(--dash-card)] translate-x-6 group-active:w-7 group-active:translate-x-4" : "bg-white translate-x-0.5 group-active:w-7")} />
+            </button>
+          </div>
+        </div>
+
+        {/* Delivery Charge Section */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-white">Delivery Charge</h2>
+            <button 
+              onClick={addDeliveryCharge}
+              className="bg-transparent border border-[var(--dash-border)] text-white px-3 py-1.5 rounded-lg font-medium text-sm flex items-center gap-1 hover:bg-[var(--dash-border)] transition-colors"
+            >
+              <Plus size={16} /> Add More
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {(draftSettings.deliveryCharges || []).map(dc => (
+              <div key={dc.id} className="space-y-2">
+                <input 
+                  type="text" 
+                  value={dc.area}
+                  onChange={(e) => updateDeliveryCharge(dc.id, 'area', e.target.value)}
+                  placeholder="Area Name (e.g. Inside Dhaka)"
+                  className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg px-3 py-3 text-white focus:outline-none focus:border-[#fafafa] transition-colors"
+                />
+                <div className="flex gap-2">
+                  <input 
+                    type="number" 
+                    value={dc.price || ''}
+                    onChange={(e) => updateDeliveryCharge(dc.id, 'price', Math.floor(Number(e.target.value)))}
+                    placeholder="Price"
+                    className="w-20 shrink-0 bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg px-3 py-3 text-white focus:outline-none focus:border-[#fafafa] transition-colors"
+                  />
+                  <input 
+                    type="text" 
+                    value={dc.time}
+                    onChange={(e) => updateDeliveryCharge(dc.id, 'time', e.target.value)}
+                    placeholder="Time (e.g. 1/2 Days)"
+                    className="flex-1 min-w-0 bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg px-3 py-3 text-white focus:outline-none focus:border-[#fafafa] transition-colors"
+                  />
+                  <button 
+                    onClick={() => removeDeliveryCharge(dc.id)}
+                    className="w-[50px] shrink-0 bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg flex items-center justify-center text-red-500 hover:bg-red-500/10 transition-colors"
+                  >
+                    <Trash2 size={20} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MarketingManager({ settings, setSettings, onClose, themePrimary }: { settings: MarketingSettings, setSettings: React.Dispatch<React.SetStateAction<MarketingSettings>>, onClose: () => void, themePrimary?: string }) {
+  const [draftSettings, setDraftSettings] = useState<MarketingSettings>(() => JSON.parse(JSON.stringify(settings)));
+  const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showMetaToken, setShowMetaToken] = useState(false);
+  const [showTikTokToken, setShowTikTokToken] = useState(false);
+  const [showGA4Secret, setShowGA4Secret] = useState(false);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      setSettings(draftSettings);
+      await cloudStore.saveSetting('marketingSettings', draftSettings);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCopy = (text: string, fieldKey: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedField(fieldKey);
+    setTimeout(() => {
+      setCopiedField(null);
+    }, 2000);
+  };
+
+  const updateMetaPixel = (field: keyof MarketingSettings['metaPixel'], value: string | boolean) => {
+    setDraftSettings(prev => ({
+      ...prev,
+      metaPixel: {
+        ...prev.metaPixel,
+        [field]: value
+      }
+    }));
+  };
+
+  const updateTikTokPixel = (field: keyof MarketingSettings['tiktokPixel'], value: string | boolean) => {
+    setDraftSettings(prev => ({
+      ...prev,
+      tiktokPixel: {
+        ...prev.tiktokPixel,
+        [field]: value
+      }
+    }));
+  };
+
+  const updateGA4 = (field: keyof GA4Settings, value: string | boolean) => {
+    setDraftSettings(prev => ({
+      ...prev,
+      ga4: {
+        ...prev.ga4,
+        enabled: prev.ga4?.enabled ?? false,
+        measurementId: prev.ga4?.measurementId ?? '',
+        apiSecret: prev.ga4?.apiSecret ?? '',
+        [field]: value
+      }
+    }));
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+      {/* Top Bar */}
+      <div className="flex items-center justify-between px-4 py-3 md:px-8 border-b border-[var(--dash-border)] bg-[var(--dash-bg)] relative z-10 shrink-0">
+        <button onClick={onClose} className="p-2 -ml-2 text-gray-400 hover:text-white transition-colors shrink-0" id="marketing_back_btn">
+          <ChevronLeft size={20} />
+        </button>
+        <div className="flex flex-col items-center text-center absolute left-1/2 -translate-x-1/2">
+          <h1 className="text-base md:text-lg font-bold text-white tracking-tight">Marketing</h1>
+          <p className="text-[10px] md:text-xs text-slate-400 mt-0.5 font-normal">Manage your tracking pixels and analytics</p>
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          style={{ backgroundColor: themePrimary || 'var(--theme-primary, #ff4d6d)', color: '#ffffff' }}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-bold text-xs md:text-sm hover:brightness-95 active:scale-98 transition-all disabled:opacity-50 shadow-md cursor-pointer shrink-0"
+        >
+          {saved ? <Check size={16} /> : <Save size={16} />}
+          {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save'}
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-3.5 space-y-4.5 pb-20 md:p-6 md:space-y-5 max-w-xl mx-auto w-full">
+        {/* Meta Pixel Section */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-xl overflow-hidden shadow-md shadow-black/5" id="meta_pixel_card">
+          <div className="flex items-center justify-between p-3.5 md:p-4.5 border-b border-[var(--dash-border)]/40">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-[#0064e0] flex items-center justify-center shrink-0">
+                <svg className="w-4.5 h-4.5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M16.417 6c-1.897 0-3.398 1.054-4.417 2.378-1.02-1.324-2.52-2.378-4.417-2.378C4.545 6 2 8.442 2 11.455c0 3.013 2.545 5.455 5.583 5.455 1.897 0 3.398-1.054 4.417-2.378 1.02 1.324 2.52 2.378 4.417 2.378C19.455 16.91 22 14.468 22 11.455 22 8.442 19.455 6 16.417 6zm-8.834 9.1c-1.928 0-3.5-1.572-3.5-3.5s1.572-3.5 3.5-3.5c1.173 0 2.215.582 2.854 1.48C9.563 11.104 8.52 12.87 7.583 15.1zm8.834 0c-.937-2.23-1.98-3.996-2.854-5.52.64-.898 1.68-1.48 2.854-1.48 1.928 0 3.5 1.572 3.5 3.5s-1.572 3.5-3.5 3.5z"/>
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xs md:text-sm font-bold text-white tracking-wide">Meta Pixel</h2>
+                <p className="text-[10px] md:text-xs text-slate-400 mt-0.5">Track conversions and optimize your ads</p>
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => updateMetaPixel('enabled', !draftSettings.metaPixel.enabled)}
+              className={cn(
+                "w-10 h-5.5 rounded-full transition-colors relative duration-200 outline-none shrink-0",
+                draftSettings.metaPixel.enabled ? "bg-blue-500" : "bg-[#1e293b] border border-slate-700/60"
+              )}
+              id="meta_pixel_toggle"
+            >
+              <div 
+                className={cn(
+                  "w-4.5 h-4.5 rounded-full bg-white absolute top-0.5 transition-all duration-200 shadow-sm",
+                  draftSettings.metaPixel.enabled ? "translate-x-4.5" : "translate-x-0.5"
+                )} 
+              />
+            </button>
+          </div>
+
+          <div className="p-3.5 md:p-4.5 space-y-3.5">
+            <div>
+              <div className="flex items-center gap-1 mb-1">
+                <span className="text-[11px] md:text-[12px] font-semibold text-slate-300 tracking-wide">Pixel ID</span>
+                <span className="text-red-500 font-bold text-xs">*</span>
+                <span className="inline-flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-help" title="Meta Pixel ID for conversion tracking">
+                  <Info size={11} className="ml-0.5" />
+                </span>
+              </div>
+              <div className="relative flex items-center">
+                <input 
+                  type="text" 
+                  value={draftSettings.metaPixel.pixelId}
+                  onChange={(e) => updateMetaPixel('pixelId', e.target.value)}
+                  placeholder="Enter Meta Pixel ID"
+                  className="w-full bg-[#0d1527]/40 border border-[var(--dash-border)]/70 rounded-lg px-3 py-2 text-xs md:text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500/80 transition-colors font-mono tracking-wide"
+                />
+                <button 
+                  type="button"
+                  onClick={() => handleCopy(draftSettings.metaPixel.pixelId, 'meta_pixelId')}
+                  className="absolute right-1 top-1 bottom-1 px-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] rounded-md text-slate-400 hover:text-white transition-colors flex items-center justify-center"
+                  title="Copy Pixel ID"
+                  id="meta_pixel_id_copy"
+                >
+                  {copiedField === 'meta_pixelId' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              <div>
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-[11px] md:text-[12px] font-semibold text-slate-300 tracking-wide">Access Token (optional)</span>
+                  <span className="inline-flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-help" title="Conversions API access token">
+                    <Info size={11} className="ml-0.5" />
+                  </span>
+                </div>
+                <div className="relative flex items-center">
+                  <input 
+                    type={showMetaToken ? "text" : "password"}
+                    value={draftSettings.metaPixel.accessToken}
+                    onChange={(e) => updateMetaPixel('accessToken', e.target.value)}
+                    placeholder="Enter access token (optional)"
+                    className="w-full bg-[#0d1527]/40 border border-[var(--dash-border)]/70 rounded-lg px-3 py-2 pr-18 text-xs md:text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500/80 transition-colors font-mono tracking-wide"
+                  />
+                  <div className="absolute right-1 top-1 bottom-1 flex items-center gap-1">
+                    <button 
+                      type="button"
+                      onClick={() => setShowMetaToken(!showMetaToken)}
+                      className="h-full px-1.5 text-slate-400 hover:text-white transition-colors flex items-center justify-center"
+                      id="meta_token_visibility_toggle"
+                    >
+                      {showMetaToken ? <EyeOff size={13} /> : <Eye size={13} />}
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => handleCopy(draftSettings.metaPixel.accessToken, 'meta_accessToken')}
+                      className="h-full px-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] rounded-md text-slate-400 hover:text-white transition-colors flex items-center justify-center"
+                      title="Copy Access Token"
+                      id="meta_access_token_copy"
+                    >
+                      {copiedField === 'meta_accessToken' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-[11px] md:text-[12px] font-semibold text-slate-300 tracking-wide">Test Code (optional)</span>
+                  <span className="inline-flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-help" title="Test event code for Conversions API payloads">
+                    <Info size={11} className="ml-0.5" />
+                  </span>
+                </div>
+                <div className="relative flex items-center">
+                  <input 
+                    type="text" 
+                    value={draftSettings.metaPixel.testCode}
+                    onChange={(e) => updateMetaPixel('testCode', e.target.value)}
+                    placeholder="TEST49835"
+                    className="w-full bg-[#0d1527]/40 border border-[var(--dash-border)]/70 rounded-lg px-3 py-2 pr-10 text-xs md:text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500/80 transition-colors font-mono tracking-wide"
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => handleCopy(draftSettings.metaPixel.testCode, 'meta_testCode')}
+                    className="absolute right-1 top-1 bottom-1 px-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] rounded-md text-slate-400 hover:text-white transition-colors flex items-center justify-center"
+                    title="Copy Test Code"
+                    id="meta_test_code_copy"
+                  >
+                    {copiedField === 'meta_testCode' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-[var(--dash-border)]/30 mt-4 pt-3 flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-emerald-400 text-[11px] md:text-xs font-medium">
+                <div className="w-4 h-4 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                  <svg className="w-2.5 h-2.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+                <span>Ready to use</span>
+              </div>
+              <a 
+                href="https://www.facebook.com/business/help/952192354843755" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-[11px] md:text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1 hover:underline transition-colors"
+                id="meta_learn_more"
+              >
+                <span>Learn how to set up</span>
+                <ExternalLink size={11} strokeWidth={2.25} />
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* TikTok Pixel Section */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-xl overflow-hidden shadow-md shadow-black/5" id="tiktok_pixel_card">
+          <div className="flex items-center justify-between p-3.5 md:p-4.5 border-b border-[var(--dash-border)]/40">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-black flex items-center justify-center shrink-0 border border-slate-800">
+                <svg className="w-4.5 h-4.5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.02 1.61 4.18.92 1.09 2.22 1.83 3.58 2.13l-.01 3.69c-1.32-.01-2.61-.35-3.74-1.05-.72-.45-1.34-1.05-1.81-1.76l-.04 6.8c.02 1.93-.54 3.86-1.63 5.39-1.2 1.7-3.13 2.86-5.21 3.19-2.13.34-4.36-.14-6.07-1.42C1.4 20.01.44 17.78.41 15.4c-.03-2.38.93-4.66 2.63-6.23 1.77-1.62 4.22-2.39 6.55-2.02l-.01 3.7c-1.34-.17-2.73.18-3.76 1.09-.85.76-1.31 1.88-1.26 3.02.04 1.13.59 2.19 1.48 2.88 1.02.79 2.39 1.02 3.58.62.97-.33 1.77-1.11 2.13-2.09.24-.63.31-1.3.29-1.97V.02h.01Z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xs md:text-sm font-bold text-white tracking-wide">TikTok Pixel</h2>
+                <p className="text-[10px] md:text-xs text-slate-400 mt-0.5">Track events and measure performance</p>
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => updateTikTokPixel('enabled', !draftSettings.tiktokPixel?.enabled)}
+              className={cn(
+                "w-10 h-5.5 rounded-full transition-colors relative duration-200 outline-none shrink-0",
+                draftSettings.tiktokPixel?.enabled ? "bg-blue-500" : "bg-[#1e293b] border border-slate-700/60"
+              )}
+              id="tiktok_pixel_toggle"
+            >
+              <div 
+                className={cn(
+                  "w-4.5 h-4.5 rounded-full bg-white absolute top-0.5 transition-all duration-200 shadow-sm",
+                  draftSettings.tiktokPixel?.enabled ? "translate-x-4.5" : "translate-x-0.5"
+                )} 
+              />
+            </button>
+          </div>
+
+          <div className="p-3.5 md:p-4.5 space-y-3.5">
+            <div>
+              <div className="flex items-center gap-1 mb-1">
+                <span className="text-[11px] md:text-[12px] font-semibold text-slate-300 tracking-wide">Pixel ID</span>
+                <span className="text-red-500 font-bold text-xs">*</span>
+                <span className="inline-flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-help" title="TikTok Pixel ID for conversion tracking">
+                  <Info size={11} className="ml-0.5" />
+                </span>
+              </div>
+              <div className="relative flex items-center">
+                <input 
+                  type="text" 
+                  value={draftSettings.tiktokPixel?.pixelId || ''}
+                  onChange={(e) => updateTikTokPixel('pixelId', e.target.value)}
+                  placeholder="Enter TikTok Pixel ID"
+                  className="w-full bg-[#0d1527]/40 border border-[var(--dash-border)]/70 rounded-lg px-3 py-2 text-xs md:text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500/80 transition-colors font-mono tracking-wide"
+                />
+                <button 
+                  type="button"
+                  onClick={() => handleCopy(draftSettings.tiktokPixel?.pixelId || '', 'tiktok_pixelId')}
+                  className="absolute right-1 top-1 bottom-1 px-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] rounded-md text-slate-400 hover:text-white transition-colors flex items-center justify-center"
+                  title="Copy Pixel ID"
+                  id="tiktok_pixel_id_copy"
+                >
+                  {copiedField === 'tiktok_pixelId' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              <div>
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-[11px] md:text-[12px] font-semibold text-slate-300 tracking-wide">Access Token (optional)</span>
+                  <span className="inline-flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-help" title="TikTok Events API access token">
+                    <Info size={11} className="ml-0.5" />
+                  </span>
+                </div>
+                <div className="relative flex items-center">
+                  <input 
+                    type={showTikTokToken ? "text" : "password"}
+                    value={draftSettings.tiktokPixel?.accessToken || ''}
+                    onChange={(e) => updateTikTokPixel('accessToken', e.target.value)}
+                    placeholder="Enter access token (optional)"
+                    className="w-full bg-[#0d1527]/40 border border-[var(--dash-border)]/70 rounded-lg px-3 py-2 pr-18 text-xs md:text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500/80 transition-colors font-mono tracking-wide"
+                  />
+                  <div className="absolute right-1 top-1 bottom-1 flex items-center gap-1">
+                    <button 
+                      type="button"
+                      onClick={() => setShowTikTokToken(!showTikTokToken)}
+                      className="h-full px-1.5 text-slate-400 hover:text-white transition-colors flex items-center justify-center"
+                      id="tiktok_token_visibility_toggle"
+                    >
+                      {showTikTokToken ? <EyeOff size={13} /> : <Eye size={13} />}
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => handleCopy(draftSettings.tiktokPixel?.accessToken || '', 'tiktok_accessToken')}
+                      className="h-full px-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] rounded-md text-slate-400 hover:text-white transition-colors flex items-center justify-center"
+                      title="Copy Access Token"
+                      id="tiktok_access_token_copy"
+                    >
+                      {copiedField === 'tiktok_accessToken' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-[11px] md:text-[12px] font-semibold text-slate-300 tracking-wide">Test Code (optional)</span>
+                  <span className="inline-flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-help" title="Test event code for TikTok Conversions API">
+                    <Info size={11} className="ml-0.5" />
+                  </span>
+                </div>
+                <div className="relative flex items-center">
+                  <input 
+                    type="text" 
+                    value={draftSettings.tiktokPixel?.testCode || ''}
+                    onChange={(e) => updateTikTokPixel('testCode', e.target.value)}
+                    placeholder="TEST83864"
+                    className="w-full bg-[#0d1527]/40 border border-[var(--dash-border)]/70 rounded-lg px-3 py-2 pr-10 text-xs md:text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500/80 transition-colors font-mono tracking-wide"
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => handleCopy(draftSettings.tiktokPixel?.testCode || '', 'tiktok_testCode')}
+                    className="absolute right-1 top-1 bottom-1 px-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] rounded-md text-slate-400 hover:text-white transition-colors flex items-center justify-center"
+                    title="Copy Test Code"
+                    id="tiktok_test_code_copy"
+                  >
+                    {copiedField === 'tiktok_testCode' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-[var(--dash-border)]/30 mt-4 pt-3 flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-emerald-400 text-[11px] md:text-xs font-medium">
+                <div className="w-4 h-4 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                  <svg className="w-2.5 h-2.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+                <span>Ready to use</span>
+              </div>
+              <a 
+                href="https://ads.tiktok.com/help/article/tiktok-pixel" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-[11px] md:text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1 hover:underline transition-colors"
+                id="tiktok_learn_more"
+              >
+                <span>Learn how to set up</span>
+                <ExternalLink size={11} strokeWidth={2.25} />
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {/* Google Analytics 4 Section */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-xl overflow-hidden shadow-md shadow-black/5" id="ga4_pixel_card">
+          <div className="flex items-center justify-between p-3.5 md:p-4.5 border-b border-[var(--dash-border)]/40">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-white flex items-center justify-center shrink-0 border border-slate-100 shadow-sm">
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                  <rect x="5" y="13" width="3.5" height="6" rx="1" fill="#F9AB00" />
+                  <rect x="10.25" y="9" width="3.5" height="10" rx="1" fill="#F25C05" />
+                  <rect x="15.5" y="5" width="3.5" height="14" rx="1" fill="#D9381E" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-xs md:text-sm font-bold text-white tracking-wide">Google Analytics 4 (GA4)</h2>
+                <p className="text-[10px] md:text-xs text-slate-400 mt-0.5">Track website traffic and user behavior</p>
+              </div>
+            </div>
+            
+            <button 
+              onClick={() => updateGA4('enabled', !draftSettings.ga4?.enabled)}
+              className={cn(
+                "w-10 h-5.5 rounded-full transition-colors relative duration-200 outline-none shrink-0",
+                draftSettings.ga4?.enabled ? "bg-blue-500" : "bg-[#1e293b] border border-slate-700/60"
+              )}
+              id="ga4_toggle"
+            >
+              <div 
+                className={cn(
+                  "w-4.5 h-4.5 rounded-full bg-white absolute top-0.5 transition-all duration-200 shadow-sm",
+                  draftSettings.ga4?.enabled ? "translate-x-4.5" : "translate-x-0.5"
+                )} 
+              />
+            </button>
+          </div>
+
+          <div className="p-3.5 md:p-4.5 space-y-3.5">
+            <div>
+              <div className="flex items-center gap-1 mb-1">
+                <span className="text-[11px] md:text-[12px] font-semibold text-slate-300 tracking-wide">Measurement ID (G-XXXXXXXXXX)</span>
+                <span className="text-red-500 font-bold text-xs">*</span>
+                <span className="inline-flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-help" title="Google Analytics 4 measurement ID">
+                  <Info size={11} className="ml-0.5" />
+                </span>
+              </div>
+              <div className="relative flex items-center">
+                <input 
+                  type="text" 
+                  value={draftSettings.ga4?.measurementId || ''}
+                  onChange={(e) => updateGA4('measurementId', e.target.value)}
+                  placeholder="G-XXXXXX"
+                  className="w-full bg-[#0d1527]/40 border border-[var(--dash-border)]/70 rounded-lg px-3 py-2 text-xs md:text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500/80 transition-colors font-mono tracking-wide"
+                />
+                <button 
+                  type="button"
+                  onClick={() => handleCopy(draftSettings.ga4?.measurementId || '', 'ga4_measurementId')}
+                  className="absolute right-1 top-1 bottom-1 px-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] rounded-md text-slate-400 hover:text-white transition-colors flex items-center justify-center"
+                  title="Copy Measurement ID"
+                  id="ga4_measurement_id_copy"
+                >
+                  {copiedField === 'ga4_measurementId' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Info Notice Box */}
+            <div className="bg-blue-500/5 border border-blue-500/10 rounded-lg p-2.5 flex items-start gap-2.5 text-slate-300" id="ga4_info_notice">
+              <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+              <p className="text-[10px] md:text-xs text-slate-400 leading-relaxed font-normal">
+                Required for both browser and server-side tracking.
+              </p>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-1 mb-1">
+                <span className="text-[11px] md:text-[12px] font-semibold text-slate-300 tracking-wide">Measurement Protocol API Secret (optional)</span>
+                <span className="inline-flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-help" title="Measurement Protocol API Secret for server-side events">
+                  <Info size={11} className="ml-0.5" />
+                </span>
+              </div>
+              <div className="relative flex items-center">
+                <input 
+                  type={showGA4Secret ? "text" : "password"}
+                  value={draftSettings.ga4?.apiSecret || ''}
+                  onChange={(e) => updateGA4('apiSecret', e.target.value)}
+                  placeholder="Enter API secret for server-side events"
+                  className="w-full bg-[#0d1527]/40 border border-[var(--dash-border)]/70 rounded-lg px-3 py-2 pr-18 text-xs md:text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-blue-500/80 transition-colors font-mono tracking-wide"
+                />
+                <div className="absolute right-1 top-1 bottom-1 flex items-center gap-1">
+                  <button 
+                    type="button"
+                    onClick={() => setShowGA4Secret(!showGA4Secret)}
+                    className="h-full px-1.5 text-slate-400 hover:text-white transition-colors flex items-center justify-center"
+                    id="ga4_secret_visibility_toggle"
+                  >
+                    {showGA4Secret ? <EyeOff size={13} /> : <Eye size={13} />}
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => handleCopy(draftSettings.ga4?.apiSecret || '', 'ga4_apiSecret')}
+                    className="h-full px-2.5 bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.05] rounded-md text-slate-400 hover:text-white transition-colors flex items-center justify-center"
+                    title="Copy API Secret"
+                    id="ga4_api_secret_copy"
+                  >
+                    {copiedField === 'ga4_apiSecret' ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                  </button>
+                </div>
+              </div>
+              <p className="text-[10px] md:text-xs text-slate-500 mt-1.5 leading-relaxed font-normal">
+                Enter your API Secret to enable server-side tracking for purchase events (highly recommended for better accuracy).
+              </p>
+            </div>
+
+            <div className="border-t border-[var(--dash-border)]/30 mt-4 pt-3 flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-emerald-400 text-[11px] md:text-xs font-medium">
+                <div className="w-4 h-4 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                  <svg className="w-2.5 h-2.5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+                <span>Ready to use</span>
+              </div>
+              <a 
+                href="https://support.google.com/analytics/answer/9304153" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-[11px] md:text-xs text-blue-400 hover:text-blue-300 font-medium flex items-center gap-1 hover:underline transition-colors"
+                id="ga4_learn_more"
+              >
+                <span>Learn how to set up</span>
+                <ExternalLink size={11} strokeWidth={2.25} />
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CourierManager({ settings, setSettings, onClose, themePrimary }: { settings: CourierSettings, setSettings: React.Dispatch<React.SetStateAction<CourierSettings>>, onClose: () => void, themePrimary?: string }) {
+  const [draftSettings, setDraftSettings] = useState<CourierSettings>(() => JSON.parse(JSON.stringify(settings)));
+  const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showSteadfastApi, setShowSteadfastApi] = useState(false);
+  const [showSteadfastSecret, setShowSteadfastSecret] = useState(false);
+  const [showBdCourierApi, setShowBdCourierApi] = useState<Record<string, boolean>>({});
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      setSettings(draftSettings);
+      await cloudStore.saveSetting('courierSettings', draftSettings);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const toggleBdCourierApiVisibility = (id: string) => {
+    setShowBdCourierApi(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const updateSteadfast = (field: keyof CourierSettings['steadfast'], value: string) => {
+    setDraftSettings(prev => ({
+      ...prev,
+      steadfast: {
+        ...prev.steadfast,
+        [field]: value
+      }
+    }));
+  };
+
+  const addBdCourierApi = () => {
+    setDraftSettings(prev => ({
+      ...prev,
+      bdCourierApis: [
+        ...(prev.bdCourierApis || []),
+        { id: Date.now().toString(), name: '', apiKey: '', enabled: true }
+      ]
+    }));
+  };
+
+  const updateBdCourierApi = (id: string, field: keyof typeof settings.bdCourierApis[0], value: any) => {
+    setDraftSettings(prev => ({
+      ...prev,
+      bdCourierApis: (prev.bdCourierApis || []).map(api => 
+        api.id === id ? { ...api, [field]: value } : api
+      )
+    }));
+  };
+
+  const removeBdCourierApi = (id: string) => {
+    setDraftSettings(prev => ({
+      ...prev,
+      bdCourierApis: (prev.bdCourierApis || []).filter(api => api.id !== id)
+    }));
+    setShowBdCourierApi(prev => {
+        const newState = { ...prev };
+        delete newState[id];
+        return newState;
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-[var(--dash-bg)] z-50 flex flex-col md:left-[240px]">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 md:px-8 md:py-5 border-b border-[var(--dash-border)] bg-[var(--dash-bg)] sticky top-0 z-10">
+        <button onClick={onClose} className="p-2 -ml-2 mr-4 text-gray-400 hover:text-white transition-colors">
+          <ChevronLeft size={24} />
+        </button>
+        <div className="flex flex-col flex-1">
+           <h1 className="text-xl font-bold text-white">Courier</h1>
+           <p className="text-[13px] text-gray-400">Manage your courier API integrations</p>
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          style={{ backgroundColor: themePrimary || 'var(--theme-primary, #ff4d6d)', color: '#ffffff' }}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs md:text-sm hover:brightness-95 active:scale-98 transition-all disabled:opacity-50 shadow-md cursor-pointer whitespace-nowrap"
+        >
+          {saved ? <Check size={16} /> : <Save size={16} />}
+          {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save'}
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 md:p-8 max-w-4xl mx-auto w-full">
+        {/* Steadfast Section */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-[14px] p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 flex items-center justify-center">
+                 <div className="flex flex-col gap-1 items-end">
+                     <div className="h-[2px] w-3 bg-[#fafafa] rounded-full"></div>
+                     <div className="h-[2px] w-5 bg-[#fafafa] rounded-full"></div>
+                     <div className="h-[2px] w-3 bg-[#fafafa] rounded-full"></div>
+                 </div>
+              </div>
+              <h2 className="text-base font-bold text-white tracking-wide">Steadfast</h2>
+              <span className="bg-[#fafafa]/10 border border-[#fafafa]/20 text-[#fafafa] text-[9px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider">Active</span>
+            </div>
+            <button className="w-8 h-8 border border-[var(--dash-border)] rounded-[10px] flex items-center justify-center text-gray-400 hover:text-white hover:bg-[var(--dash-border)] transition-colors">
+              <RefreshCw size={14} />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-white">API Key <span className="text-red-500">*</span></label>
+                <div className="flex items-center gap-1 text-[10px] text-gray-400">
+                  <Shield size={10} /> Encrypted & secure
+                </div>
+              </div>
+              <div className="relative flex items-center">
+                <input 
+                  type={showSteadfastApi ? "text" : "password"}
+                  value={draftSettings.steadfast.apiKey}
+                  onChange={(e) => updateSteadfast('apiKey', e.target.value)}
+                  className={cn("w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-[10px] pl-3 pr-[80px] py-2.5 text-white focus:outline-none focus:border-[#fafafa] transition-colors text-sm", !showSteadfastApi && "tracking-[0.2em] font-mono")}
+                  placeholder="•••••••••••••••"
+                />
+                <div className="absolute right-1.5 flex items-center gap-1">
+                   <button onClick={() => setShowSteadfastApi(!showSteadfastApi)} className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-md">
+                      {showSteadfastApi ? <EyeOff size={16} /> : <Eye size={16} />}
+                   </button>
+                   <button onClick={() => navigator.clipboard.writeText(draftSettings.steadfast.apiKey)} className="p-1.5 text-gray-400 hover:text-white border border-[var(--dash-border)] rounded-md transition-colors bg-[var(--dash-card)]">
+                      <Copy size={14} />
+                   </button>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                 <label className="text-xs font-semibold text-white">Secret Key <span className="text-red-500">*</span></label>
+              </div>
+              <div className="relative flex items-center">
+                <input 
+                  type={showSteadfastSecret ? "text" : "password"}
+                  value={draftSettings.steadfast.secretKey}
+                  onChange={(e) => updateSteadfast('secretKey', e.target.value)}
+                  className={cn("w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-[10px] pl-3 pr-[80px] py-2.5 text-white focus:outline-none focus:border-[#fafafa] transition-colors text-sm", !showSteadfastSecret && "tracking-[0.2em] font-mono")}
+                  placeholder="•••••••••••••••"
+                />
+                <div className="absolute right-1.5 flex items-center gap-1">
+                   <button onClick={() => setShowSteadfastSecret(!showSteadfastSecret)} className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-md">
+                      {showSteadfastSecret ? <EyeOff size={16} /> : <Eye size={16} />}
+                   </button>
+                   <button onClick={() => navigator.clipboard.writeText(draftSettings.steadfast.secretKey)} className="p-1.5 text-gray-400 hover:text-white border border-[var(--dash-border)] rounded-md transition-colors bg-[var(--dash-card)]">
+                      <Copy size={14} />
+                   </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* BD COURIER API Section */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-[14px] p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center gap-2.5">
+                <div className="w-6 h-6 flex items-center justify-center text-[#fafafa]">
+                  <Layers size={18} />
+                </div>
+                <h2 className="text-base font-bold text-white tracking-wide uppercase">BD COURIER API</h2>
+            </div>
+            <button 
+              onClick={addBdCourierApi}
+              className="flex items-center gap-1 text-xs font-medium text-[#fafafa] hover:text-[#fafafa]/80 transition-colors"
+            >
+              <Plus size={14} strokeWidth={2.5} />
+              Add API
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {(!draftSettings.bdCourierApis || draftSettings.bdCourierApis.length === 0) ? (
+              <div className="text-center py-6 text-gray-500 text-sm bg-[var(--dash-bg)] rounded-[10px] border border-[var(--dash-border)] border-dashed">
+                No BD Courier APIs configured. Click "Add API" to add one.
+              </div>
+            ) : (
+              draftSettings.bdCourierApis.map((api, index) => (
+                <div key={api.id} className="relative">
+                  <div className="flex items-center justify-between mb-3">
+                     <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-[#fafafa] bg-[#fafafa]/10 px-1.5 py-[2px] rounded uppercase border border-[#fafafa]/20">API #{index + 1}</span>
+                        <span className="text-xs text-gray-100">{api.name || 'Primary Check API'} <span className="text-gray-500">(Optional)</span></span>
+                     </div>
+                     <div className="flex items-center gap-3">
+                        <button
+                           onClick={() => updateBdCourierApi(api.id, 'enabled', !api.enabled)}
+                           className={cn("w-[36px] h-5 rounded-full relative flex items-center px-[2px] transition-colors", api.enabled ? "bg-[#fafafa]" : "bg-[var(--dash-border)]")}
+                         >
+                           <div className={cn("w-4 h-4 rounded-full transition-transform shadow-sm", api.enabled ? "bg-[var(--dash-card)] translate-x-[16px]" : "bg-white translate-x-0")}></div>
+                         </button>
+                         <button 
+                           onClick={() => removeBdCourierApi(api.id)}
+                           className="text-red-400 hover:text-red-300 transition-colors p-[5px] border border-[var(--dash-border)] rounded-md bg-[var(--dash-bg)]"
+                         >
+                           <Trash2 size={14} strokeWidth={2} />
+                         </button>
+                     </div>
+                  </div>
+                  
+                  <div>
+                     <label className="text-xs font-semibold text-white mb-1.5 block">API Key <span className="text-red-500">*</span></label>
+                     <div className="relative flex items-center">
+                       <input 
+                          type={showBdCourierApi[api.id] ? "text" : "password"}
+                          value={api.apiKey}
+                          onChange={(e) => updateBdCourierApi(api.id, 'apiKey', e.target.value)}
+                          className={cn("w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-[10px] pl-3 pr-[80px] py-2.5 text-white focus:outline-none focus:border-[#fafafa] transition-colors text-sm", !showBdCourierApi[api.id] && "tracking-[0.2em] font-mono")}
+                          placeholder="•••••••••••••••••••••••••"
+                        />
+                        <div className="absolute right-1.5 flex items-center gap-1">
+                           <button onClick={() => toggleBdCourierApiVisibility(api.id)} className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-md">
+                              {showBdCourierApi[api.id] ? <EyeOff size={16} /> : <Eye size={16} />}
+                           </button>
+                           <button onClick={() => navigator.clipboard.writeText(api.apiKey)} className="p-1.5 text-gray-400 hover:text-white border border-[var(--dash-border)] rounded-md transition-colors bg-[var(--dash-card)]">
+                              <Copy size={14} />
+                           </button>
+                        </div>
+                     </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PriceCalculatorManager({ settings, setSettings, onClose, themePrimary }: { settings: PriceCalculatorSettings, setSettings: React.Dispatch<React.SetStateAction<PriceCalculatorSettings>>, onClose: () => void, themePrimary?: string }) {
+  const [yuanRate, setYuanRate] = useState(settings.yuanRate.toString());
+  const [additionalCost, setAdditionalCost] = useState(settings.additionalCost.toString());
+  const [profit, setProfit] = useState(settings.profit.toString());
+  const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const updated = {
+        yuanRate: Number(yuanRate) || 0,
+        additionalCost: Number(additionalCost) || 0,
+        profit: Number(profit) || 0
+      };
+      setSettings(updated);
+      await cloudStore.saveSetting('priceCalculatorSettings', updated);
+      setSaved(true);
+      setTimeout(() => {
+        setSaved(false);
+        onClose();
+      }, 600);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-[var(--dash-bg)] z-50 flex flex-col md:left-[240px]">
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 md:px-8 md:py-5 border-b border-[var(--dash-border)] bg-[var(--dash-bg)] sticky top-0 z-10">
+        <button onClick={onClose} className="p-2 -ml-2 text-gray-400 hover:text-white transition-colors">
+          <ChevronLeft size={24} />
+        </button>
+        <h1 className="text-xl font-bold text-white">Price Calculator</h1>
+        <div className="w-10" /> {/* Spacer for centering */}
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 md:p-8 max-w-4xl mx-auto w-full">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-4 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-[#ff4d6d] mb-1.5">Yuan Rate *</label>
+            <input 
+              type="number" 
+              value={yuanRate}
+              onChange={(e) => setYuanRate(e.target.value)}
+              className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg px-3 py-3 text-white focus:outline-none focus:border-[#fafafa] transition-colors"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#ff4d6d] mb-1.5">Additional Cost *</label>
+            <input 
+              type="number" 
+              value={additionalCost}
+              onChange={(e) => setAdditionalCost(e.target.value)}
+              className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg px-3 py-3 text-white focus:outline-none focus:border-[#fafafa] transition-colors"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#ff4d6d] mb-1.5">Profit *</label>
+            <input 
+              type="number" 
+              value={profit}
+              onChange={(e) => setProfit(e.target.value)}
+              className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg px-3 py-3 text-white focus:outline-none focus:border-[#fafafa] transition-colors"
+            />
+          </div>
+          <button 
+            onClick={handleSave}
+            disabled={isSaving}
+            style={{ backgroundColor: themePrimary || 'var(--theme-primary, #ff4d6d)', color: '#ffffff' }}
+            className="w-full py-3 mt-4 rounded-lg font-bold text-base md:text-lg hover:brightness-95 active:scale-98 transition-all disabled:opacity-50 shadow-md cursor-pointer flex items-center justify-center gap-2"
+          >
+            {saved ? <Check size={20} /> : <Save size={20} />}
+            {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminAuth({ adminUsers, setAdminUsers, setCurrentAdmin }: { adminUsers: AdminUser[], setAdminUsers: React.Dispatch<React.SetStateAction<AdminUser[]>>, setCurrentAdmin: (user: AdminUser) => void }) {
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (isLogin) {
+      const trimmedEmail = email.trim();
+      const res = await cloudStore.loginAdmin(trimmedEmail, password);
+      if (res.success && res.user) {
+        if (res.user.isBlocked) {
+          setError('Account has been blocked by admin.');
+        } else if (res.user.isApproved) {
+          setCurrentAdmin({ ...res.user, loginTimestamp: Date.now() });
+        } else {
+          setError('Account pending approval from admin.');
+        }
+      } else {
+        setError(res.error || 'Invalid email or password.');
+      }
+    } else {
+      if (password.length < 4) {
+        setError('Password must be at least 4 characters.');
+        return;
+      }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.');
+        return;
+      }
+
+      const trimmedEmail = email.trim();
+      if (adminUsers.some(u => u.email.trim() === trimmedEmail)) {
+        setError('Email already exists.');
+        return;
+      }
+
+      const res = await cloudStore.registerAdmin(trimmedEmail, password);
+      if (res.success && res.user) {
+        setAdminUsers([...adminUsers, res.user]);
+        setIsLogin(true);
+        setEmail('');
+        setPassword('');
+        setConfirmPassword('');
+        setError('Registration successful. Please wait for admin approval.');
+      } else {
+        setError(res.error || 'Registration failed');
+      }
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-[var(--dash-bg)] z-[200] flex flex-col font-sans">
+      <div className="flex items-center justify-between p-4 bg-[var(--dash-bg)]">
+        <div className="flex items-center gap-2 text-white">
+          <Check size={20} className="text-[#fafafa]" />
+          <h1 className="text-lg font-medium">Admin {isLogin ? 'login' : 'registration'} | Nahl Shop</h1>
+        </div>
+        <button className="p-2 text-white">
+          <RefreshCw size={20} />
+        </button>
+      </div>
+
+      <div className="flex-1 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-sm bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-[#ff4d6d] mb-1.5">E-Mail *</label>
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg px-3 py-3 text-white focus:outline-none focus:border-[#fafafa] transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#ff4d6d] mb-1.5">Password *</label>
+              <input 
+                type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg px-3 py-3 text-white focus:outline-none focus:border-[#fafafa] transition-colors"
+              />
+            </div>
+            
+            {!isLogin && (
+              <div>
+                <label className="block text-sm font-medium text-[#ff4d6d] mb-1.5">Confirm Password *</label>
+                <input 
+                  type="password" 
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg px-3 py-3 text-white focus:outline-none focus:border-[#fafafa] transition-colors"
+                />
+              </div>
+            )}
+
+            {error && (
+              <div className={cn("text-sm text-center", error.includes('successful') ? "text-[#fafafa]" : "text-[#ff4d6d]")}>
+                {error}
+              </div>
+            )}
+
+            <button 
+              type="submit"
+              className="w-full py-3 rounded-lg font-medium text-lg bg-[#fafafa] text-[var(--dash-bg)] hover:bg-[#e4e4e7] transition-colors"
+            >
+              {isLogin ? 'Login' : 'Register'}
+            </button>
+          </form>
+
+          <div className="mt-6 text-center">
+            <button 
+              onClick={() => {
+                setIsLogin(!isLogin);
+                setError('');
+                setEmail('');
+                setPassword('');
+                setConfirmPassword('');
+              }}
+              className="text-gray-400 hover:text-white underline underline-offset-4"
+            >
+              {isLogin ? 'Register' : 'Login'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdmin, websiteSettings, setWebsiteSettings, onClose }: { adminUsers: AdminUser[], setAdminUsers: React.Dispatch<React.SetStateAction<AdminUser[]>>, currentAdmin: AdminUser, setCurrentAdmin: (user: AdminUser | null) => void, websiteSettings: WebsiteSettings, setWebsiteSettings: React.Dispatch<React.SetStateAction<WebsiteSettings>>, onClose: () => void }) {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pwdMsg, setPwdMsg] = useState({ type: '', text: '' });
+
+  const [newEmail, setNewEmail] = useState('');
+  const [emailMsg, setEmailMsg] = useState({ type: '', text: '' });
+
+  const [autoLogoutDays, setAutoLogoutDays] = useState(websiteSettings.autoLogoutDays?.toString() || '7');
+  const [logoutMsg, setLogoutMsg] = useState({ type: '', text: '' });
+
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    autoLogout: true
+  });
+  const [userTab, setUserTab] = useState<'pending' | 'active' | 'blocked'>('pending');
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  const handleLogout = () => {
+    setCurrentAdmin(null);
+  };
+
+  const handleChangeEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (adminUsers.some(u => u.email === newEmail && u.id !== currentAdmin.id)) {
+      setEmailMsg({ type: 'error', text: 'Email already in use.' });
+      return;
+    }
+    const updatedUsers = adminUsers.map(u => 
+      u.id === currentAdmin.id ? { ...u, email: newEmail } : u
+    );
+    setAdminUsers(updatedUsers);
+    setCurrentAdmin({ ...currentAdmin, email: newEmail });
+    await cloudStore.saveSetting('adminUsers', updatedUsers);
+    setEmailMsg({ type: 'success', text: 'Email updated successfully!' });
+    setNewEmail('');
+    setTimeout(() => setEmailMsg({ type: '', text: '' }), 3000);
+  };
+
+  const handleUpdateLogout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const days = parseInt(autoLogoutDays);
+    if (isNaN(days) || days < 1) {
+      setLogoutMsg({ type: 'error', text: 'Please enter a valid number of days.' });
+      return;
+    }
+    const updated = { ...websiteSettings, autoLogoutDays: days };
+    setWebsiteSettings(updated);
+    await cloudStore.saveSetting('websiteSettings', updated);
+    setLogoutMsg({ type: 'success', text: 'Auto logout time updated!' });
+    setTimeout(() => setLogoutMsg({ type: '', text: '' }), 3000);
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (currentAdmin.passwordHash !== currentPassword) {
+      setPwdMsg({ type: 'error', text: 'Incorrect current password.' });
+      return;
+    }
+    if (newPassword.length < 4) {
+      setPwdMsg({ type: 'error', text: 'New password must be at least 4 characters.' });
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPwdMsg({ type: 'error', text: 'New passwords do not match.' });
+      return;
+    }
+
+    const updatedUsers = adminUsers.map(u => 
+      u.id === currentAdmin.id ? { ...u, passwordHash: newPassword } : u
+    );
+    setAdminUsers(updatedUsers);
+    setCurrentAdmin({ ...currentAdmin, passwordHash: newPassword });
+    await cloudStore.saveSetting('adminUsers', updatedUsers);
+    setPwdMsg({ type: 'success', text: 'Password updated successfully!' });
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setTimeout(() => setPwdMsg({ type: '', text: '' }), 3000);
+  };
+
+  const handleApprove = async (id: string) => {
+    const updated = adminUsers.map(u => u.id === id ? { ...u, isApproved: true, isBlocked: false } : u);
+    setAdminUsers(updated);
+    await cloudStore.saveSetting('adminUsers', updated);
+  };
+
+  const handleReject = async (id: string) => {
+    const updated = adminUsers.filter(u => u.id !== id);
+    setAdminUsers(updated);
+    await cloudStore.saveSetting('adminUsers', updated);
+  };
+
+  const handleBlock = async (id: string) => {
+    const updated = adminUsers.map(u => u.id === id ? { ...u, isBlocked: true } : u);
+    setAdminUsers(updated);
+    await cloudStore.saveSetting('adminUsers', updated);
+  };
+
+  const handleUnblock = async (id: string) => {
+    const updated = adminUsers.map(u => u.id === id ? { ...u, isBlocked: false } : u);
+    setAdminUsers(updated);
+    await cloudStore.saveSetting('adminUsers', updated);
+  };
+
+  const pendingUsers = adminUsers.filter(u => !u.isApproved && !u.isBlocked);
+  const activeUsers = adminUsers.filter(u => u.isApproved && !u.isBlocked && u.id !== currentAdmin.id);
+  const blockedUsers = adminUsers.filter(u => u.isBlocked);
+
+  return (
+    <div className="fixed inset-0 bg-[var(--dash-bg)] z-50 flex flex-col md:left-[240px]">
+      <div className="flex items-center justify-between p-4 md:px-8 md:py-5 border-b border-[var(--dash-border)] bg-[var(--dash-bg)] sticky top-0 z-10">
+        <button onClick={onClose} className="p-2 -ml-2 text-gray-400 hover:text-white transition-colors">
+          <ChevronLeft size={24} />
+        </button>
+        <h1 className="text-xl font-bold text-white">Account Control</h1>
+        <div className="w-10" />
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-20 md:p-8 md:pb-20 max-w-4xl mx-auto w-full">
+        {/* Profile Card */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-5 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-full bg-[#fafafa]/10 flex items-center justify-center text-[#fafafa]">
+                <User size={24} />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-white">Current User</h2>
+                <p className="text-sm text-gray-400">{currentAdmin.email}</p>
+              </div>
+            </div>
+            <button 
+              onClick={handleLogout}
+              className="px-4 py-2 bg-[#ff4d6d]/10 text-[#ff4d6d] rounded-lg font-medium hover:bg-[#ff4d6d]/20 transition-colors flex items-center gap-2"
+            >
+              <LogOut size={16} /> Logout
+            </button>
+          </div>
+        </div>
+
+        {/* Change Password Card */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl shadow-lg overflow-hidden">
+          <div 
+            className="flex items-center justify-between p-5 cursor-pointer hover:bg-[var(--dash-border)]/50 transition-colors"
+            onClick={() => toggleSection('password')}
+          >
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-medium text-white">Change Password</h2>
+            </div>
+            {expandedSections.password ? <ChevronUp size={20} className="text-[#fafafa]" /> : <ChevronDown size={20} className="text-[#fafafa]" />}
+          </div>
+          {expandedSections.password && (
+          <form onSubmit={handleChangePassword} className="space-y-4 p-5 pt-0 border-t border-[var(--dash-border)]/50 mt-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1.5">Current Password</label>
+              <input 
+                type="password" 
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#fafafa] transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1.5">New Password</label>
+              <input 
+                type="password" 
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#fafafa] transition-colors"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1.5">Confirm New Password</label>
+              <input 
+                type="password" 
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#fafafa] transition-colors"
+              />
+            </div>
+            
+            {pwdMsg.text && (
+              <div className={cn("text-sm p-3 rounded-lg", pwdMsg.type === 'success' ? "bg-[#fafafa]/10 text-[#fafafa]" : "bg-[#ff4d6d]/10 text-[#ff4d6d]")}>
+                {pwdMsg.text}
+              </div>
+            )}
+
+            <button 
+              type="submit"
+              style={{ backgroundColor: websiteSettings.themeColors?.primary || 'var(--theme-primary, #ff4d6d)', color: '#ffffff' }}
+              className="w-full py-3 rounded-lg font-bold text-sm md:text-base hover:brightness-95 active:scale-98 transition-all shadow-md cursor-pointer"
+            >
+              Update Password
+            </button>
+          </form>
+          )}
+        </div>
+
+        {/* Change Email Card */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl shadow-lg overflow-hidden">
+          <div 
+            className="flex items-center justify-between p-5 cursor-pointer hover:bg-[var(--dash-border)]/50 transition-colors"
+            onClick={() => toggleSection('email')}
+          >
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-medium text-white">Change Email</h2>
+            </div>
+            {expandedSections.email ? <ChevronUp size={20} className="text-[#fafafa]" /> : <ChevronDown size={20} className="text-[#fafafa]" />}
+          </div>
+          {expandedSections.email && (
+          <form onSubmit={handleChangeEmail} className="space-y-4 p-5 pt-0 border-t border-[var(--dash-border)]/50 mt-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-400 mb-1.5">New Email</label>
+              <input 
+                type="email" 
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                required
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#fafafa] transition-colors"
+              />
+            </div>
+            {emailMsg.text && (
+              <div className={cn("text-sm p-3 rounded-lg", emailMsg.type === 'success' ? "bg-[#fafafa]/10 text-[#fafafa]" : "bg-[#ff4d6d]/10 text-[#ff4d6d]")}>
+                {emailMsg.text}
+              </div>
+            )}
+            <button 
+              type="submit"
+              style={{ backgroundColor: websiteSettings.themeColors?.primary || 'var(--theme-primary, #ff4d6d)', color: '#ffffff' }}
+              className="w-full py-3 rounded-lg font-bold text-sm md:text-base hover:brightness-95 active:scale-98 transition-all shadow-md cursor-pointer"
+            >
+              Update Email
+            </button>
+          </form>
+          )}
+        </div>
+
+        {/* Auto Logout Card */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl shadow-lg overflow-hidden">
+          <div 
+            className="flex items-center justify-between p-5 cursor-pointer hover:bg-[var(--dash-border)]/50 transition-colors"
+            onClick={() => toggleSection('autoLogout')}
+          >
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-medium text-white">Auto Logout System</h2>
+            </div>
+            {expandedSections.autoLogout ? <ChevronUp size={20} className="text-[#fafafa]" /> : <ChevronDown size={20} className="text-[#fafafa]" />}
+          </div>
+          {expandedSections.autoLogout && (
+          <form onSubmit={handleUpdateLogout} className="space-y-4 p-5 pt-0 border-t border-[var(--dash-border)]/50">
+            <div className="flex flex-col sm:flex-row gap-4 items-end mt-4">
+              <div className="flex-1 w-full">
+                <label className="block text-sm font-medium text-gray-400 mb-1.5">Auto Logout Time (days)</label>
+                <input 
+                  type="number" 
+                  min="1"
+                  value={autoLogoutDays}
+                  onChange={(e) => setAutoLogoutDays(e.target.value)}
+                  required
+                  className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-[#fafafa] transition-colors"
+                />
+              </div>
+              <button 
+                type="submit"
+                style={{ backgroundColor: websiteSettings.themeColors?.primary || 'var(--theme-primary, #ff4d6d)', color: '#ffffff' }}
+                className="w-full sm:w-auto px-6 py-2.5 rounded-lg font-bold text-xs md:text-sm hover:brightness-95 active:scale-98 transition-all shadow-md cursor-pointer flex-[1.5]"
+              >
+                Update Auto Logout
+              </button>
+            </div>
+            {logoutMsg.text && (
+              <div className={cn("text-sm p-3 rounded-lg", logoutMsg.type === 'success' ? "bg-[#fafafa]/10 text-[#fafafa]" : "bg-[#ff4d6d]/10 text-[#ff4d6d]")}>
+                {logoutMsg.text}
+              </div>
+            )}
+          </form>
+          )}
+        </div>
+
+        {/* Admin Management Section */}
+        {currentAdmin.id === 'default-admin' && (
+          <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl shadow-lg p-5">
+            <h2 className="text-lg font-medium text-white mb-4">User Management</h2>
+            
+            <div className="flex flex-wrap items-center gap-2 mb-4 border-b border-[var(--dash-border)] pb-4">
+              <button
+                onClick={() => setUserTab('pending')}
+                className={cn("px-4 py-2 rounded-full text-sm font-medium transition-colors border", userTab === 'pending' ? "border-[#fafafa] text-[#fafafa] bg-[#fafafa]/10" : "border-transparent text-gray-400 hover:text-white")}
+              >
+                Pending Approvals ({pendingUsers.length})
+              </button>
+              <button
+                onClick={() => setUserTab('active')}
+                className={cn("px-4 py-2 rounded-full text-sm font-medium transition-colors border", userTab === 'active' ? "border-[#fafafa] text-[#fafafa] bg-[#fafafa]/10" : "border-transparent text-gray-400 hover:text-white")}
+              >
+                Active Accounts ({activeUsers.length})
+              </button>
+              <button
+                onClick={() => setUserTab('blocked')}
+                className={cn("px-4 py-2 rounded-full text-sm font-medium transition-colors border", userTab === 'blocked' ? "border-[#fafafa] text-[#fafafa] bg-[#fafafa]/10" : "border-transparent text-gray-400 hover:text-white")}
+              >
+                Blocked Accounts ({blockedUsers.length})
+              </button>
+            </div>
+
+            <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg p-4">
+              {userTab === 'pending' && (
+                <div className="space-y-3">
+                  {pendingUsers.length === 0 ? (
+                    <p className="text-gray-500 text-sm">No pending approvals.</p>
+                  ) : (
+                    pendingUsers.map(user => (
+                      <div key={user.id} className="flex items-center justify-between p-3 bg-[var(--dash-card)] rounded-lg border border-[var(--dash-border)]">
+                        <div>
+                          <p className="text-white font-medium">{user.email}</p>
+                          <p className="text-xs text-gray-500">Joined: {new Date(user.createdAt).toLocaleDateString()}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            onClick={() => handleApprove(user.id)}
+                            className="p-2 bg-[#fafafa]/10 text-[#fafafa] rounded-lg hover:bg-[#fafafa]/20 transition-colors"
+                            title="Approve"
+                          >
+                            <Check size={18} />
+                          </button>
+                          <button 
+                            onClick={() => handleReject(user.id)}
+                            className="p-2 bg-[#ff4d6d]/10 text-[#ff4d6d] rounded-lg hover:bg-[#ff4d6d]/20 transition-colors"
+                            title="Reject"
+                          >
+                            <X size={18} />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+              
+              {userTab === 'active' && (
+                <div className="space-y-3">
+                  {activeUsers.length === 0 ? (
+                    <p className="text-gray-500 text-sm">No other active accounts.</p>
+                  ) : (
+                    activeUsers.map(user => (
+                      <div key={user.id} className="flex items-center justify-between p-3 bg-[var(--dash-card)] rounded-lg border border-[var(--dash-border)]">
+                        <div>
+                          <p className="text-white font-medium">{user.email}</p>
+                          <p className="text-xs text-[#fafafa]">Approved</p>
+                        </div>
+                        <button 
+                          onClick={() => handleBlock(user.id)}
+                          className="px-3 py-1.5 bg-[#ff4d6d]/10 text-[#ff4d6d] rounded-lg hover:bg-[#ff4d6d]/20 transition-colors flex items-center gap-1.5 text-sm font-medium"
+                        >
+                          <ShieldAlert size={16} /> Block
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+
+              {userTab === 'blocked' && (
+                <div className="space-y-3">
+                  {blockedUsers.length === 0 ? (
+                    <p className="text-gray-500 text-sm">No blocked accounts.</p>
+                  ) : (
+                    blockedUsers.map(user => (
+                      <div key={user.id} className="flex items-center justify-between p-3 bg-[var(--dash-card)] rounded-lg border border-[var(--dash-border)] opacity-75">
+                        <div>
+                          <p className="text-gray-400 font-medium line-through">{user.email}</p>
+                          <p className="text-xs text-[#ff4d6d]">Blocked</p>
+                        </div>
+                        <button 
+                          onClick={() => handleUnblock(user.id)}
+                          className="px-3 py-1.5 bg-blue-500/10 text-blue-500 rounded-lg hover:bg-blue-500/20 transition-colors flex items-center gap-1.5 text-sm font-medium"
+                        >
+                          <Unlock size={16} /> Unblock
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function QtyRulesManager({ settings, setSettings, onClose, themePrimary }: { settings: WebsiteSettings, setSettings: React.Dispatch<React.SetStateAction<WebsiteSettings>>, onClose: () => void, themePrimary?: string }) {
+  const [enabled, setEnabled] = useState(settings.qtyRules?.enabled ?? false);
+  const [minQuantity, setMinQuantity] = useState(settings.qtyRules?.minQuantity?.toString() || '6');
+  const [discountPerPiece, setDiscountPerPiece] = useState(settings.qtyRules?.discountPerPiece?.toString() || '5');
+  const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const updated = {
+        ...settings,
+        qtyRules: {
+          enabled,
+          minQuantity: parseInt(minQuantity) || 0,
+          discountPerPiece: parseInt(discountPerPiece) || 0
+        }
+      };
+      setSettings(updated);
+      await cloudStore.saveSetting('websiteSettings', updated);
+      setSaved(true);
+      setTimeout(() => {
+        setSaved(false);
+        onClose();
+      }, 600);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+      <div className="flex items-center justify-between p-4 md:px-8 md:py-5 border-b border-[var(--dash-border)] bg-[var(--dash-card)]">
+        <div className="flex items-center gap-3">
+          <button onClick={onClose} className="p-2 -ml-2 text-gray-400 hover:text-white"><ChevronLeft size={24} /></button>
+          <h1 className="text-xl font-bold text-white">Qty Rules</h1>
+        </div>
+        <button 
+          onClick={handleSave} 
+          disabled={isSaving}
+          style={{ backgroundColor: themePrimary || 'var(--theme-primary, #ff4d6d)', color: '#ffffff' }}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs md:text-sm hover:brightness-95 active:scale-98 transition-all disabled:opacity-50 shadow-md cursor-pointer"
+        >
+          {saved ? <Check size={18} /> : <Save size={18} />}
+          {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save'}
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 max-w-3xl mx-auto w-full">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-2xl p-4 sm:p-6 shadow-lg">
+          <div className="flex justify-between items-start gap-4">
+            <div className="flex-1 pr-4">
+              <h2 className="text-lg sm:text-xl font-bold text-white mb-1">Quantity Pricing System</h2>
+              <p className="text-xs sm:text-sm text-gray-400">Automate quantity-based discounts across your store.</p>
+            </div>
+            <div 
+              className={cn("w-12 h-6 rounded-full p-1 cursor-pointer transition-colors duration-200 ease-in-out flex items-center shrink-0 mt-1 group",
+                enabled ? "bg-[#fafafa]" : "bg-gray-600"
+              )}
+              onClick={() => setEnabled(!enabled)}
+            >
+              <div className={cn("w-4 h-4 bg-white rounded-full transition-all duration-300 ease-[cubic-bezier(0.25,1,0.5,1)] shadow-sm group-active:w-6", enabled ? "translate-x-6 group-active:translate-x-4" : "translate-x-0")} />
+            </div>
+          </div>
+
+          <div className={cn("transition-all duration-300 overflow-hidden", enabled ? "opacity-100 max-h-[1000px] mt-6" : "opacity-0 max-h-0")}>
+             <div className="pt-6 border-t border-[var(--dash-border)] space-y-6">
+                <div>
+                  <h3 className="text-lg font-bold text-white mb-4">Global Default Rule</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-400">Apply discount when Qty &ge;</label>
+                      <div className="relative">
+                        <input 
+                          type="number" 
+                          value={minQuantity} 
+                          onChange={e => setMinQuantity(e.target.value)} 
+                          placeholder="e.g. 6"
+                          className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-3 pl-4 text-white focus:outline-none focus:border-[#fafafa] transition-colors"
+                        />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">pcs</span>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-gray-400">Discount per piece</label>
+                      <div className="relative">
+                        <input 
+                          type="number" 
+                          value={discountPerPiece} 
+                          onChange={e => setDiscountPerPiece(e.target.value)} 
+                          placeholder="e.g. 5"
+                          className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-3 pl-4 text-white focus:outline-none focus:border-[#fafafa] transition-colors"
+                        />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">৳</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-5 flex gap-4 mt-6">
+                  <div className="text-[#fafafa] shrink-0 pt-1">
+                    <PackagePlus size={24} />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-white text-base mb-1">How rules are applied</h4>
+                    <ul className="space-y-2 text-sm text-gray-400 list-disc list-inside">
+                      <li>Purchasing <strong className="text-[#fafafa]">&ge;{minQuantity || 0} items</strong> of a single product grants a <strong className="text-[#fafafa]">{discountPerPiece || 0}৳</strong> discount per piece.</li>
+                      <li>Custom rules configured on individual products will <strong className="text-white">override</strong> this global rule.</li>
+                    </ul>
+                  </div>
+                </div>
+             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function SeoSettingsManager({ settings, setSettings, onClose, themePrimary }: { settings: WebsiteSettings, setSettings: React.Dispatch<React.SetStateAction<WebsiteSettings>>, onClose: () => void, themePrimary?: string }) {
+  const [seo, setSeo] = useState<SeoSettings>(settings.seoSettings || {});
+  const [saved, setSaved] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState<{ [key: string]: boolean }>({});
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const newSettings = { ...settings, seoSettings: seo };
+      setSettings(newSettings);
+      await cloudStore.saveSetting('websiteSettings', newSettings);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: keyof SeoSettings) => {
+    if (e.target.files && e.target.files[0]) {
+      const fieldStr = String(fieldName);
+      setIsUploading({ ...isUploading, [fieldStr]: true });
+      const file = e.target.files[0];
+      try {
+        const url = await cloudStore.uploadFile(file, `seo_${fieldStr}_${Date.now()}.${file.name.split('.').pop()}`);
+        setSeo({ ...seo, [fieldName]: url });
+      } catch (err) {
+        console.error("Upload failed", err);
+        // Fallback to dataURL
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          setSeo({ ...seo, [fieldName]: event.target?.result as string });
+        };
+        reader.readAsDataURL(file);
+      } finally {
+        setIsUploading({ ...isUploading, [fieldStr]: false });
+      }
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+      {/* Top Header Bar */}
+      <div className="flex items-center justify-between px-4 py-3 md:px-8 border-b border-[var(--dash-border)] bg-[var(--dash-card)] relative z-10 shrink-0">
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={onClose} 
+            className="w-10 h-10 rounded-full border border-[var(--dash-border)] bg-[var(--dash-card)]/50 hover:bg-[var(--dash-card)] flex items-center justify-center text-slate-400 hover:text-white transition-all shrink-0"
+            id="seo_back_btn"
+            title="Go back"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <div className="flex flex-col">
+            <h1 className="text-sm md:text-base font-bold text-white flex items-center gap-2 tracking-tight">
+              <Globe size={18} className="text-purple-400" /> SEO & Branding
+            </h1>
+            <p className="text-[10px] md:text-xs text-slate-400 font-normal hidden sm:block">
+              Optimize how your store looks on search engines and social platforms.
+            </p>
+          </div>
+        </div>
+
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          style={{ backgroundColor: themePrimary || 'var(--theme-primary, #ff4d6d)', color: '#ffffff' }}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs md:text-sm hover:brightness-95 active:scale-98 transition-all disabled:opacity-50 shrink-0 shadow-md cursor-pointer"
+          id="seo_save_btn"
+        >
+          {saved ? <Check size={16} /> : <Save size={16} />}
+          {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save Changes'}
+        </button>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-6 pb-24 md:p-8 md:space-y-6 max-w-2xl mx-auto w-full">
+        {/* Basic SEO Controls (Box 1) */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-2xl overflow-hidden shadow-lg shadow-black/10 flex flex-col p-4.5 md:p-6 space-y-4" id="seo_basic_card">
+          <div className="flex items-start justify-between border-b border-[var(--dash-border)]/40 pb-4.5">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[var(--dash-border)]/50 text-indigo-400 flex items-center justify-center shrink-0 font-bold text-sm border border-[var(--dash-border)]">
+                1
+              </div>
+              <div className="flex flex-col">
+                <h2 className="text-xs md:text-sm font-bold text-white tracking-wide">Basic SEO Controls (Google Search)</h2>
+                <p className="text-[10px] md:text-xs text-slate-400 mt-0.5 font-normal">Improve your store's visibility in Google Search results.</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/15 rounded-full text-xs font-semibold select-none shrink-0" id="seo_status_good">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <Check size={12} className="stroke-[3]" />
+              <span>Good</span>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="text-[11px] md:text-xs font-semibold text-slate-300 tracking-wide">Store Meta Title</span>
+                <span className="inline-flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-help" title="Enter the main heading that appears in Google Search results.">
+                  <Info size={11} />
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[var(--dash-border)]/30 text-indigo-400 border border-[var(--dash-border)]/50 flex items-center justify-center shrink-0" id="meta_title_icon_box">
+                  <Tag size={16} />
+                </div>
+                <input
+                  type="text"
+                  value={seo.metaTitle || ''}
+                  onChange={(e) => setSeo({ ...seo, metaTitle: e.target.value })}
+                  placeholder="e.g. Flixomart - Premium Electronic Goods"
+                  className="flex-1 bg-[var(--dash-bg)]/80 border border-[var(--dash-border)] rounded-lg px-3 py-2 text-xs md:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[var(--dash-border-light)] transition-colors font-sans"
+                  id="seo_meta_title_input"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="text-[11px] md:text-xs font-semibold text-slate-300 tracking-wide">Store Meta Description</span>
+                <span className="inline-flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-help" title="Short description paragraph that appears in Google Search.">
+                  <Info size={11} />
+                </span>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[var(--dash-border)]/30 text-indigo-400 border border-[var(--dash-border)]/50 flex items-center justify-center shrink-0 mt-0.5" id="meta_desc_icon_box">
+                  <FileText size={16} />
+                </div>
+                <textarea
+                  value={seo.metaDescription || ''}
+                  onChange={(e) => setSeo({ ...seo, metaDescription: e.target.value })}
+                  placeholder="Short paragraph describing your store..."
+                  rows={2}
+                  className="flex-1 bg-[var(--dash-bg)]/80 border border-[var(--dash-border)] rounded-lg px-3 py-2 text-xs md:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[var(--dash-border-light)] transition-colors resize-y min-h-[44px]"
+                  id="seo_meta_description_textarea"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="text-[11px] md:text-xs font-semibold text-slate-300 tracking-wide">Meta Keywords</span>
+                <span className="inline-flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-help" title="Comma-separated keywords representing your store.">
+                  <Info size={11} />
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[var(--dash-border)]/30 text-indigo-400 border border-[var(--dash-border)]/50 flex items-center justify-center shrink-0" id="meta_keywords_icon_box">
+                  <Key size={16} />
+                </div>
+                <input
+                  type="text"
+                  value={seo.metaKeywords || ''}
+                  onChange={(e) => setSeo({ ...seo, metaKeywords: e.target.value })}
+                  placeholder="e.g. electronics, smartphones, gadgets (comma separated)"
+                  className="flex-1 bg-[var(--dash-bg)]/80 border border-[var(--dash-border)] rounded-lg px-3 py-2 text-xs md:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[var(--dash-border-light)] transition-colors font-sans"
+                  id="seo_meta_keywords_input"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Social Media Sharing Controls (Box 2) */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-2xl overflow-hidden shadow-lg shadow-black/10 flex flex-col p-4.5 md:p-6 space-y-4" id="seo_social_card">
+          <div className="flex items-start justify-between border-b border-[var(--dash-border)]/40 pb-4.5">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[var(--dash-border)]/50 text-indigo-400 flex items-center justify-center shrink-0 font-bold text-sm border border-[var(--dash-border)]">
+                2
+              </div>
+              <div className="flex flex-col">
+                <h2 className="text-xs md:text-sm font-bold text-white tracking-wide">Social Media Sharing Controls (Open Graph)</h2>
+                <p className="text-[10px] md:text-xs text-slate-400 mt-0.5 font-normal">Control how your store appears when shared on social media.</p>
+              </div>
+            </div>
+            
+            <div className="text-slate-400 shrink-0 p-1 bg-slate-800/20 border border-slate-700/20 rounded-lg" id="seo_social_badge">
+              <Share2 size={16} />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="text-[11px] md:text-xs font-semibold text-slate-300 tracking-wide">Social Share Title</span>
+                <span className="inline-flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-help" title="Custom title when shared on messaging platforms.">
+                  <Info size={11} />
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[var(--dash-border)]/30 text-indigo-400 border border-[var(--dash-border)]/50 flex items-center justify-center shrink-0" id="social_title_icon_box">
+                  <Type size={16} />
+                </div>
+                <input
+                  type="text"
+                  value={seo.socialShareTitle || ''}
+                  onChange={(e) => setSeo({ ...seo, socialShareTitle: e.target.value })}
+                  placeholder="Enter social share title (optional)"
+                  className="flex-1 bg-[var(--dash-bg)]/80 border border-[var(--dash-border)] rounded-lg px-3 py-2 text-xs md:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[var(--dash-border-light)] transition-colors font-sans"
+                  id="seo_social_title_input"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="text-[11px] md:text-xs font-semibold text-slate-300 tracking-wide">Social Share Description</span>
+                <span className="inline-flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-help" title="Custom description shown under the link preview.">
+                  <Info size={11} />
+                </span>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-lg bg-[var(--dash-border)]/30 text-indigo-400 border border-[var(--dash-border)]/50 flex items-center justify-center shrink-0 mt-0.5" id="social_desc_icon_box">
+                  <AlignLeft size={16} />
+                </div>
+                <textarea
+                  value={seo.socialShareDescription || ''}
+                  onChange={(e) => setSeo({ ...seo, socialShareDescription: e.target.value })}
+                  placeholder="Text that appears under the link preview..."
+                  rows={2}
+                  className="flex-1 bg-[var(--dash-bg)]/80 border border-[var(--dash-border)] rounded-lg px-3 py-2 text-xs md:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-[var(--dash-border-light)] transition-colors resize-y min-h-[44px]"
+                  id="seo_social_description_textarea"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="text-[11px] md:text-xs font-semibold text-slate-300 tracking-wide">Default Social Share Image</span>
+                <span className="inline-flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-help" title="Recommended dimension: 1200x630px. Shown when sharing store homepage.">
+                  <Info size={11} />
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-lg bg-[var(--dash-border)]/30 text-indigo-400 border border-[var(--dash-border)]/50 flex items-center justify-center shrink-0 overflow-hidden" id="social_image_preview_box">
+                  {seo.defaultSocialShareImage ? (
+                    <img src={seo.defaultSocialShareImage} alt="Social Share Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <ImageIcon size={18} />
+                  )}
+                </div>
+                
+                <div className="flex-1 border border-dashed border-[var(--dash-border)] rounded-lg p-2.5 md:p-3 flex items-center justify-between bg-[var(--dash-bg)]/40 gap-4" id="social_image_upload_zone">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] md:text-xs font-semibold text-slate-300">Upload an image (Recommended: 1200x630px)</span>
+                    <span className="text-[9px] md:text-[10px] text-slate-500">This image will be shown in link previews.</span>
+                  </div>
+                  
+                  <label className={cn(
+                    "bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-200 hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold cursor-pointer transition-all shrink-0",
+                    isUploading.defaultSocialShareImage && "opacity-50 cursor-not-allowed"
+                  )} id="social_image_upload_label">
+                    {isUploading.defaultSocialShareImage ? <RefreshCw className="animate-spin" size={13} /> : <Upload size={13} />}
+                    <span>{isUploading.defaultSocialShareImage ? 'Uploading...' : 'Upload Image'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      id="social_share_image_input"
+                      onChange={(e) => handleImageUpload(e, 'defaultSocialShareImage')}
+                      disabled={isUploading.defaultSocialShareImage}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Branding & Appearance (Box 3) */}
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-2xl overflow-hidden shadow-lg shadow-black/10 flex flex-col p-4.5 md:p-6 space-y-4" id="seo_branding_card">
+          <div className="flex items-start justify-between border-b border-[var(--dash-border)]/40 pb-4.5">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[var(--dash-border)]/50 text-indigo-400 flex items-center justify-center shrink-0 font-bold text-sm border border-[var(--dash-border)]">
+                3
+              </div>
+              <div className="flex flex-col">
+                <h2 className="text-xs md:text-sm font-bold text-white tracking-wide">Branding & Appearance</h2>
+                <p className="text-[10px] md:text-xs text-slate-400 mt-0.5 font-normal">Customize your store's identity and appearance.</p>
+              </div>
+            </div>
+            
+            <div className="text-slate-400 shrink-0 p-1 bg-slate-800/20 border border-slate-700/20 rounded-lg" id="seo_branding_badge">
+              <Palette size={16} />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <span className="text-[11px] md:text-xs font-semibold text-slate-300 tracking-wide">Favicon Upload</span>
+                <span className="inline-flex items-center text-slate-500 hover:text-slate-300 transition-colors cursor-help" title="The tiny icon shown in browser tabs next to your website title.">
+                  <Info size={11} />
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-lg bg-[var(--dash-border)]/30 text-indigo-400 border border-[var(--dash-border)]/50 flex items-center justify-center shrink-0 overflow-hidden bg-white/5" id="favicon_preview_box">
+                  {seo.favicon ? (
+                    <img src={seo.favicon} alt="Favicon Preview" className="w-6 h-6 object-contain" />
+                  ) : (
+                    <Star size={18} className="text-amber-400" />
+                  )}
+                </div>
+                
+                <div className="flex-1 border border-dashed border-[var(--dash-border)] rounded-lg p-2.5 md:p-3 flex items-center justify-between bg-[var(--dash-bg)]/40 gap-4" id="favicon_upload_zone">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] md:text-xs font-semibold text-slate-300">Upload Favicon</span>
+                    <span className="text-[9px] md:text-[10px] text-slate-500">The tiny icon that shows up in the browser tab.</span>
+                  </div>
+                  
+                  <label className={cn(
+                    "bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-200 hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold cursor-pointer transition-all shrink-0",
+                    isUploading.favicon && "opacity-50 cursor-not-allowed"
+                  )} id="favicon_upload_label">
+                    {isUploading.favicon ? <RefreshCw className="animate-spin" size={13} /> : <Upload size={13} />}
+                    <span>{isUploading.favicon ? 'Uploading...' : 'Upload Favicon'}</span>
+                    <input
+                      type="file"
+                      accept="image/png, image/x-icon, image/jpeg, image/svg+xml"
+                      className="hidden"
+                      id="favicon_image_input"
+                      onChange={(e) => handleImageUpload(e, 'favicon')}
+                      disabled={isUploading.favicon}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ImageSettingsManager({ onClose, themePrimary }: { onClose: () => void; themePrimary?: string }) {
+  const [enabled, setEnabled] = useState(true);
+  const [quality, setQuality] = useState(80);
+  const [scale, setScale] = useState(100);
+  const [thumbnailWidth, setThumbnailWidth] = useState(500);
+  const [thumbnailQuality, setThumbnailQuality] = useState(65);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    const cfg = getDefaultImageOptimization();
+    setEnabled(cfg.enabled);
+    setQuality(cfg.quality);
+    setScale(cfg.scale);
+    setThumbnailWidth(cfg.thumbnailWidth);
+    setThumbnailQuality(cfg.thumbnailQuality);
+  }, []);
+
+  const handleSave = () => {
+    setDefaultImageOptimization({ enabled, quality, scale, thumbnailWidth, thumbnailQuality });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+      <div className="flex items-center justify-between p-4 bg-[var(--dash-card)] border-b border-[var(--dash-border)] md:px-8 md:py-5">
+        <button onClick={onClose} className="p-2 -ml-2 text-gray-400 hover:text-white transition-colors">
+          <ChevronLeft size={24} />
+        </button>
+        <h1 className="text-xl font-bold text-white flex items-center gap-2 absolute left-1/2 -translate-x-1/2">
+          <ImageIcon size={22} className="text-sky-400" /> Image Settings
+        </h1>
+        <button
+          onClick={handleSave}
+          style={{ backgroundColor: themePrimary || 'var(--theme-primary, #ff4d6d)', color: '#ffffff' }}
+          className="flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm hover:brightness-95 active:scale-95 transition-all shadow-md cursor-pointer"
+        >
+          {saved ? <Check size={18} className="text-white" /> : <Save size={18} />}
+          {saved ? 'Saved' : 'Save'}
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 pb-24 md:p-8 md:pb-24 max-w-3xl mx-auto w-full">
+          <div className="space-y-6">
+            
+            {/* Auto Optimization */}
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="font-bold text-lg text-white">Auto Optimization</h3>
+                  <p className="text-sm text-gray-400 mt-1">Automatically compress and resize main product images upon upload.</p>
+                </div>
+                <button 
+                  onClick={() => setEnabled(!enabled)}
+                  className={cn("w-12 h-6 rounded-full relative flex items-center px-1 transition-colors group shrink-0", enabled ? "bg-[#fafafa]" : "bg-[var(--dash-border)]")}
+                >
+                  <div className={cn("w-4 h-4 rounded-full transition-all duration-300", enabled  ? "bg-[var(--dash-card)] translate-x-6" : "bg-white translate-x-0")}></div>
+                </button>
+              </div>
+
+              {enabled && (
+                <div className="space-y-6 pt-4 border-t border-[var(--dash-border)]">
+                  <div>
+                    <div className="flex justify-between text-sm mb-2 text-white">
+                      <span>Image Quality</span>
+                      <span className="font-bold">{quality}%</span>
+                    </div>
+                    <input 
+                      type="range" min="1" max="100" value={quality} onChange={e => setQuality(Number(e.target.value))}
+                      className="w-full h-1 bg-[var(--dash-border)] rounded-full appearance-none cursor-pointer custom-range"
+                    />
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-sm mb-2 text-white">
+                      <span>Image Scale (Resolution)</span>
+                      <span className="font-bold">{scale}%</span>
+                    </div>
+                    <input 
+                      type="range" min="10" max="100" value={scale} onChange={e => setScale(Number(e.target.value))}
+                      className="w-full h-1 bg-[var(--dash-border)] rounded-full appearance-none cursor-pointer custom-range"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Thumbnail Settings */}
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-5">
+              <h3 className="font-bold text-lg text-white mb-1">Thumbnail Generation</h3>
+              <p className="text-sm text-gray-400 mb-5">Thumbnails are automatically generated to reduce loading times on grids. Adjusting these will ONLY affect newly uploaded products or zip imports.</p>
+
+              <div className="space-y-6">
+                <div>
+                  <div className="flex justify-between text-sm mb-2 text-white">
+                    <span>Thumbnail Width (px)</span>
+                    <span className="font-bold text-sky-400">{thumbnailWidth}px</span>
+                  </div>
+                  <input 
+                    type="range" min="100" max="1080" step="10" value={thumbnailWidth} onChange={e => setThumbnailWidth(Number(e.target.value))}
+                    className="w-full h-1 bg-[var(--dash-border)] rounded-full appearance-none cursor-pointer custom-range"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">Recommended: 300px - 600px. High values increase clarity but make homepage slower.</p>
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-2 text-white">
+                    <span>Thumbnail Quality</span>
+                    <span className="font-bold text-sky-400">{thumbnailQuality}%</span>
+                  </div>
+                  <input 
+                    type="range" min="10" max="100" value={thumbnailQuality} onChange={e => setThumbnailQuality(Number(e.target.value))}
+                    className="w-full h-1 bg-[var(--dash-border)] rounded-full appearance-none cursor-pointer custom-range"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">Recommended: 60% - 80%.</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+    </div>
+  );
+}

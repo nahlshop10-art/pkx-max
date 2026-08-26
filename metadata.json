@@ -1,0 +1,6 @@
+{
+  "name": "PaikariX Pro",
+  "description": "A comprehensive wholesale e-commerce solution with real-time order tracking, AI-powered product management, and courier integration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
