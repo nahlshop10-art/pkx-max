@@ -81,8 +81,7 @@ const TopProductItem = React.memo(({
 }) => {
   return (
     <div 
-      className="relative overflow-hidden rounded-xl bg-[var(--dash-card)] border border-[var(--dash-border)] aspect-square content-visibility-auto contain-paint"
-      style={{ transform: 'translateZ(0)' }}
+      className="relative overflow-hidden rounded-xl bg-[var(--dash-card)] border border-[var(--dash-border)] aspect-square"
     >
       {showImages && (
         <img 
@@ -128,8 +127,7 @@ const DashboardProductGridCard = React.memo(({
 }: DashboardProductGridCardProps) => {
   return (
     <div 
-      className="rounded-xl overflow-hidden border flex flex-col relative cursor-pointer transition-colors bg-[var(--dash-card)] border-[var(--dash-border)] content-visibility-auto contain-paint"
-      style={{ transform: 'translateZ(0)' }}
+      className="rounded-xl overflow-hidden border flex flex-col relative cursor-pointer bg-[var(--dash-card)] border-[var(--dash-border)]"
       onClick={() => {
         if (topBarMode === 'default') {
           onEdit(product);
@@ -968,13 +966,20 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
     }
   }, [scrollRef.current, activeTab]);
   
-  const getScrollElement = React.useCallback(() => scrollEl, [scrollEl]);
-  
+  const estimateRowHeight = React.useCallback(() => {
+    if (typeof window === 'undefined') return 240;
+    const w = window.innerWidth;
+    if (w < 768) {
+      return Math.round((w - 16) / 2 + 45);
+    }
+    return 300;
+  }, []);
+
   const virtualizer = useVirtualizer({
     count: rowCount,
     getScrollElement,
-    estimateSize: () => 350,
-    overscan: 5,
+    estimateSize: estimateRowHeight,
+    overscan: 8,
   });
 
   // Orders filtering
