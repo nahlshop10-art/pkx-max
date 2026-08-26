@@ -1838,7 +1838,14 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
         )}
       </AnimatePresence>
 
-      <div ref={scrollRef} className={cn("flex-grow min-h-0 overflow-y-auto relative z-0 md:p-8", activeTab === 'Dashboard' ? 'px-1.5 pt-1 pb-20' : 'px-4 pt-4 pb-20')}>
+      <div 
+        ref={scrollRef} 
+        className={cn(
+          "flex-grow min-h-0 overflow-y-auto relative z-0 md:p-8 overscroll-y-contain", 
+          activeTab === 'Dashboard' ? 'px-1.5 pt-1 pb-20' : 'px-4 pt-4 pb-20'
+        )}
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         <div className="max-w-7xl mx-auto w-full">
         {/* Stats - Only show on Dashboard tab */}
         {activeTab === 'Dashboard' && perms.sections.dashboard && (
@@ -1888,12 +1895,18 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
 
         {/* Products Grid */}
         {activeTab === 'Products' && perms.sections.products && (
-          <div ref={listRef} className="w-full relative px-1 pb-1" style={{ height: `${virtualizer.getTotalSize()}px` }}>
+          <div 
+            ref={listRef} 
+            className="w-full relative px-1 pb-1" 
+            style={{ 
+              height: `${virtualizer.getTotalSize()}px`,
+              transform: 'translateZ(0)',
+              willChange: 'transform'
+            }}
+          >
             {virtualizer.getVirtualItems().map((virtualRow) => (
               <div
                 key={virtualRow.index}
-                ref={virtualizer.measureElement}
-                data-index={virtualRow.index}
                 className={`absolute top-0 left-0 w-full grid grid-cols-2 gap-1 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 md:gap-4 md:px-4`}
                 style={{
                   transform: `translateY(${virtualRow.start}px)`,
@@ -3002,7 +3015,11 @@ function CategoriesManager({ categories, setCategories, onClose, themePrimary }:
       </div>
 
       {/* Categories Grid */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 pt-0">
+      <div 
+        ref={scrollRef} 
+        className="flex-1 overflow-y-auto p-4 pt-0 overscroll-y-contain"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         <div className="max-w-3xl mx-auto w-full">
         <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8 gap-4">
           {categories.map(cat => (
@@ -3119,7 +3136,10 @@ function CategoryEditorModal({ category, onSave, onClose, onDelete, themePrimary
         )}
       </div>
 
-      <div className="p-4 flex-1 overflow-y-auto md:p-8 max-w-3xl mx-auto w-full">
+      <div 
+        className="p-4 flex-1 overflow-y-auto md:p-8 max-w-3xl mx-auto w-full overscroll-y-contain"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-4 flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-[#ff4d6d]">Title *</label>
@@ -3328,7 +3348,10 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-6 md:p-8 max-w-4xl mx-auto w-full">
+      <div 
+        className="flex-1 overflow-y-auto p-4 space-y-6 md:p-8 max-w-4xl mx-auto w-full overscroll-y-contain"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         {/* Stock Out Control */}
         <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-4">
           <div className="flex items-center justify-between mb-4">
@@ -3739,7 +3762,10 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3.5 space-y-4.5 pb-20 md:p-6 md:space-y-5 max-w-xl mx-auto w-full">
+      <div 
+        className="flex-1 overflow-y-auto p-3.5 space-y-4.5 pb-20 md:p-6 md:space-y-5 max-w-xl mx-auto w-full overscroll-y-contain"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
         {/* Meta Pixel Section */}
         <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-xl overflow-hidden shadow-md shadow-black/5" id="meta_pixel_card">
           <div className="flex items-center justify-between p-3.5 md:p-4.5 border-b border-[var(--dash-border)]/40">
