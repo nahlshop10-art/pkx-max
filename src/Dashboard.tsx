@@ -79,14 +79,15 @@ const TopProductItem = React.memo(({
   quantity: number; 
   showImages: boolean; 
 }) => {
+  if (!product) return null;
   return (
     <div 
       className="relative overflow-hidden rounded-xl bg-[var(--dash-card)] border border-[var(--dash-border)] aspect-square"
     >
       {showImages && (
         <img 
-          src={product.thumbnail || product.image} 
-          alt={product.title} 
+          src={product.thumbnail || product.image || ''} 
+          alt={product.title || ''} 
           loading="lazy"
           decoding="async"
           className="absolute inset-0 w-full h-full object-cover"
@@ -125,6 +126,11 @@ const DashboardProductGridCard = React.memo(({
   onToggleVisibility,
   onMoveProducts
 }: DashboardProductGridCardProps) => {
+  if (!product) return null;
+  const buyPriceVal = product.buyPrice ?? (product.price ? Math.floor(product.price * 0.4) : 0);
+  const sellPriceVal = product.price || 0;
+  const profitVal = sellPriceVal - buyPriceVal;
+
   return (
     <div 
       className="rounded-xl overflow-hidden border flex flex-col relative cursor-pointer bg-[var(--dash-card)] border-[var(--dash-border)]"
@@ -142,8 +148,8 @@ const DashboardProductGridCard = React.memo(({
     >
       <div className="relative aspect-square w-full overflow-hidden bg-[var(--dash-card)]">
         <img 
-          src={product.thumbnail || product.image} 
-          alt={product.title} 
+          src={product.thumbnail || product.image || ''} 
+          alt={product.title || ''} 
           loading="lazy"
           decoding="async"
           className={cn("absolute inset-0 w-full h-full object-cover", (product.isVisible === false || isOutOfStock) ? "opacity-75 grayscale" : "")} 
@@ -202,22 +208,22 @@ const DashboardProductGridCard = React.memo(({
         {topBarMode !== 'move' && !isOutOfStock && (
           <div className="absolute bottom-2 left-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border z-10 shadow-md bg-[#fafafa] text-[var(--dash-bg)] border-[#fafafa]/20">
             <Package size={14} />
-            {perms.product.stock ? (product.stock || 0) : '***'}
+            {perms?.product?.stock !== false ? (product.stock || 0) : '***'}
           </div>
         )}
       </div>
       <div className="grid grid-cols-3 text-center text-[10px] border-t border-[var(--dash-border)] divide-x divide-[var(--dash-border)]">
         <div className="py-1">
           <div className="text-gray-500">BUY</div>
-          <div className="font-medium text-white">{perms.product.buyPrice ? (product.buyPrice || Math.floor(product.price * 0.4)) : '***'}</div>
+          <div className="font-medium text-white">{perms?.product?.buyPrice !== false ? buyPriceVal : '***'}</div>
         </div>
         <div className="py-1">
           <div className="text-gray-500">SELL</div>
-          <div className="font-medium text-white">{perms.product.sellPrice ? product.price : '***'}</div>
+          <div className="font-medium text-white">{perms?.product?.sellPrice !== false ? sellPriceVal : '***'}</div>
         </div>
         <div className="py-1">
           <div className="text-gray-500">PROFIT</div>
-          <div className="font-medium text-white">{perms.product.profit ? product.price - (product.buyPrice || Math.floor(product.price * 0.4)) : '***'}</div>
+          <div className="font-medium text-white">{perms?.product?.profit !== false ? profitVal : '***'}</div>
         </div>
       </div>
     </div>
@@ -361,7 +367,12 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
     return null;
   });
 
-  const perms = currentAdmin?.permissions || DEFAULT_ADMIN_PERMISSIONS;
+  const perms = {
+    sections: { ...DEFAULT_ADMIN_PERMISSIONS.sections, ...(currentAdmin?.permissions?.sections || {}) },
+    product: { ...DEFAULT_ADMIN_PERMISSIONS.product, ...(currentAdmin?.permissions?.product || {}) },
+    order: { ...DEFAULT_ADMIN_PERMISSIONS.order, ...(currentAdmin?.permissions?.order || {}) },
+    analytics: { ...DEFAULT_ADMIN_PERMISSIONS.analytics, ...(currentAdmin?.permissions?.analytics || {}) },
+  };
   const isOwner = currentAdmin?.role === 'Owner' || !currentAdmin?.role;
 
   // Enforce Permissions on Route/Tab changes
@@ -1027,12 +1038,18 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
   const totalProfitAmount = adminStats ? adminStats.totalProfitAmount : rawTotalProfitAmount;
   const completedProfitAmount = adminStats ? adminStats.completedProfitAmount : rawCompletedProfitAmount;
 
-  const totalQuantity = adminStats ? adminStats.totalQuantity : filteredOrders.reduce((acc, o) => acc + o.items.reduce((sum, item) => sum + item.quantity, 0), 0);
+  const totalQuantity = adminStats ? adminStats.totalQuantity : filteredOrders.reduce((acc, o) => acc + (o.items || []).reduce((sum, item) => sum + (item.quantity || 0), 0), 0);
   
   // Unique items sold
   const uniqueItemIds = new Set<string>();
-  filteredOrders.forEach(o => o.items.forEach(item => uniqueItemIds.add(item.product.id)));
-  const uniqueItemsCount = adminStats ? adminStats.uniqueItemIds.length : uniqueItemIds.size;
+  filteredOrders.forEach(o => {
+    (o.items || []).forEach(item => {
+      if (item?.product?.id) {
+        uniqueItemIds.add(item.product.id);
+      }
+    });
+  });
+  const uniqueItemsCount = adminStats ? (adminStats.uniqueItemIds?.length || 0) : uniqueItemIds.size;
 
   // Product Sales Calculation
   const productSales = new Map<string, { product: Product, quantity: number }>();
@@ -1040,19 +1057,23 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
       Object.entries(adminStats.productSales).forEach(([productId, quantity]) => {
           const latestProduct = products.find(p => p.id === productId);
           if (latestProduct) {
-              productSales.set(productId, { product: latestProduct, quantity: quantity as number });
+              productSales.set(productId, { product: latestProduct, quantity: Number(quantity) || 0 });
           }
       });
   } else {
       filteredOrders.forEach(order => {
         if (order.status !== 'Canceled' && order.status !== 'Returned' && order.status !== 'Complete Return') {
-          order.items.forEach(item => {
-            const existing = productSales.get(item.product.id);
+          (order.items || []).forEach(item => {
+            const pId = item?.product?.id;
+            if (!pId) return;
+            const existing = productSales.get(pId);
             if (existing) {
-              existing.quantity += item.quantity;
+              existing.quantity += (item.quantity || 0);
             } else {
-              const latestProduct = products.find(p => p.id === item.product.id) || item.product;
-              productSales.set(item.product.id, { product: latestProduct, quantity: item.quantity });
+              const latestProduct = products.find(p => p.id === pId) || item.product;
+              if (latestProduct) {
+                productSales.set(pId, { product: latestProduct, quantity: (item.quantity || 0) });
+              }
             }
           });
         }
@@ -1060,7 +1081,7 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
   }
 
   const topProducts = Array.from(productSales.values())
-    .filter(p => p.quantity > 0)
+    .filter(p => p && p.product && p.quantity > 0)
     .sort((a, b) => b.quantity - a.quantity);
 
   const toggleProductSelection = (id: string) => {
