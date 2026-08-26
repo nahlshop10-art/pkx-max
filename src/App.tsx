@@ -1496,6 +1496,7 @@ export default function App() {
                         src={product.thumbnail || product.image} 
                         alt={product.title} 
                         loading="lazy"
+                        decoding="async"
                         className={cn(
                           "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
                           websiteSettings.productImageHover && product.images && product.images.length > 1 ? "group-hover:opacity-0" : "",
@@ -1507,6 +1508,7 @@ export default function App() {
                           src={product.thumbnails?.[1] || product.images[1]} 
                           alt={`${product.title} hover`} 
                           loading="lazy"
+                          decoding="async"
                           className={cn(
                             "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
                             hoveredProductId === product.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"
