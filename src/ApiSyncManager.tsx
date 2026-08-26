@@ -44,7 +44,10 @@ export function ApiSyncManager({ settings, setSettings, onClose }: ApiSyncManage
   };
 
   const handleConnect = async () => {
-    if (!connectedMasterUrl.trim() || !connectedMasterApiKey.trim()) {
+    const cleanUrl = connectedMasterUrl.trim().replace(/\/$/, "");
+    const cleanApiKey = connectedMasterApiKey.trim();
+
+    if (!cleanUrl || !cleanApiKey) {
       setConnectionStatus('error');
       setSyncMessage('Both Master Store URL and API Key are required.');
       return;
@@ -54,27 +57,43 @@ export function ApiSyncManager({ settings, setSettings, onClose }: ApiSyncManage
     setSyncMessage('');
     
     try {
-      const cleanUrl = connectedMasterUrl.trim().replace(/\/$/, "");
-      
       const res = await fetch(`${cleanUrl}/api/sync_check`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${connectedMasterApiKey.trim()}`
+          'Authorization': `Bearer ${cleanApiKey}`
         },
         body: JSON.stringify({ retailUrl: window.location.origin })
       });
       
       if (!res.ok) {
-        throw new Error(`Verification failed (Status: ${res.status})`);
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `Verification failed (Status: ${res.status})`);
       }
       
+      // Auto-save settings locally so database is immediately updated
+      const updated = {
+        ...settings,
+        apiSync: {
+          enabled: true,
+          isMaster: false,
+          masterApiKey,
+          connectedMasterUrl: cleanUrl,
+          connectedMasterApiKey: cleanApiKey
+        }
+      };
+      setSettings(updated);
+      setEnabled(true);
+      setIsMaster(false);
       setConnectedMasterUrl(cleanUrl);
+      setConnectedMasterApiKey(cleanApiKey);
+      await cloudStore.saveSetting('websiteSettings', updated);
+
       setConnectionStatus('success');
       setSyncMessage('Successfully connected to Master Wholesale Store!');
     } catch (err: any) {
       setConnectionStatus('error');
-      setSyncMessage('Failed to establish connection. Please verify the URL and API Key.');
+      setSyncMessage(err.message || 'Failed to establish connection. Please verify the URL and API Key.');
     }
   };
 
@@ -84,30 +103,39 @@ export function ApiSyncManager({ settings, setSettings, onClose }: ApiSyncManage
     
     try {
       const dbUrl = connectedMasterUrl.trim().replace(/\/$/, "");
+      const cleanApiKey = connectedMasterApiKey.trim();
       
       const res = await fetch(`${dbUrl}/api/sync_data`, {
         headers: {
-          'Authorization': `Bearer ${connectedMasterApiKey.trim()}`
+          'Authorization': `Bearer ${cleanApiKey}`
         }
       });
       
-      if (!res.ok) throw new Error('Failed to retrieve inventory data from Master');
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Failed to retrieve inventory data from Master');
+      }
       
       const data = await res.json();
       const products = data.products || [];
+      const categories = data.categories || [];
       
       const applyRes = await fetch('/api/sync_apply', {
         method: 'POST',
+        credentials: 'include',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${connectedMasterApiKey.trim()}`
+          'Authorization': `Bearer ${cleanApiKey}`
         },
-        body: JSON.stringify({ products })
+        body: JSON.stringify({ products, categories })
       });
       
-      if (!applyRes.ok) throw new Error('Failed to apply synced products locally');
+      if (!applyRes.ok) {
+        const errJson = await applyRes.json().catch(() => ({}));
+        throw new Error(errJson.error || 'Failed to apply synced products locally');
+      }
       
-      setSyncMessage(`Sync completed successfully! ${products.length} products updated.`);
+      setSyncMessage(`Sync completed successfully! ${products.length} products synced.`);
       setTimeout(() => {
         setSyncMessage('');
         window.location.reload();

@@ -43,9 +43,25 @@ export async function onRequest(context: any) {
   const storeSettings = storeSettingsRes.results.length > 0 ? JSON.parse(storeSettingsRes.results[0].value) : {};
 
   if (path === '/api/sync_apply') {
-    // sync_apply is called by Master using Master's API Key
-    if (!tokenFromHeader || !storeSettings?.apiSync?.connectedMasterApiKey || tokenFromHeader !== storeSettings.apiSync.connectedMasterApiKey) {
-       return new Response(JSON.stringify({ error: 'Unauthorized retail sync' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+    // 1. Check if called by logged-in admin
+    let isAdminAuth = false;
+    if (adminToken) {
+      try {
+        const secret = new TextEncoder().encode(env.JWT_SECRET || 'default_secret_change_in_production');
+        await jwtVerify(adminToken, secret);
+        isAdminAuth = true;
+      } catch (e) {}
+    }
+
+    // 2. Check if called by Master using Master API Key
+    const isMasterKeyAuth = Boolean(
+      tokenFromHeader && 
+      storeSettings?.apiSync?.connectedMasterApiKey && 
+      tokenFromHeader.trim() === storeSettings.apiSync.connectedMasterApiKey.trim()
+    );
+
+    if (!isAdminAuth && !isMasterKeyAuth) {
+      return new Response(JSON.stringify({ error: 'Unauthorized retail sync' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
     }
     return next();
   }

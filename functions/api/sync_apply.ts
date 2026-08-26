@@ -11,8 +11,8 @@ export async function onRequestPost(context: any) {
 
     // Handle deletes
     if (deletedIds && Array.isArray(deletedIds) && deletedIds.length > 0 && !isStockOnly) {
-        for (let i = 0; i < deletedIds.length; i += 50) {
-            const chunkIds = deletedIds.slice(i, i + 50);
+        for (let i = 0; i < deletedIds.length; i += 25) {
+            const chunkIds = deletedIds.slice(i, i + 25);
             const placeholders = chunkIds.map(() => '?').join(',');
             stmts.push(env.DB.prepare(`DELETE FROM products WHERE id IN (${placeholders})`).bind(...chunkIds));
             count += chunkIds.length;
@@ -24,12 +24,14 @@ export async function onRequestPost(context: any) {
         const productIds = products.map((p: any) => p.id);
         const currentProducts = new Map();
         
-        for (let i = 0; i < productIds.length; i += 50) {
-            const chunkIds = productIds.slice(i, i + 50);
+        for (let i = 0; i < productIds.length; i += 25) {
+            const chunkIds = productIds.slice(i, i + 25);
             const placeholders = chunkIds.map(() => '?').join(',');
             const res = await env.DB.prepare(`SELECT id, data FROM products WHERE id IN (${placeholders})`).bind(...chunkIds).all();
-            for (const r of res.results) {
-                currentProducts.set(String(r.id), JSON.parse(r.data));
+            for (const r of (res.results || [])) {
+                try {
+                    currentProducts.set(String(r.id), JSON.parse(r.data));
+                } catch (e) {}
             }
         }
         
@@ -76,9 +78,6 @@ export async function onRequestPost(context: any) {
                         merged.price = current.price;
                         merged.autoPrice = false;
                         merged.customPrice = current.customPrice;
-                    } else if (current.customPrice && current.autoPrice) {
-                       // if autoPrice is true, it uses the global margin formula in the UI. 
-                       // But the master's price should be overwritten by the formula in the frontend, so we just take master's price.
                     }
                     
                     if (merged.variants && current.variants) {
@@ -108,27 +107,45 @@ export async function onRequestPost(context: any) {
         }
     }
     
+    // Batch execute statements in chunks of 25 (safe for Cloudflare D1 40-statement limit)
     if (stmts.length > 0) {
-        for (let i = 0; i < stmts.length; i += 50) {
-          const chunk = stmts.slice(i, i + 50);
+        for (let i = 0; i < stmts.length; i += 25) {
+          const chunk = stmts.slice(i, i + 25);
           await env.DB.batch(chunk);
         }
     }
     
-    // Invalidate cache
-    const cache = (caches as any).default;
-    const url = new URL('/api/public_state', request.url);
-    if (context.waitUntil) {
-      context.waitUntil(cache.delete(new Request(url.toString())));
-    } else {
-      await cache.delete(new Request(url.toString()));
+    // Optional category sync if provided
+    if (data.categories && Array.isArray(data.categories) && data.categories.length > 0 && !isStockOnly) {
+      try {
+        const storeSettingsRes = await env.DB.prepare("SELECT value FROM settings WHERE key = 'websiteSettings'").first();
+        if (storeSettingsRes && storeSettingsRes.value) {
+          const storeSettings = JSON.parse(storeSettingsRes.value as string);
+          if (!storeSettings.categories || storeSettings.categories.length === 0) {
+            storeSettings.categories = data.categories;
+            await env.DB.prepare("INSERT INTO settings (key, value) VALUES ('websiteSettings', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value")
+              .bind(JSON.stringify(storeSettings)).run();
+          }
+        }
+      } catch (e) {}
     }
+    
+    // Invalidate cache
+    try {
+      const cache = (caches as any).default;
+      const url = new URL('/api/public_state', request.url);
+      if (context.waitUntil) {
+        context.waitUntil(cache.delete(new Request(url.toString())));
+      } else {
+        await cache.delete(new Request(url.toString()));
+      }
+    } catch (e) {}
     
     return new Response(JSON.stringify({ success: true, processed: count }), {
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
   } catch (error: any) {
-    return new Response(JSON.stringify({ error: error.message }), { 
+    return new Response(JSON.stringify({ error: error.message || 'Internal sync error' }), { 
       status: 500,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
