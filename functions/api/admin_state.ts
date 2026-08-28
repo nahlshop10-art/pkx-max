@@ -2,15 +2,6 @@ import { replaceUploadUrls } from './_domain';
 export async function onRequestGet(context: any) {
   const { env } = context;
   try {
-    // Ensure table exists for migration
-    await env.DB.prepare('CREATE TABLE IF NOT EXISTS customers (id TEXT PRIMARY KEY, data TEXT, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)').run();
-
-    // D1 Performance Optimization (Runs safely using IF NOT EXISTS)
-    try {
-        await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_orders_id_int ON orders(cast(id as integer))').run();
-        await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_orders_updated_at ON orders(updated_at)').run();
-    } catch (e) {}
-
     const settingsRes = await env.DB.prepare('SELECT value FROM settings WHERE key = ?').bind('adminUsers').all();
     const customersRes = await env.DB.prepare('SELECT data FROM customers ORDER BY updated_at DESC LIMIT 2000').all();
     const allSettingsRes = await env.DB.prepare('SELECT key, value FROM settings').all();

@@ -39,10 +39,10 @@ export async function onRequest(context: any) {
   const cookies = Object.fromEntries(cookieHeader.split(';').map(c => c.trim().split('=')));
   const adminToken = cookies['admin_token'];
 
-  const storeSettingsRes = await env.DB.prepare('SELECT value FROM settings WHERE key = ?').bind('websiteSettings').all();
-  const storeSettings = storeSettingsRes.results.length > 0 ? JSON.parse(storeSettingsRes.results[0].value) : {};
-
   if (path === '/api/sync_apply') {
+    const storeSettingsRes = await env.DB.prepare('SELECT value FROM settings WHERE key = ?').bind('websiteSettings').all();
+    const storeSettings = storeSettingsRes.results.length > 0 ? JSON.parse(storeSettingsRes.results[0].value) : {};
+
     // 1. Check if called by logged-in admin
     let isAdminAuth = false;
     if (adminToken) {
