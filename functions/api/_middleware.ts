@@ -25,7 +25,8 @@ export async function onRequest(context: any) {
     '/api/facebook',
     '/api/tiktok',
     '/api/ga4',
-    '/api/send_telegram'
+    '/api/send_telegram',
+    '/api/proxy_image'
   ];
 
   if (publicPaths.includes(path)) {

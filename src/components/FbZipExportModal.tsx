@@ -10,7 +10,9 @@ import {
   Layers, 
   SlidersHorizontal,
   ChevronDown,
-  Info
+  Info,
+  Sparkles,
+  Image as ImageIcon
 } from 'lucide-react';
 import JSZip from 'jszip';
 import { Product, Category } from '../types';
@@ -90,20 +92,20 @@ function getExtension(url: string, blob?: Blob): string {
   if (match) {
     return match[0].toLowerCase();
   }
-  return '.jpg';
+  return '.webp';
 }
 
 /**
- * Fetch image with timeout and fallback
+ * Fetch original high-res image via internal CORS proxy or direct
  */
-async function fetchImageBlob(url: string): Promise<{ blob: Blob; ext: string } | null> {
+async function fetchHighResImageBlob(url: string): Promise<{ blob: Blob; ext: string } | null> {
   if (!url) return null;
 
   try {
     // 1. Handle base64 data URI
     if (url.startsWith('data:image/')) {
       const parts = url.split(',');
-      const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+      const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/webp';
       const bstr = atob(parts[1]);
       let n = bstr.length;
       const u8arr = new Uint8Array(n);
@@ -114,20 +116,34 @@ async function fetchImageBlob(url: string): Promise<{ blob: Blob; ext: string } 
       return { blob, ext: getExtension(url, blob) };
     }
 
-    // 2. Direct fetch with timeout
+    // 2. Fetch via internal server proxy (/api/proxy_image) to bypass CORS and get original full-res file
+    const proxyEndpoint = `/api/proxy_image?url=${encodeURIComponent(url)}`;
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
 
-    const fullUrl = url.startsWith('/') ? `${window.location.origin}${url}` : url;
-    const response = await fetch(fullUrl, { signal: controller.signal, mode: 'cors' });
-    clearTimeout(timeoutId);
+    try {
+      const proxyRes = await fetch(proxyEndpoint, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (proxyRes.ok) {
+        const blob = await proxyRes.blob();
+        if (blob && blob.size > 0) {
+          return { blob, ext: getExtension(url, blob) };
+        }
+      }
+    } catch (proxyErr) {
+      console.warn('Proxy fetch failed, attempting direct fetch...', proxyErr);
+    }
 
-    if (response.ok) {
-      const blob = await response.blob();
-      return { blob, ext: getExtension(url, blob) };
+    // 3. Fallback: direct fetch
+    const directRes = await fetch(url, { mode: 'cors' });
+    if (directRes.ok) {
+      const blob = await directRes.blob();
+      if (blob && blob.size > 0) {
+        return { blob, ext: getExtension(url, blob) };
+      }
     }
   } catch (e) {
-    // Fallback: load via HTMLImageElement and render to canvas
+    // 4. Ultimate fallback: Canvas drawing
     try {
       const blob = await new Promise<Blob | null>((resolve) => {
         const img = new Image();
@@ -140,7 +156,7 @@ async function fetchImageBlob(url: string): Promise<{ blob: Blob; ext: string } 
             const ctx = canvas.getContext('2d');
             if (!ctx) return resolve(null);
             ctx.drawImage(img, 0, 0);
-            canvas.toBlob((b) => resolve(b), 'image/jpeg', 0.95);
+            canvas.toBlob((b) => resolve(b), 'image/webp', 0.95);
           } catch {
             resolve(null);
           }
@@ -149,8 +165,8 @@ async function fetchImageBlob(url: string): Promise<{ blob: Blob; ext: string } 
         img.src = url;
       });
 
-      if (blob) {
-        return { blob, ext: '.jpg' };
+      if (blob && blob.size > 0) {
+        return { blob, ext: '.webp' };
       }
     } catch {
       // Ignored
@@ -169,6 +185,7 @@ export default function FbZipExportModal({
   const [moqDiscount, setMoqDiscount] = useState<number>(5);
   const [fallbackCategory, setFallbackCategory] = useState<string>('GENERAL');
   const [folderNaming, setFolderNaming] = useState<'sequential' | 'productId'>('sequential');
+  const [maxImagesPerProduct, setMaxImagesPerProduct] = useState<number>(3);
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [selectedPreviewIndex, setSelectedPreviewIndex] = useState<number>(0);
 
@@ -204,6 +221,24 @@ export default function FbZipExportModal({
     return generateProductCaption(sampleProduct, categories, moqDiscount, fallbackCategory);
   }, [sampleProduct, categories, moqDiscount, fallbackCategory]);
 
+  // Estimate total images
+  const estimatedImagesCount = useMemo(() => {
+    let count = 0;
+    for (const p of inStockProducts) {
+      let prodImgCount = 0;
+      if (p.image) prodImgCount++;
+      if (Array.isArray(p.images)) {
+        for (const img of p.images) {
+          if (img && img !== p.image) prodImgCount++;
+        }
+      }
+      if (prodImgCount === 0 && p.thumbnail) prodImgCount++;
+      const limited = maxImagesPerProduct > 0 ? Math.min(prodImgCount, maxImagesPerProduct) : prodImgCount;
+      count += limited;
+    }
+    return count;
+  }, [inStockProducts, maxImagesPerProduct]);
+
   const handleStartExport = async () => {
     if (inStockProducts.length === 0) {
       alert('No in-stock products found to export.');
@@ -224,7 +259,7 @@ export default function FbZipExportModal({
       let totalImages = 0;
       let completedProducts = 0;
 
-      // Process in concurrent batches of 4 products to avoid browser network limits
+      // Process in batches of 4 products to maintain responsive UI
       const CONCURRENCY = 4;
       for (let i = 0; i < total; i += CONCURRENCY) {
         if (cancelRef.current) {
@@ -243,30 +278,41 @@ export default function FbZipExportModal({
           const folder = datasetFolder.folder(folderName);
           if (!folder) return;
 
-          // 1. Generate text.txt
+          // 1. Generate formatted caption (text.txt)
           const caption = generateProductCaption(prod, categories, moqDiscount, fallbackCategory);
           folder.file('text.txt', caption);
 
-          // 2. Collect unique image URLs
-          const imgUrls: string[] = [];
-          if (prod.image) imgUrls.push(prod.image);
+          // 2. Collect ORIGINAL high-resolution image URLs (avoid thumbnails for max quality)
+          const highResImgUrls: string[] = [];
+          if (prod.image && !prod.image.includes('thumb_')) {
+            highResImgUrls.push(prod.image);
+          }
           if (Array.isArray(prod.images)) {
             for (const img of prod.images) {
-              if (img && !imgUrls.includes(img)) {
-                imgUrls.push(img);
+              if (img && !img.includes('thumb_') && !highResImgUrls.includes(img)) {
+                highResImgUrls.push(img);
               }
             }
           }
-          if (imgUrls.length === 0 && prod.thumbnail) {
-            imgUrls.push(prod.thumbnail);
+          // Fallback if main image was not present
+          if (highResImgUrls.length === 0 && prod.image) {
+            highResImgUrls.push(prod.image);
+          }
+          if (highResImgUrls.length === 0 && prod.thumbnail) {
+            highResImgUrls.push(prod.thumbnail);
           }
 
-          // 3. Download product images
+          // Apply Max Images Per Product limiter
+          const selectedImgUrls = maxImagesPerProduct > 0 
+            ? highResImgUrls.slice(0, maxImagesPerProduct)
+            : highResImgUrls;
+
+          // 3. Download product images in original high quality
           let imgSeq = 1;
-          for (const url of imgUrls) {
+          for (const url of selectedImgUrls) {
             if (cancelRef.current) return;
-            const res = await fetchImageBlob(url);
-            if (res) {
+            const res = await fetchHighResImageBlob(url);
+            if (res && res.blob) {
               const filename = `image_${imgSeq}${res.ext}`;
               folder.file(filename, res.blob);
               totalImages++;
@@ -280,7 +326,7 @@ export default function FbZipExportModal({
           setStatusMessage(`Packaging product ${completedProducts}/${total}: "${prod.title.slice(0, 24)}..."`);
         }));
 
-        // Allow UI thread to breathe
+        // Allow browser UI to update
         await new Promise(r => setTimeout(r, 10));
       }
 
@@ -290,7 +336,7 @@ export default function FbZipExportModal({
       }
 
       // Generate final ZIP file
-      setStatusMessage('Compressing and generating .ZIP file...');
+      setStatusMessage('Compressing and generating high-res .ZIP package...');
       setProgressPercent(95);
 
       const zipBlob = await zip.generateAsync(
@@ -356,7 +402,7 @@ export default function FbZipExportModal({
                   In-Stock Only
                 </span>
               </h2>
-              <p className="text-xs text-gray-400">FB Messenger Automation App Dataset Exporter</p>
+              <p className="text-xs text-gray-400">High-Res Images &amp; Captions for FB Messenger Auto-Sender</p>
             </div>
           </div>
           <button 
@@ -393,12 +439,13 @@ export default function FbZipExportModal({
               </div>
             </div>
 
-            <div className="col-span-2 sm:col-span-1 bg-[var(--dash-bg)]/80 border border-[var(--dash-border)]/60 rounded-2xl p-3.5 flex flex-col justify-between">
-              <span className="text-xs font-medium text-gray-400 flex items-center gap-1.5">
-                <Layers size={14} className="text-blue-400" /> Structure
+            <div className="col-span-2 sm:col-span-1 bg-[var(--dash-bg)]/80 border border-blue-500/30 rounded-2xl p-3.5 flex flex-col justify-between">
+              <span className="text-xs font-medium text-blue-400 flex items-center gap-1.5">
+                <ImageIcon size={14} /> High-Res Pics
               </span>
               <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-sm font-bold text-white font-mono">1/, 2/, 3/...</span>
+                <span className="text-2xl font-black text-white">~{estimatedImagesCount}</span>
+                <span className="text-xs text-gray-400">images</span>
               </div>
             </div>
           </div>
@@ -411,7 +458,7 @@ export default function FbZipExportModal({
                 style={{ borderColor: `${themePrimary}30`, borderTopColor: themePrimary }}
               />
               <div className="space-y-1 max-w-md">
-                <h3 className="text-base font-bold text-white">Preparing ZIP Dataset</h3>
+                <h3 className="text-base font-bold text-white">Downloading Images &amp; Packaging Dataset</h3>
                 <p className="text-xs text-gray-400 truncate">{statusMessage}</p>
               </div>
 
@@ -449,7 +496,7 @@ export default function FbZipExportModal({
               </div>
               <h3 className="text-lg font-bold text-white">Export Completed Successfully!</h3>
               <p className="text-xs text-emerald-300 max-w-md">
-                Downloaded <span className="font-bold">{exportedCount} in-stock products</span> with <span className="font-bold">{totalImagesExported} images</span> formatted for Facebook Messenger auto-sender.
+                Downloaded <span className="font-bold">{exportedCount} in-stock products</span> with <span className="font-bold">{totalImagesExported} high-resolution images</span> formatted for Facebook Messenger auto-sender.
               </p>
               <div className="pt-2 flex gap-3">
                 <button
@@ -486,9 +533,62 @@ export default function FbZipExportModal({
             </div>
           )}
 
-          {/* Live Preview Section (Idle State) */}
+          {/* Configuration & Controls Section (Idle State) */}
           {exportState === 'idle' && (
             <>
+              {/* Max Pictures Limit Control (Requested by user) */}
+              <div className="bg-[var(--dash-bg)]/90 border border-blue-500/30 rounded-2xl p-4 space-y-3 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon size={18} className="text-blue-400" />
+                    <div>
+                      <h4 className="text-xs font-bold text-white uppercase tracking-wider">Max Pictures per Product</h4>
+                      <p className="text-[11px] text-gray-400">If a product has multiple gallery styles, limits how many images to export per folder.</p>
+                    </div>
+                  </div>
+
+                  {/* Quick Preset Buttons */}
+                  <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                    {[1, 2, 3, 5, 0].map((count) => (
+                      <button
+                        key={count}
+                        type="button"
+                        onClick={() => setMaxImagesPerProduct(count)}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                          maxImagesPerProduct === count 
+                            ? 'bg-blue-500 text-white shadow-sm' 
+                            : 'bg-white/5 hover:bg-white/10 text-gray-300'
+                        }`}
+                      >
+                        {count === 0 ? 'All' : count}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 pt-1">
+                  <div className="flex-1">
+                    <input 
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={maxImagesPerProduct === 0 ? '' : maxImagesPerProduct}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                        setMaxImagesPerProduct(isNaN(val) ? 0 : Math.max(0, val));
+                      }}
+                      placeholder="0 = Download all pictures"
+                      className="w-full bg-[var(--dash-card)] text-white border border-[var(--dash-border)] rounded-xl px-3.5 py-2 font-mono text-xs focus:border-blue-500 outline-none"
+                    />
+                  </div>
+                  <span className="text-xs text-blue-300/80 font-mono shrink-0">
+                    {maxImagesPerProduct === 0 
+                      ? 'Downloading all uploaded photos' 
+                      : `Saving up to ${maxImagesPerProduct} high-res photos per product`}
+                  </span>
+                </div>
+              </div>
+
               {/* Live Caption & Folder Preview Box */}
               <div className="bg-[var(--dash-bg)]/90 border border-[var(--dash-border)]/80 rounded-2xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
@@ -552,12 +652,15 @@ export default function FbZipExportModal({
               <div className="bg-[var(--dash-bg)]/40 border border-white/5 rounded-2xl p-4">
                 <h4 className="text-xs font-semibold text-gray-300 mb-2 flex items-center gap-1.5">
                   <Info size={14} className="text-blue-400" />
-                  Dataset Archive Specification
+                  Dataset Archive Structure
                 </h4>
                 <div className="font-mono text-[11px] text-gray-400 space-y-1 pl-1">
                   <div>📁 <span className="text-gray-200">export_dataset/</span></div>
                   <div className="pl-4">├── 📁 <span className="text-cyan-300">1/</span> (Product 1)</div>
-                  <div className="pl-8">├── 🖼️ <span className="text-amber-200">image_1.jpg</span> (Original high-res)</div>
+                  <div className="pl-8">├── 🖼️ <span className="text-amber-200">image_1.webp</span> (Original High-Res)</div>
+                  {maxImagesPerProduct !== 1 && (
+                    <div className="pl-8">├── 🖼️ <span className="text-amber-200">image_2.webp</span> (Gallery Photo)</div>
+                  )}
                   <div className="pl-8">└── 📄 <span className="text-emerald-300">text.txt</span> (Formatted caption)</div>
                   <div className="pl-4">├── 📁 <span className="text-cyan-300">2/</span> (Product 2)</div>
                   <div className="pl-8">└── ...</div>
@@ -667,7 +770,7 @@ export default function FbZipExportModal({
               className="flex-1 py-3 px-5 rounded-2xl font-bold text-xs sm:text-sm hover:brightness-110 active:scale-[0.99] transition-all shadow-lg flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Download size={18} strokeWidth={2.2} />
-              <span>Download Fb Zip ({inStockProducts.length} In-Stock)</span>
+              <span>Download Fb Zip ({inStockProducts.length} In-Stock Products)</span>
             </button>
           )}
         </div>
