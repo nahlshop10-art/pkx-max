@@ -168,12 +168,6 @@ __name(onRequestGet, "onRequestGet");
 async function onRequestGet2(context) {
   const { env } = context;
   try {
-    await env.DB.prepare("CREATE TABLE IF NOT EXISTS customers (id TEXT PRIMARY KEY, data TEXT, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)").run();
-    try {
-      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_orders_id_int ON orders(cast(id as integer))").run();
-      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_orders_updated_at ON orders(updated_at)").run();
-    } catch (e) {
-    }
     const settingsRes = await env.DB.prepare("SELECT value FROM settings WHERE key = ?").bind("adminUsers").all();
     const customersRes = await env.DB.prepare("SELECT data FROM customers ORDER BY updated_at DESC LIMIT 2000").all();
     const allSettingsRes = await env.DB.prepare("SELECT key, value FROM settings").all();
@@ -2712,8 +2706,9 @@ __name(onRequestPost13, "onRequestPost");
 async function onRequestGet4(context) {
   const { request, env, waitUntil } = context;
   const cache2 = caches.default;
+  const cacheKey = new Request(new URL("/api/public_state", request.url).toString());
   try {
-    let response = await cache2.match(request);
+    let response = await cache2.match(cacheKey);
     if (response) {
       return response;
     }
@@ -2772,7 +2767,7 @@ async function onRequestGet4(context) {
       }
     });
     if (waitUntil && typeof waitUntil === "function") {
-      waitUntil(cache2.put(request, response.clone()));
+      waitUntil(cache2.put(cacheKey, response.clone()));
     }
     return response;
   } catch (error) {
@@ -2969,8 +2964,8 @@ async function onRequestPost18(context) {
     const stmts = [];
     let count = 0;
     if (deletedIds && Array.isArray(deletedIds) && deletedIds.length > 0 && !isStockOnly) {
-      for (let i = 0; i < deletedIds.length; i += 50) {
-        const chunkIds = deletedIds.slice(i, i + 50);
+      for (let i = 0; i < deletedIds.length; i += 25) {
+        const chunkIds = deletedIds.slice(i, i + 25);
         const placeholders = chunkIds.map(() => "?").join(",");
         stmts.push(env.DB.prepare(`DELETE FROM products WHERE id IN (${placeholders})`).bind(...chunkIds));
         count += chunkIds.length;
@@ -2979,12 +2974,15 @@ async function onRequestPost18(context) {
     if (products && Array.isArray(products)) {
       const productIds = products.map((p) => p.id);
       const currentProducts = /* @__PURE__ */ new Map();
-      for (let i = 0; i < productIds.length; i += 50) {
-        const chunkIds = productIds.slice(i, i + 50);
+      for (let i = 0; i < productIds.length; i += 25) {
+        const chunkIds = productIds.slice(i, i + 25);
         const placeholders = chunkIds.map(() => "?").join(",");
         const res = await env.DB.prepare(`SELECT id, data FROM products WHERE id IN (${placeholders})`).bind(...chunkIds).all();
-        for (const r of res.results) {
-          currentProducts.set(String(r.id), JSON.parse(r.data));
+        for (const r of res.results || []) {
+          try {
+            currentProducts.set(String(r.id), JSON.parse(r.data));
+          } catch (e) {
+          }
         }
       }
       for (const p of products) {
@@ -3024,7 +3022,6 @@ async function onRequestPost18(context) {
               merged.price = current.price;
               merged.autoPrice = false;
               merged.customPrice = current.customPrice;
-            } else if (current.customPrice && current.autoPrice) {
             }
             if (merged.variants && current.variants) {
               merged.variants = merged.variants.map((mv) => {
@@ -3049,23 +3046,39 @@ async function onRequestPost18(context) {
       }
     }
     if (stmts.length > 0) {
-      for (let i = 0; i < stmts.length; i += 50) {
-        const chunk = stmts.slice(i, i + 50);
+      for (let i = 0; i < stmts.length; i += 25) {
+        const chunk = stmts.slice(i, i + 25);
         await env.DB.batch(chunk);
       }
     }
-    const cache2 = caches.default;
-    const url = new URL("/api/public_state", request.url);
-    if (context.waitUntil) {
-      context.waitUntil(cache2.delete(new Request(url.toString())));
-    } else {
-      await cache2.delete(new Request(url.toString()));
+    if (data.categories && Array.isArray(data.categories) && data.categories.length > 0 && !isStockOnly) {
+      try {
+        const storeSettingsRes = await env.DB.prepare("SELECT value FROM settings WHERE key = 'websiteSettings'").first();
+        if (storeSettingsRes && storeSettingsRes.value) {
+          const storeSettings = JSON.parse(storeSettingsRes.value);
+          if (!storeSettings.categories || storeSettings.categories.length === 0) {
+            storeSettings.categories = data.categories;
+            await env.DB.prepare("INSERT INTO settings (key, value) VALUES ('websiteSettings', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(storeSettings)).run();
+          }
+        }
+      } catch (e) {
+      }
+    }
+    try {
+      const cache2 = caches.default;
+      const url = new URL("/api/public_state", request.url);
+      if (context.waitUntil) {
+        context.waitUntil(cache2.delete(new Request(url.toString())));
+      } else {
+        await cache2.delete(new Request(url.toString()));
+      }
+    } catch (e) {
     }
     return new Response(JSON.stringify({ success: true, processed: count }), {
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error.message || "Internal sync error" }), {
       status: 500,
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
     });
@@ -3477,10 +3490,22 @@ async function onRequest(context) {
   const cookieHeader = request.headers.get("Cookie") || "";
   const cookies = Object.fromEntries(cookieHeader.split(";").map((c) => c.trim().split("=")));
   const adminToken = cookies["admin_token"];
-  const storeSettingsRes = await env.DB.prepare("SELECT value FROM settings WHERE key = ?").bind("websiteSettings").all();
-  const storeSettings = storeSettingsRes.results.length > 0 ? JSON.parse(storeSettingsRes.results[0].value) : {};
   if (path === "/api/sync_apply") {
-    if (!tokenFromHeader || !storeSettings?.apiSync?.connectedMasterApiKey || tokenFromHeader !== storeSettings.apiSync.connectedMasterApiKey) {
+    const storeSettingsRes = await env.DB.prepare("SELECT value FROM settings WHERE key = ?").bind("websiteSettings").all();
+    const storeSettings = storeSettingsRes.results.length > 0 ? JSON.parse(storeSettingsRes.results[0].value) : {};
+    let isAdminAuth = false;
+    if (adminToken) {
+      try {
+        const secret = new TextEncoder().encode(env.JWT_SECRET || "default_secret_change_in_production");
+        await jwtVerify(adminToken, secret);
+        isAdminAuth = true;
+      } catch (e) {
+      }
+    }
+    const isMasterKeyAuth = Boolean(
+      tokenFromHeader && storeSettings?.apiSync?.connectedMasterApiKey && tokenFromHeader.trim() === storeSettings.apiSync.connectedMasterApiKey.trim()
+    );
+    if (!isAdminAuth && !isMasterKeyAuth) {
       return new Response(JSON.stringify({ error: "Unauthorized retail sync" }), { status: 401, headers: { "Content-Type": "application/json" } });
     }
     return next();
@@ -3513,7 +3538,7 @@ async function onRequest(context) {
 }
 __name(onRequest, "onRequest");
 
-// ../.wrangler/tmp/pages-cRxkFt/functionsRoutes-0.7219460681253955.mjs
+// ../.wrangler/tmp/pages-kbcufM/functionsRoutes-0.5236531707343102.mjs
 var routes = [
   {
     routePath: "/api/admin_orders",
@@ -3741,7 +3766,7 @@ var routes = [
   }
 ];
 
-// ../../../.npm/_npx/32026684e21afda6/node_modules/path-to-regexp/dist.es2015/index.js
+// ../../../.npm/_npx/38f3295754dfa028/node_modules/path-to-regexp/dist.es2015/index.js
 function lexer(str) {
   var tokens = [];
   var i = 0;
@@ -4067,7 +4092,7 @@ function pathToRegexp(path, keys, options) {
 }
 __name(pathToRegexp, "pathToRegexp");
 
-// ../../../.npm/_npx/32026684e21afda6/node_modules/wrangler/templates/pages-template-worker.ts
+// ../../../.npm/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
 var escapeRegex = /[.+?^${}()|[\]\\]/g;
 function* executeRequest(request) {
   const requestPath = new URL(request.url).pathname;

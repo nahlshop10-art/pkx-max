@@ -1,27 +1,29 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  X, 
+  ChevronLeft, 
   Download, 
   FileText, 
   FolderArchive, 
   CheckCircle2, 
   AlertCircle, 
-  SlidersHorizontal,
-  ChevronDown,
-  Info,
-  Sparkles,
   Image as ImageIcon,
-  Eye,
-  Settings2
+  DollarSign,
+  FolderTree,
+  Check,
+  Sparkles,
+  Layers,
+  ArrowDownToLine,
+  RefreshCw
 } from 'lucide-react';
 import JSZip from 'jszip';
-import { Product, Category } from '../types';
+import { Product, Category, WebsiteSettings } from '../types';
 
 interface FbZipExportModalProps {
   onClose: () => void;
   products: Product[];
   categories: Category[];
+  websiteSettings?: WebsiteSettings;
   themePrimary?: string;
 }
 
@@ -50,7 +52,6 @@ export function generateProductCaption(
   moqDiscount: number = 5,
   fallbackCategory: string = 'GENERAL'
 ): string {
-  // 1. Primary category name converted to UPPERCASE
   let catName = fallbackCategory;
   if (product.category) {
     const foundCat = categories.find(
@@ -63,24 +64,12 @@ export function generateProductCaption(
   }
   const categoryUpper = catName.toUpperCase();
 
-  // 2. Selling price
   const price = Math.round(Number(product.price) || 0);
-
-  // 3. MOQ-6 Price (Price - discount)
   const moqPrice = Math.max(0, price - moqDiscount);
 
-  // Exact format:
-  // {CATEGORY_NAME_IN_UPPERCASE}
-  // ┈┈┈┈┈┈┈┈┈┈
-  // {PRICE} TK / PER PIECES 
-  // {MOQ_PRICE} TK / MOQ-6
-  // ┈┈┈┈┈┈┈┈┈┈
   return `${categoryUpper}\n${DIVIDER_LINE}\n${price} TK / PER PIECES \n${moqPrice} TK / MOQ-6\n${DIVIDER_LINE}`;
 }
 
-/**
- * Helper to get extension from URL or Blob mime
- */
 function getExtension(url: string, blob?: Blob): string {
   if (blob && blob.type) {
     if (blob.type.includes('png')) return '.png';
@@ -96,14 +85,10 @@ function getExtension(url: string, blob?: Blob): string {
   return '.webp';
 }
 
-/**
- * Fetch original high-res image via internal CORS proxy or direct
- */
 async function fetchHighResImageBlob(url: string): Promise<{ blob: Blob; ext: string } | null> {
   if (!url) return null;
 
   try {
-    // 1. Handle base64 data URI
     if (url.startsWith('data:image/')) {
       const parts = url.split(',');
       const mime = parts[0].match(/:(.*?);/)?.[1] || 'image/webp';
@@ -117,7 +102,6 @@ async function fetchHighResImageBlob(url: string): Promise<{ blob: Blob; ext: st
       return { blob, ext: getExtension(url, blob) };
     }
 
-    // 2. Fetch via internal server proxy (/api/proxy_image) to bypass CORS and get original full-res file
     const proxyEndpoint = `/api/proxy_image?url=${encodeURIComponent(url)}`;
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 12000);
@@ -132,10 +116,9 @@ async function fetchHighResImageBlob(url: string): Promise<{ blob: Blob; ext: st
         }
       }
     } catch (proxyErr) {
-      console.warn('Proxy fetch failed, attempting direct fetch...', proxyErr);
+      console.warn('Proxy fetch fallback to direct fetch', proxyErr);
     }
 
-    // 3. Fallback: direct fetch
     const directRes = await fetch(url, { mode: 'cors' });
     if (directRes.ok) {
       const blob = await directRes.blob();
@@ -144,7 +127,6 @@ async function fetchHighResImageBlob(url: string): Promise<{ blob: Blob; ext: st
       }
     }
   } catch (e) {
-    // 4. Ultimate fallback: Canvas drawing
     try {
       const blob = await new Promise<Blob | null>((resolve) => {
         const img = new Image();
@@ -181,15 +163,17 @@ export default function FbZipExportModal({
   onClose, 
   products, 
   categories, 
+  websiteSettings,
   themePrimary = '#ff4d6d' 
 }: FbZipExportModalProps) {
+  const primaryColor = websiteSettings?.themeColors?.primary || themePrimary || '#ff4d6d';
+
   const [moqDiscount, setMoqDiscount] = useState<number>(5);
   const [fallbackCategory, setFallbackCategory] = useState<string>('GENERAL');
   const [folderNaming, setFolderNaming] = useState<'sequential' | 'productId'>('sequential');
   const [maxImagesPerProduct, setMaxImagesPerProduct] = useState<number>(3);
-  const [isCustomCount, setIsCustomCount] = useState<boolean>(false);
-  const [showPreview, setShowPreview] = useState<boolean>(false);
-  const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
+  const [customImageLimit, setCustomImageLimit] = useState<string>('3');
+  const [isCustomMode, setIsCustomMode] = useState<boolean>(false);
   const [selectedPreviewIndex, setSelectedPreviewIndex] = useState<number>(0);
 
   const [exportState, setExportState] = useState<'idle' | 'exporting' | 'success' | 'error'>('idle');
@@ -242,6 +226,21 @@ export default function FbZipExportModal({
     return count;
   }, [inStockProducts, maxImagesPerProduct]);
 
+  const handleSelectPreset = (count: number) => {
+    setIsCustomMode(false);
+    setMaxImagesPerProduct(count);
+  };
+
+  const handleCustomChange = (val: string) => {
+    setCustomImageLimit(val);
+    const parsed = parseInt(val, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+      setMaxImagesPerProduct(Math.min(50, parsed));
+    } else if (val === '0') {
+      setMaxImagesPerProduct(0);
+    }
+  };
+
   const handleStartExport = async () => {
     if (inStockProducts.length === 0) {
       alert('No in-stock products found to export.');
@@ -251,7 +250,7 @@ export default function FbZipExportModal({
     cancelRef.current = false;
     setExportState('exporting');
     setProgressPercent(0);
-    setStatusMessage('Initializing ZIP archive...');
+    setStatusMessage('Preparing ZIP file...');
     setErrorMessage('');
 
     try {
@@ -262,7 +261,6 @@ export default function FbZipExportModal({
       let totalImages = 0;
       let completedProducts = 0;
 
-      // Process in batches of 4 products to maintain responsive UI
       const CONCURRENCY = 4;
       for (let i = 0; i < total; i += CONCURRENCY) {
         if (cancelRef.current) {
@@ -281,11 +279,11 @@ export default function FbZipExportModal({
           const folder = datasetFolder.folder(folderName);
           if (!folder) return;
 
-          // 1. Generate formatted caption (text.txt)
+          // 1. Write text.txt
           const caption = generateProductCaption(prod, categories, moqDiscount, fallbackCategory);
           folder.file('text.txt', caption);
 
-          // 2. Collect ORIGINAL high-resolution image URLs (avoid thumbnails for max quality)
+          // 2. Collect high-res photos
           const highResImgUrls: string[] = [];
           if (prod.image && !prod.image.includes('thumb_')) {
             highResImgUrls.push(prod.image);
@@ -297,7 +295,6 @@ export default function FbZipExportModal({
               }
             }
           }
-          // Fallback if main image was not present
           if (highResImgUrls.length === 0 && prod.image) {
             highResImgUrls.push(prod.image);
           }
@@ -305,12 +302,11 @@ export default function FbZipExportModal({
             highResImgUrls.push(prod.thumbnail);
           }
 
-          // Apply Max Images Per Product limiter
           const selectedImgUrls = maxImagesPerProduct > 0 
             ? highResImgUrls.slice(0, maxImagesPerProduct)
             : highResImgUrls;
 
-          // 3. Download product images in original high quality
+          // 3. Download image blobs
           let imgSeq = 1;
           for (const url of selectedImgUrls) {
             if (cancelRef.current) return;
@@ -326,10 +322,9 @@ export default function FbZipExportModal({
           completedProducts++;
           const pct = Math.round((completedProducts / total) * 90);
           setProgressPercent(pct);
-          setStatusMessage(`Packaging ${completedProducts}/${total}: "${prod.title.slice(0, 20)}..."`);
+          setStatusMessage(`Packaging product ${completedProducts} of ${total}: "${prod.title.slice(0, 22)}..."`);
         }));
 
-        // Allow browser UI to update
         await new Promise(r => setTimeout(r, 10));
       }
 
@@ -338,8 +333,7 @@ export default function FbZipExportModal({
         return;
       }
 
-      // Generate final ZIP file
-      setStatusMessage('Packaging and finalizing ZIP...');
+      setStatusMessage('Creating high-resolution ZIP package...');
       setProgressPercent(95);
 
       const zipBlob = await zip.generateAsync(
@@ -353,7 +347,6 @@ export default function FbZipExportModal({
         }
       );
 
-      // Trigger automatic download
       const timestamp = new Date().toISOString().slice(0, 10);
       const downloadUrl = URL.createObjectURL(zipBlob);
       const a = document.createElement('a');
@@ -381,398 +374,417 @@ export default function FbZipExportModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
-      <motion.div 
-        initial={{ opacity: 0, y: 20, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: 20, scale: 0.98 }}
-        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-        className="bg-[#10141d] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[85vh]"
-      >
-        {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-white/10 flex justify-between items-center bg-[#151a24]">
-          <div className="flex items-center gap-3">
-            <div 
-              className="w-9 h-9 rounded-xl flex items-center justify-center shadow-inner shrink-0"
-              style={{ backgroundColor: `${themePrimary}25`, color: themePrimary }}
-            >
-              <FolderArchive size={19} strokeWidth={2.2} />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
-                  Download FB Zip
-                </h2>
-                <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
-                  In-Stock
-                </span>
-              </div>
-              <p className="text-[11px] text-gray-400">High-Res images &amp; captions for Auto-Sender</p>
-            </div>
-          </div>
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+      
+      {/* Full-Screen Top Navigation Bar */}
+      <div className="flex items-center justify-between p-4 border-b border-[var(--dash-border)] bg-[var(--dash-card)] shrink-0 md:px-8 md:py-4">
+        <div className="flex items-center gap-2">
           <button 
             onClick={onClose} 
-            disabled={exportState === 'exporting'}
-            className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors disabled:opacity-30 cursor-pointer"
+            className="p-2 -ml-2 text-white hover:text-gray-300 transition-colors rounded-full hover:bg-white/5 cursor-pointer"
           >
-            <X size={16} />
+            <ChevronLeft size={24} />
           </button>
+          <div className="flex items-center gap-2.5">
+            <div 
+              className="w-8 h-8 rounded-lg flex items-center justify-center shadow-sm"
+              style={{ backgroundColor: `${primaryColor}20`, color: primaryColor }}
+            >
+              <FolderArchive size={18} strokeWidth={2.2} />
+            </div>
+            <div>
+              <h1 className="text-base sm:text-lg font-bold text-white tracking-wide flex items-center gap-2">
+                Download FB Zip
+                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                  In-Stock
+                </span>
+              </h1>
+            </div>
+          </div>
         </div>
 
-        {/* Content Body */}
-        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 custom-scrollbar">
-          
-          {/* Compact 1-Line Status Metric Strip */}
-          <div className="grid grid-cols-3 gap-2 bg-[#151a24] border border-white/5 rounded-2xl p-2.5 sm:p-3 text-center">
-            <div className="flex flex-col">
-              <span className="text-[10px] uppercase font-semibold text-emerald-400 flex items-center justify-center gap-1">
-                <CheckCircle2 size={11} /> In-Stock
-              </span>
-              <span className="text-lg font-black text-white mt-0.5">{inStockProducts.length}</span>
+        {/* Top Header Action Button */}
+        <button 
+          onClick={handleStartExport}
+          disabled={exportState === 'exporting' || inStockProducts.length === 0}
+          style={{ backgroundColor: primaryColor, color: '#ffffff' }}
+          className="flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl font-bold text-xs sm:text-sm hover:brightness-105 active:scale-95 transition-all shadow-md cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {exportState === 'exporting' ? (
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <Download size={16} strokeWidth={2.5} />
+          )}
+          <span>{exportState === 'exporting' ? 'Exporting...' : 'Download ZIP'}</span>
+        </button>
+      </div>
+
+      {/* Main Full-Screen Scrollable Content */}
+      <div className="flex-1 overflow-y-auto px-4 py-5 md:p-8 space-y-6 max-w-3xl mx-auto w-full pb-28 custom-scrollbar">
+
+        {/* Export Progress Notification (Visible during active export) */}
+        {exportState === 'exporting' && (
+          <div className="bg-[var(--dash-card)] rounded-2xl p-5 md:p-6 border border-blue-500/40 shadow-lg space-y-4 animate-in fade-in">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                  <RefreshCw size={16} className="animate-spin" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Downloading Images &amp; Building ZIP</h3>
+                  <p className="text-xs text-gray-400 truncate max-w-xs sm:max-w-md">{statusMessage}</p>
+                </div>
+              </div>
+              <span className="font-mono text-sm font-bold text-blue-400">{progressPercent}%</span>
             </div>
 
-            <div className="flex flex-col border-x border-white/5">
-              <span className="text-[10px] uppercase font-semibold text-gray-400 flex items-center justify-center gap-1">
-                <AlertCircle size={11} /> Stock-Out
-              </span>
-              <span className="text-lg font-black text-gray-400 mt-0.5">{outOfStockCount}</span>
+            <div className="w-full h-2.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
+              <motion.div 
+                className="h-full rounded-full bg-blue-500 transition-all duration-200"
+                style={{ width: `${progressPercent}%` }}
+              />
             </div>
 
-            <div className="flex flex-col">
-              <span className="text-[10px] uppercase font-semibold text-blue-400 flex items-center justify-center gap-1">
-                <ImageIcon size={11} /> Photos
-              </span>
-              <span className="text-lg font-black text-blue-300 mt-0.5">~{estimatedImagesCount}</span>
+            <div className="flex justify-end">
+              <button
+                onClick={handleCancel}
+                className="text-xs text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+              >
+                Cancel Export
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Export Success Notification */}
+        {exportState === 'success' && (
+          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-5 md:p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3 text-center sm:text-left">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                <CheckCircle2 size={22} />
+              </div>
+              <div>
+                <h3 className="text-sm sm:text-base font-bold text-white">ZIP Archive Downloaded Successfully!</h3>
+                <p className="text-xs text-emerald-300">
+                  Exported {exportedCount} in-stock products with {totalImagesExported} high-resolution photos and captions.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setExportState('idle')}
+              className="px-4 py-2 rounded-xl bg-white/10 text-white text-xs font-semibold hover:bg-white/15 transition-colors shrink-0"
+            >
+              Export Again
+            </button>
+          </div>
+        )}
+
+        {/* Export Error Notification */}
+        {exportState === 'error' && (
+          <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 flex items-start gap-3">
+            <AlertCircle size={20} className="text-rose-400 shrink-0 mt-0.5" />
+            <div className="space-y-1 flex-1">
+              <h4 className="text-sm font-bold text-rose-300">Export Failed</h4>
+              <p className="text-xs text-rose-400/90">{errorMessage}</p>
+              <button
+                onClick={() => setExportState('idle')}
+                className="mt-1 text-xs font-semibold text-white underline"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Section 1: Stock Status & Overview Cards */}
+        <div className="grid grid-cols-3 gap-3 md:gap-4">
+          <div className="bg-[var(--dash-card)] rounded-2xl p-4 border border-[var(--dash-border)] shadow-sm flex flex-col justify-between">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-400 uppercase tracking-wide">
+              <CheckCircle2 size={14} /> In-Stock
+            </div>
+            <div className="mt-3">
+              <div className="text-2xl sm:text-3xl font-black text-white">{inStockProducts.length}</div>
+              <div className="text-[11px] text-gray-400 mt-0.5">Ready to export</div>
             </div>
           </div>
 
-          {/* Exporting Progress View */}
-          {exportState === 'exporting' && (
-            <div className="bg-[#151a24] border border-white/10 rounded-2xl p-5 flex flex-col items-center justify-center text-center space-y-3.5">
-              <div 
-                className="w-12 h-12 rounded-full border-3 border-t-transparent animate-spin flex items-center justify-center"
-                style={{ borderColor: `${themePrimary}30`, borderTopColor: themePrimary }}
-              />
-              <div className="space-y-1 max-w-xs">
-                <h3 className="text-sm font-bold text-white">Downloading Images &amp; Packaging</h3>
-                <p className="text-[11px] text-gray-400 truncate">{statusMessage}</p>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="w-full max-w-xs space-y-1">
-                <div className="flex justify-between text-[11px] font-mono text-gray-400">
-                  <span>Progress</span>
-                  <span className="font-bold text-white">{progressPercent}%</span>
-                </div>
-                <div className="w-full h-2 bg-black/60 rounded-full overflow-hidden border border-white/5">
-                  <motion.div 
-                    className="h-full rounded-full transition-all duration-200"
-                    style={{ 
-                      width: `${progressPercent}%`,
-                      backgroundColor: themePrimary 
-                    }}
-                  />
-                </div>
-              </div>
-
-              <button
-                onClick={handleCancel}
-                className="text-xs text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors mt-1"
-              >
-                Cancel
-              </button>
+          <div className="bg-[var(--dash-card)] rounded-2xl p-4 border border-[var(--dash-border)] shadow-sm flex flex-col justify-between">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+              <AlertCircle size={14} className="text-amber-400/80" /> Stock Out
             </div>
-          )}
+            <div className="mt-3">
+              <div className="text-2xl sm:text-3xl font-black text-gray-300">{outOfStockCount}</div>
+              <div className="text-[11px] text-gray-500 mt-0.5">Auto-skipped</div>
+            </div>
+          </div>
 
-          {/* Success View */}
-          {exportState === 'success' && (
-            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-5 flex flex-col items-center justify-center text-center space-y-2.5">
-              <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <CheckCircle2 size={24} />
+          <div className="bg-[var(--dash-card)] rounded-2xl p-4 border border-[var(--dash-border)] shadow-sm flex flex-col justify-between">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-blue-400 uppercase tracking-wide">
+              <ImageIcon size={14} /> High-Res Pics
+            </div>
+            <div className="mt-3">
+              <div className="text-2xl sm:text-3xl font-black text-blue-300">~{estimatedImagesCount}</div>
+              <div className="text-[11px] text-gray-400 mt-0.5">Images total</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 2: Photo Export Settings (Max Photos per Product) */}
+        <div className="bg-[var(--dash-card)] rounded-2xl p-5 md:p-6 border border-[var(--dash-border)] shadow-md space-y-4">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
+                <ImageIcon size={20} />
               </div>
-              <h3 className="text-base font-bold text-white">Download Ready!</h3>
-              <p className="text-xs text-emerald-300">
-                Downloaded <strong className="text-white">{exportedCount} products</strong> with <strong className="text-white">{totalImagesExported} high-res images</strong> and captions.
-              </p>
-              <div className="pt-2 flex gap-2 w-full">
-                <button
-                  onClick={() => setExportState('idle')}
-                  className="flex-1 py-2.5 rounded-xl bg-white/10 text-white text-xs font-semibold hover:bg-white/15 transition-colors"
-                >
-                  Export Again
-                </button>
-                <button
-                  onClick={onClose}
-                  style={{ backgroundColor: themePrimary }}
-                  className="flex-1 py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:brightness-110 transition-all"
-                >
-                  Done
-                </button>
+              <div>
+                <h2 className="text-sm sm:text-base font-bold text-white">Photos per Product</h2>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Limit how many gallery photos to include per product folder.
+                </p>
               </div>
             </div>
-          )}
+            <span className="text-xs font-mono text-blue-400 font-bold bg-blue-500/10 px-2.5 py-1 rounded-lg border border-blue-500/20 shrink-0">
+              {maxImagesPerProduct === 0 ? 'All Photos' : `${maxImagesPerProduct} Max`}
+            </span>
+          </div>
 
-          {/* Error View */}
-          {exportState === 'error' && (
-            <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 flex items-start gap-3">
-              <AlertCircle size={18} className="text-rose-400 shrink-0 mt-0.5" />
-              <div className="space-y-1 flex-1">
-                <h4 className="text-xs font-bold text-rose-300">Export Failed</h4>
-                <p className="text-[11px] text-rose-400/90">{errorMessage}</p>
-                <button
-                  onClick={() => setExportState('idle')}
-                  className="mt-1 text-xs font-semibold text-white underline"
-                >
-                  Try Again
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Controls Section (Idle State) */}
-          {exportState === 'idle' && (
-            <>
-              {/* Max Pictures Limit Control (Touch friendly segmented buttons) */}
-              <div className="bg-[#151a24] border border-white/10 rounded-2xl p-3.5 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <ImageIcon size={15} className="text-blue-400" />
-                    <span className="text-xs font-bold text-white">Photos per Product</span>
-                  </div>
-                  <span className="text-[11px] font-mono text-blue-300/90 font-medium">
-                    {maxImagesPerProduct === 0 ? 'All Photos' : `Max ${maxImagesPerProduct} Photos`}
-                  </span>
-                </div>
-
-                {/* Segmented Pill Selector with 44px Touch Targets */}
-                <div className="grid grid-cols-5 gap-1.5 p-1 bg-black/40 rounded-xl border border-white/5">
-                  {[1, 2, 3, 5, 0].map((count) => {
-                    const isSelected = !isCustomCount && maxImagesPerProduct === count;
-                    return (
-                      <button
-                        key={count}
-                        type="button"
-                        onClick={() => {
-                          setIsCustomCount(false);
-                          setMaxImagesPerProduct(count);
-                        }}
-                        className={`h-9 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer ${
-                          isSelected
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'text-gray-400 hover:text-white hover:bg-white/5'
-                        }`}
-                      >
-                        {count === 0 ? 'All' : count}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Custom Count Toggle / Input */}
-                <div className="flex items-center justify-between pt-0.5">
+          {/* Segmented Preset Selector */}
+          <div className="space-y-3 pt-1">
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              {[
+                { label: '1 Photo', val: 1 },
+                { label: '2 Photos', val: 2 },
+                { label: '3 Photos', val: 3 },
+                { label: '5 Photos', val: 5 },
+                { label: 'All Photos', val: 0 },
+                { label: 'Custom', val: -1 }
+              ].map((item) => {
+                const isSelected = item.val === -1 ? isCustomMode : (!isCustomMode && maxImagesPerProduct === item.val);
+                return (
                   <button
+                    key={item.label}
                     type="button"
-                    onClick={() => setIsCustomCount(!isCustomCount)}
-                    className="text-[11px] text-gray-400 hover:text-blue-300 flex items-center gap-1 cursor-pointer transition-colors"
+                    onClick={() => {
+                      if (item.val === -1) {
+                        setIsCustomMode(true);
+                      } else {
+                        handleSelectPreset(item.val);
+                      }
+                    }}
+                    className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center cursor-pointer border ${
+                      isSelected
+                        ? 'bg-blue-600 text-white border-blue-500 shadow-md'
+                        : 'bg-[var(--dash-bg)] text-gray-300 border-[var(--dash-border)] hover:bg-white/5'
+                    }`}
                   >
-                    <span>{isCustomCount ? '▼ Hide custom limit' : '✎ Set custom number'}</span>
+                    {item.label}
                   </button>
+                );
+              })}
+            </div>
 
-                  <span className="text-[10px] text-gray-500">
-                    {maxImagesPerProduct === 0 
-                      ? 'Exports every uploaded image' 
-                      : `Exports top ${maxImagesPerProduct} pictures + caption`}
-                  </span>
-                </div>
-
-                {isCustomCount && (
-                  <div className="pt-1 flex items-center gap-2">
-                    <input 
-                      type="number"
-                      inputMode="numeric"
-                      min="1"
-                      max="50"
-                      value={maxImagesPerProduct === 0 ? '' : maxImagesPerProduct}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        setMaxImagesPerProduct(isNaN(val) ? 1 : Math.max(1, Math.min(50, val)));
-                      }}
-                      placeholder="e.g. 4"
-                      className="w-24 bg-black/50 text-white text-center font-bold border border-blue-500/50 rounded-xl py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <span className="text-[11px] text-gray-300">photos maximum per folder</span>
-                  </div>
-                )}
+            {/* Custom Input Field (Shown when Custom is selected) */}
+            {isCustomMode && (
+              <div className="bg-[var(--dash-bg)] border border-blue-500/30 rounded-xl p-3 flex items-center gap-3 animate-in fade-in">
+                <span className="text-xs text-gray-300 font-medium">Custom Quantity:</span>
+                <input 
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  max="50"
+                  value={customImageLimit}
+                  onChange={(e) => handleCustomChange(e.target.value)}
+                  placeholder="e.g. 4"
+                  className="w-20 bg-[var(--dash-card)] text-white text-center font-bold border border-[var(--dash-border)] rounded-lg py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <span className="text-xs text-gray-400">photos max per product</span>
               </div>
+            )}
 
-              {/* Collapsible Live text.txt Caption Preview */}
-              <div className="border border-white/10 rounded-2xl overflow-hidden bg-[#151a24]">
-                <button
-                  type="button"
-                  onClick={() => setShowPreview(!showPreview)}
-                  className="w-full p-3 sm:p-3.5 flex items-center justify-between text-xs font-semibold text-gray-200 hover:text-white transition-colors cursor-pointer"
+            <div className="flex items-center gap-1.5 text-[11px] text-gray-400 pt-1">
+              <CheckCircle2 size={13} className="text-blue-400" />
+              <span>All images are exported in original full resolution (no compression/blur).</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 3: Caption & Pricing Format (text.txt) */}
+        <div className="bg-[var(--dash-card)] rounded-2xl p-5 md:p-6 border border-[var(--dash-border)] shadow-md space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+              <FileText size={20} />
+            </div>
+            <div>
+              <h2 className="text-sm sm:text-base font-bold text-white">FB Caption &amp; Price Rules</h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Formatted specifically for FB Messenger Auto-Sender app.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-300">MOQ-6 Discount Amount (TK)</label>
+              <div className="relative">
+                <input 
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max="500"
+                  value={moqDiscount}
+                  onChange={(e) => setMoqDiscount(Math.max(0, parseInt(e.target.value) || 0))}
+                  className="w-full bg-[var(--dash-bg)] text-white border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 font-mono text-xs focus:ring-2 focus:ring-emerald-500 outline-none"
+                />
+                <span className="absolute right-3 top-2.5 text-xs text-gray-400">TK OFF</span>
+              </div>
+              <p className="text-[11px] text-gray-500">Deducted from selling price for MOQ-6 caption (Default: 5 TK).</p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-gray-300">Fallback Category Name</label>
+              <input 
+                type="text"
+                value={fallbackCategory}
+                onChange={(e) => setFallbackCategory(e.target.value.toUpperCase())}
+                className="w-full bg-[var(--dash-bg)] text-white border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 uppercase font-mono text-xs focus:ring-2 focus:ring-emerald-500 outline-none"
+                placeholder="GENERAL"
+              />
+              <p className="text-[11px] text-gray-500">Used if a product has no category (Default: GENERAL).</p>
+            </div>
+          </div>
+
+          {/* Live Caption Code Preview */}
+          <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-4 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-gray-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles size={13} className="text-emerald-400" />
+                Live text.txt Preview
+              </span>
+              {inStockProducts.length > 1 && (
+                <select
+                  value={selectedPreviewIndex}
+                  onChange={(e) => setSelectedPreviewIndex(Number(e.target.value))}
+                  className="text-xs bg-[var(--dash-card)] text-gray-200 border border-[var(--dash-border)] rounded-lg px-2.5 py-1 outline-none max-w-[200px] truncate"
                 >
-                  <span className="flex items-center gap-2">
-                    <FileText size={15} className="text-cyan-400" />
-                    <span>Caption Preview (text.txt)</span>
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded-full border border-cyan-400/20">
-                      {showPreview ? 'Hide' : 'View'}
-                    </span>
-                    <ChevronDown 
-                      size={14} 
-                      className={`text-gray-400 transition-transform duration-200 ${showPreview ? 'rotate-180' : ''}`} 
-                    />
-                  </div>
-                </button>
+                  {inStockProducts.slice(0, 20).map((p, idx) => (
+                    <option key={p.id || idx} value={idx}>
+                      {idx + 1}. {p.title}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
 
-                <AnimatePresence>
-                  {showPreview && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="border-t border-white/5 p-3.5 space-y-2.5 bg-black/20"
-                    >
-                      {inStockProducts.length > 1 && (
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] text-gray-400 shrink-0">Sample:</span>
-                          <select
-                            value={selectedPreviewIndex}
-                            onChange={(e) => setSelectedPreviewIndex(Number(e.target.value))}
-                            className="flex-1 text-xs bg-[#10141d] text-gray-200 border border-white/10 rounded-lg px-2 py-1 outline-none truncate"
-                          >
-                            {inStockProducts.slice(0, 20).map((p, idx) => (
-                              <option key={p.id || idx} value={idx}>
-                                {idx + 1}. {p.title}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
+            <div className="bg-black/60 border border-white/10 rounded-xl p-3.5 font-mono text-xs text-emerald-300 whitespace-pre-wrap leading-relaxed shadow-inner">
+              {sampleCaption || 'No in-stock products available for preview.'}
+            </div>
+          </div>
+        </div>
 
-                      {sampleProduct ? (
-                        <div className="bg-black/60 border border-white/10 rounded-xl p-3 font-mono text-xs text-emerald-300 whitespace-pre-wrap leading-relaxed shadow-inner">
-                          {sampleCaption}
-                        </div>
-                      ) : (
-                        <div className="text-center py-2 text-xs text-gray-400">
-                          No in-stock products available.
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+        {/* Section 4: Folder Organization & Structure */}
+        <div className="bg-[var(--dash-card)] rounded-2xl p-5 md:p-6 border border-[var(--dash-border)] shadow-md space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center shrink-0">
+              <FolderTree size={20} />
+            </div>
+            <div>
+              <h2 className="text-sm sm:text-base font-bold text-white">ZIP Folder Structure</h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Choose how product subfolders inside the ZIP archive should be named.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <label 
+              onClick={() => setFolderNaming('sequential')}
+              className={`p-3.5 rounded-xl border cursor-pointer flex items-center gap-3 transition-all ${
+                folderNaming === 'sequential' 
+                  ? 'bg-pink-500/10 border-pink-500 text-white' 
+                  : 'bg-[var(--dash-bg)] border-[var(--dash-border)] text-gray-300 hover:bg-white/5'
+              }`}
+            >
+              <input 
+                type="radio" 
+                name="folderNaming" 
+                checked={folderNaming === 'sequential'} 
+                onChange={() => setFolderNaming('sequential')}
+                className="accent-pink-500"
+              />
+              <div>
+                <div className="text-xs font-bold">Sequential Numbers (1, 2, 3...)</div>
+                <div className="text-[11px] text-gray-400 mt-0.5">Recommended for FB Auto-Sender</div>
               </div>
+            </label>
 
-              {/* Advanced Options Accordion (Pricing discount & category) */}
-              <div className="border border-white/10 rounded-2xl overflow-hidden bg-[#151a24]">
-                <button
-                  type="button"
-                  onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="w-full p-3 sm:p-3.5 flex items-center justify-between text-xs font-semibold text-gray-300 hover:text-white transition-colors cursor-pointer"
-                >
-                  <span className="flex items-center gap-2">
-                    <Settings2 size={15} className="text-pink-400" />
-                    <span>Pricing &amp; Folder Options</span>
-                  </span>
-                  <ChevronDown 
-                    size={14} 
-                    className={`text-gray-400 transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`} 
-                  />
-                </button>
-
-                <AnimatePresence>
-                  {showAdvanced && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="border-t border-white/5 p-3.5 space-y-3 bg-black/20 text-xs"
-                    >
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-gray-300 font-medium">MOQ-6 Discount (TK)</label>
-                          <input 
-                            type="number"
-                            inputMode="numeric"
-                            min="0"
-                            value={moqDiscount}
-                            onChange={(e) => setMoqDiscount(Math.max(0, parseInt(e.target.value) || 0))}
-                            className="w-full bg-[#10141d] text-white border border-white/10 rounded-xl px-3 py-1.5 font-mono text-xs focus:border-pink-500 outline-none"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="text-gray-300 font-medium">Fallback Category</label>
-                          <input 
-                            type="text"
-                            value={fallbackCategory}
-                            onChange={(e) => setFallbackCategory(e.target.value.toUpperCase())}
-                            className="w-full bg-[#10141d] text-white border border-white/10 rounded-xl px-3 py-1.5 uppercase font-mono text-xs focus:border-pink-500 outline-none"
-                            placeholder="GENERAL"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5 pt-1">
-                        <label className="text-gray-300 font-medium">Folder Numbering</label>
-                        <div className="flex gap-4">
-                          <label className="flex items-center gap-1.5 cursor-pointer text-gray-300 text-xs">
-                            <input 
-                              type="radio" 
-                              name="folderNaming" 
-                              checked={folderNaming === 'sequential'} 
-                              onChange={() => setFolderNaming('sequential')}
-                              className="accent-pink-500"
-                            />
-                            <span>1, 2, 3...</span>
-                          </label>
-                          <label className="flex items-center gap-1.5 cursor-pointer text-gray-300 text-xs">
-                            <input 
-                              type="radio" 
-                              name="folderNaming" 
-                              checked={folderNaming === 'productId'} 
-                              onChange={() => setFolderNaming('productId')}
-                              className="accent-pink-500"
-                            />
-                            <span>Product ID (P001...)</span>
-                          </label>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+            <label 
+              onClick={() => setFolderNaming('productId')}
+              className={`p-3.5 rounded-xl border cursor-pointer flex items-center gap-3 transition-all ${
+                folderNaming === 'productId' 
+                  ? 'bg-pink-500/10 border-pink-500 text-white' 
+                  : 'bg-[var(--dash-bg)] border-[var(--dash-border)] text-gray-300 hover:bg-white/5'
+              }`}
+            >
+              <input 
+                type="radio" 
+                name="folderNaming" 
+                checked={folderNaming === 'productId'} 
+                onChange={() => setFolderNaming('productId')}
+                className="accent-pink-500"
+              />
+              <div>
+                <div className="text-xs font-bold">Product IDs (P001, P002...)</div>
+                <div className="text-[11px] text-gray-400 mt-0.5">Uses your internal product SKU/ID</div>
               </div>
+            </label>
+          </div>
+
+          {/* Directory Visual Tree */}
+          <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-3.5 font-mono text-xs text-gray-400 space-y-1">
+            <div>📁 <span className="text-white">export_dataset/</span></div>
+            <div className="pl-4">├── 📁 <span className="text-cyan-300">{folderNaming === 'sequential' ? '1/' : 'P001/'}</span> (Product 1)</div>
+            <div className="pl-8">├── 🖼️ <span className="text-amber-200">image_1.webp</span> (Original High-Res)</div>
+            {maxImagesPerProduct !== 1 && (
+              <div className="pl-8">├── 🖼️ <span className="text-amber-200">image_2.webp</span> (Gallery Photo)</div>
+            )}
+            <div className="pl-8">└── 📄 <span className="text-emerald-300">text.txt</span> (Formatted caption)</div>
+            <div className="pl-4">├── 📁 <span className="text-cyan-300">{folderNaming === 'sequential' ? '2/' : 'P002/'}</span> (Product 2)</div>
+            <div className="pl-8">└── ...</div>
+          </div>
+        </div>
+
+      </div>
+
+      {/* Floating Bottom Action Bar for Mobile & Desktop */}
+      <div className="fixed bottom-0 left-0 right-0 md:left-[240px] p-4 bg-[var(--dash-card)] border-t border-[var(--dash-border)] flex items-center justify-between gap-3 z-[110] shadow-2xl pb-[max(1rem,env(safe-area-inset-bottom))]">
+        <button 
+          onClick={onClose}
+          disabled={exportState === 'exporting'}
+          className="px-5 py-3 rounded-xl border border-[var(--dash-border)] text-gray-300 hover:text-white font-semibold hover:bg-white/5 transition-colors text-xs sm:text-sm disabled:opacity-40 cursor-pointer"
+        >
+          Back
+        </button>
+
+        <button 
+          onClick={handleStartExport}
+          disabled={exportState === 'exporting' || inStockProducts.length === 0}
+          style={{ backgroundColor: primaryColor, color: '#ffffff' }}
+          className="flex-1 max-w-md py-3 px-6 rounded-xl font-bold text-xs sm:text-sm hover:brightness-105 active:scale-98 transition-all shadow-lg flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {exportState === 'exporting' ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <span>Exporting {progressPercent}%...</span>
+            </>
+          ) : (
+            <>
+              <Download size={18} strokeWidth={2.2} />
+              <span>Download FB Zip ({inStockProducts.length} In-Stock Products)</span>
             </>
           )}
+        </button>
+      </div>
 
-        </div>
-
-        {/* Footer Action Bar with Mobile-First High Touch Targets */}
-        <div className="p-3.5 sm:p-4 border-t border-white/10 bg-[#151a24] flex items-center gap-2.5 pb-[max(0.875rem,env(safe-area-inset-bottom))]">
-          <button 
-            onClick={onClose}
-            disabled={exportState === 'exporting'}
-            className="h-11 sm:h-12 px-4 rounded-xl border border-white/10 text-gray-300 hover:text-white font-semibold hover:bg-white/5 transition-colors text-xs sm:text-sm disabled:opacity-40 cursor-pointer"
-          >
-            Close
-          </button>
-
-          {exportState !== 'exporting' && exportState !== 'success' && (
-            <button 
-              onClick={handleStartExport}
-              disabled={inStockProducts.length === 0}
-              style={{ backgroundColor: themePrimary }}
-              className="flex-1 h-11 sm:h-12 px-4 rounded-xl font-bold text-xs sm:text-sm text-white hover:brightness-110 active:scale-[0.99] transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Download size={16} strokeWidth={2.2} />
-              <span className="truncate">Download FB Zip ({inStockProducts.length})</span>
-            </button>
-          )}
-        </div>
-      </motion.div>
     </div>
   );
 }

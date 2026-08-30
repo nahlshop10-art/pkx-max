@@ -242,7 +242,7 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const [settingsView, setSettingsView] = useState<'main' | 'categories' | 'website' | 'marketing' | 'courier' | 'priceCalculator' | 'account' | 'accountControl' | 'discounts' | 'customers' | 'suppliers' | 'customise' | 'qtyRules' | 'incompleteOrders' | 'antiSpam' | 'minOrder' | 'bulkPrice' | 'socialMedia' | 'preOrder' | 'imageSettings' | 'seoSettings' | 'apiSync' | 'notification'>('main');
+  const [settingsView, setSettingsView] = useState<'main' | 'categories' | 'website' | 'marketing' | 'courier' | 'priceCalculator' | 'account' | 'accountControl' | 'discounts' | 'customers' | 'suppliers' | 'customise' | 'qtyRules' | 'incompleteOrders' | 'antiSpam' | 'minOrder' | 'bulkPrice' | 'socialMedia' | 'preOrder' | 'imageSettings' | 'seoSettings' | 'apiSync' | 'notification' | 'fbZipExport'>('main');
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -255,7 +255,7 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
      if (path.startsWith('/admin/settings/')) {
         const slug = path.replace('/admin/settings/', '');
         setActiveTab('Settings');
-        const validViews = ['main', 'categories', 'website', 'marketing', 'courier', 'priceCalculator', 'account', 'accountControl', 'discounts', 'customers', 'suppliers', 'customise', 'qtyRules', 'incompleteOrders', 'antiSpam', 'minOrder', 'bulkPrice', 'socialMedia', 'preOrder', 'imageSettings', 'seoSettings', 'apiSync', 'notification'];
+        const validViews = ['main', 'categories', 'website', 'marketing', 'courier', 'priceCalculator', 'account', 'accountControl', 'discounts', 'customers', 'suppliers', 'customise', 'qtyRules', 'incompleteOrders', 'antiSpam', 'minOrder', 'bulkPrice', 'socialMedia', 'preOrder', 'imageSettings', 'seoSettings', 'apiSync', 'notification', 'fbZipExport'];
         const matchedView = validViews.find(v => slugify(v) === slug) || slug;
         setSettingsView(matchedView as any);
      } else if (path.startsWith('/admin/')) {
@@ -1660,8 +1660,8 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
             )}
 
             <button 
-              onClick={() => setShowFbZipExport(true)}
-              className="ml-auto px-3 py-2 bg-[var(--dash-card)] rounded-lg border border-[var(--dash-border)] hover:bg-[var(--dash-border)] transition-colors text-white font-medium flex items-center gap-2"
+              onClick={() => { setActiveTab('Settings'); setSettingsView('fbZipExport'); }}
+              className="ml-auto px-3 py-2 bg-[var(--dash-card)] rounded-lg border border-[var(--dash-border)] hover:bg-[var(--dash-border)] transition-colors text-white font-medium flex items-center gap-2 cursor-pointer"
               title="Download FB Auto-Sender In-Stock Dataset"
             >
               <Download size={18} className="text-blue-400" />
@@ -2478,7 +2478,7 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
 
               {/* Download FB Zip (FB Auto-Sender Dataset) */}
               <div 
-                onClick={() => setShowFbZipExport(true)}
+                onClick={() => setSettingsView('fbZipExport')}
                 className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
               >
                 <div className="flex items-center gap-3.5">
@@ -2752,15 +2752,6 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
         />
       )}
 
-      {showFbZipExport && (
-        <FbZipExportModal
-          onClose={() => setShowFbZipExport(false)}
-          products={products}
-          categories={categories}
-          themePrimary={websiteSettings.themeColors?.primary}
-        />
-      )}
-
       {/* Order Details Modal */}
       {selectedOrder && (
         <OrderDetailsModal
@@ -2869,7 +2860,16 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
           onClose={() => setSettingsView('main')} 
           products={products}
           categories={categories}
-          onDownloadFbZip={() => setShowFbZipExport(true)}
+          onDownloadFbZip={() => setSettingsView('fbZipExport')}
+        />
+      )}
+      {settingsView === 'fbZipExport' && perms.sections.settings && (
+        <FbZipExportModal 
+          products={products}
+          categories={categories}
+          websiteSettings={websiteSettings}
+          themePrimary={websiteSettings.themeColors?.primary}
+          onClose={() => setSettingsView('main')}
         />
       )}
       {settingsView === 'notification' && perms.sections.settings && (

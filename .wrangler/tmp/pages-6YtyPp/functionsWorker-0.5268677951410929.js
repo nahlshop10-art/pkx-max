@@ -168,12 +168,6 @@ __name(onRequestGet, "onRequestGet");
 async function onRequestGet2(context) {
   const { env } = context;
   try {
-    await env.DB.prepare("CREATE TABLE IF NOT EXISTS customers (id TEXT PRIMARY KEY, data TEXT, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)").run();
-    try {
-      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_orders_id_int ON orders(cast(id as integer))").run();
-      await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_orders_updated_at ON orders(updated_at)").run();
-    } catch (e) {
-    }
     const settingsRes = await env.DB.prepare("SELECT value FROM settings WHERE key = ?").bind("adminUsers").all();
     const customersRes = await env.DB.prepare("SELECT data FROM customers ORDER BY updated_at DESC LIMIT 2000").all();
     const allSettingsRes = await env.DB.prepare("SELECT key, value FROM settings").all();
@@ -2045,6 +2039,87 @@ async function onRequestPost9(context) {
 }
 __name(onRequestPost9, "onRequestPost");
 
+// api/proxy_image.ts
+async function onRequestGet4({ request, env }) {
+  const urlObj = new URL(request.url);
+  const targetUrl = urlObj.searchParams.get("url");
+  if (!targetUrl) {
+    return new Response(JSON.stringify({ error: "Missing url parameter" }), {
+      status: 400,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+      }
+    });
+  }
+  if (targetUrl.includes("/uploads/")) {
+    const key = "uploads/" + targetUrl.split("/uploads/")[1].split("?")[0];
+    if (env.BUCKET) {
+      try {
+        const object = await env.BUCKET.get(key);
+        if (object) {
+          const headers = new Headers();
+          if (object.httpMetadata?.contentType) {
+            headers.set("Content-Type", object.httpMetadata.contentType);
+          } else {
+            headers.set("Content-Type", key.endsWith(".png") ? "image/png" : "image/webp");
+          }
+          headers.set("Access-Control-Allow-Origin", "*");
+          headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+          headers.set("Cache-Control", "public, max-age=31536000, immutable");
+          if (object.httpEtag) {
+            headers.set("ETag", object.httpEtag);
+          }
+          return new Response(object.body, { headers });
+        }
+      } catch (e) {
+        console.error("R2 read error in proxy_image:", e);
+      }
+    }
+  }
+  try {
+    const res = await fetch(targetUrl);
+    if (res.ok) {
+      const headers = new Headers(res.headers);
+      headers.set("Access-Control-Allow-Origin", "*");
+      headers.set("Access-Control-Allow-Methods", "GET, OPTIONS");
+      headers.set("Cache-Control", "public, max-age=31536000, immutable");
+      const cType = headers.get("Content-Type");
+      if (!cType || cType.includes("text/html")) {
+        const ext = targetUrl.split("?")[0].split(".").pop()?.toLowerCase();
+        if (ext === "webp") headers.set("Content-Type", "image/webp");
+        else if (ext === "png") headers.set("Content-Type", "image/png");
+        else if (ext === "jpg" || ext === "jpeg") headers.set("Content-Type", "image/jpeg");
+      }
+      return new Response(res.body, { status: res.status, headers });
+    }
+    return new Response("Remote image not found", {
+      status: res.status,
+      headers: { "Access-Control-Allow-Origin": "*" }
+    });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e?.message || "Proxy fetch failed" }), {
+      status: 500,
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*"
+      }
+    });
+  }
+}
+__name(onRequestGet4, "onRequestGet");
+async function onRequestOptions() {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "*"
+    }
+  });
+}
+__name(onRequestOptions, "onRequestOptions");
+
 // api/_sync_broadcast.ts
 async function broadcastStockToRetails(env, request, changedProducts, context) {
   if (!changedProducts || !Array.isArray(changedProducts) || changedProducts.length === 0) {
@@ -2200,6 +2275,34 @@ async function onRequestPost10(context) {
     if (!updatedOrder || updatedOrder.id !== orderId) {
       return new Response(JSON.stringify({ error: "Invalid order data" }), { status: 400 });
     }
+    if (Array.isArray(updatedOrder.items)) {
+      updatedOrder.items = updatedOrder.items.map((item) => {
+        if (!item) return item;
+        const p = item.product || {};
+        return {
+          id: item.id || p.id || "",
+          product: {
+            id: p.id || item.id || "",
+            title: p.title || "",
+            price: Number(p.price) || 0,
+            buyPrice: p.buyPrice !== void 0 ? Number(p.buyPrice) : void 0,
+            image: p.thumbnail || p.image || "",
+            thumbnail: p.thumbnail || p.image || "",
+            category: p.category || "",
+            supplier: p.supplier || "",
+            material: p.material || "",
+            variants: p.variants && item.variantId ? p.variants.filter((v) => v.id === item.variantId) : void 0
+          },
+          quantity: Number(item.quantity) || 1,
+          color: item.color,
+          variantId: item.variantId,
+          variantName: item.variantName,
+          variantPrice: item.variantPrice !== void 0 ? Number(item.variantPrice) : void 0,
+          variantBuyPrice: item.variantBuyPrice !== void 0 ? Number(item.variantBuyPrice) : void 0,
+          selectedOption: item.selectedOption
+        };
+      });
+    }
     const stmts = [];
     stmts.push(
       env.DB.prepare("UPDATE orders SET data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND type = ?").bind(JSON.stringify(updatedOrder), orderId, "standard")
@@ -2208,12 +2311,16 @@ async function onRequestPost10(context) {
     if (changedProducts && Array.isArray(changedProducts) && changedProducts.length > 0) {
       for (const p of changedProducts) {
         stmts.push(
-          env.DB.prepare("UPDATE products SET data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(JSON.stringify(p), p.id)
+          env.DB.prepare("UPDATE products SET data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?").bind(JSON.stringify(p), String(p.id))
         );
       }
     }
     if (stmts.length > 0) {
-      await env.DB.batch(stmts);
+      const BATCH_SIZE = 40;
+      for (let i = 0; i < stmts.length; i += BATCH_SIZE) {
+        const batchChunk = stmts.slice(i, i + BATCH_SIZE);
+        await env.DB.batch(batchChunk);
+      }
     }
     const itemsToDeduct = (newItems || []).map((item) => {
       let variantIndex;
@@ -2252,6 +2359,26 @@ async function onRequestPost10(context) {
 __name(onRequestPost10, "onRequestPost");
 
 // ../src/lib/stockUtils.ts
+function getAvailableStock(p, variantId) {
+  if (!p) return 0;
+  if (variantId && p.variants && p.variants.length > 0) {
+    const v = p.variants.find((variant) => variant.id === variantId);
+    if (v && v.stock !== void 0 && v.stock !== null) {
+      return Math.max(0, Number(v.stock));
+    }
+  }
+  if (p.hasVariants && p.variants && p.variants.length > 0) {
+    const hasExplicitVariantStocks = p.variants.some((v) => v.stock !== void 0 && v.stock !== null);
+    if (hasExplicitVariantStocks) {
+      return p.variants.reduce((acc, v) => acc + (v.stock !== void 0 && v.stock !== null ? Math.max(0, Number(v.stock)) : 0), 0);
+    }
+  }
+  if (p.stock !== void 0 && p.stock !== null) {
+    return Math.max(0, Number(p.stock));
+  }
+  return 0;
+}
+__name(getAvailableStock, "getAvailableStock");
 function restoreOrderStock(products, order) {
   let updatedProducts = [...products];
   order.items.forEach((item) => {
@@ -2470,6 +2597,33 @@ async function onRequestPost11(context) {
 __name(onRequestPost11, "onRequestPost");
 
 // api/public_checkout.ts
+function sanitizeOrderItem(item) {
+  if (!item) return item;
+  const p = item.product || {};
+  return {
+    id: item.id || p.id || "",
+    product: {
+      id: p.id || item.id || "",
+      title: p.title || "",
+      price: Number(p.price) || 0,
+      buyPrice: p.buyPrice !== void 0 ? Number(p.buyPrice) : void 0,
+      image: p.thumbnail || p.image || "",
+      thumbnail: p.thumbnail || p.image || "",
+      category: p.category || "",
+      supplier: p.supplier || "",
+      material: p.material || "",
+      variants: p.variants && item.variantId ? p.variants.filter((v) => v.id === item.variantId) : void 0
+    },
+    quantity: Number(item.quantity) || 1,
+    color: item.color,
+    variantId: item.variantId,
+    variantName: item.variantName,
+    variantPrice: item.variantPrice !== void 0 ? Number(item.variantPrice) : void 0,
+    variantBuyPrice: item.variantBuyPrice !== void 0 ? Number(item.variantBuyPrice) : void 0,
+    selectedOption: item.selectedOption
+  };
+}
+__name(sanitizeOrderItem, "sanitizeOrderItem");
 async function onRequestPost12(context) {
   const { request, env } = context;
   try {
@@ -2484,6 +2638,7 @@ async function onRequestPost12(context) {
       nextId = (maxRes.maxId + 1).toString();
     }
     order.id = nextId;
+    order.items = order.items.map(sanitizeOrderItem);
     const stmts = [];
     stmts.push(
       env.DB.prepare("INSERT INTO orders (id, type, data) VALUES (?, ?, ?)").bind(order.id, "standard", JSON.stringify(order))
@@ -2496,9 +2651,33 @@ async function onRequestPost12(context) {
     const productIds = Array.from(new Set(order.items.map((i) => String(i.product?.id || i.id || "")).filter(Boolean)));
     let changedProducts = [];
     if (productIds.length > 0) {
-      const placeholders = productIds.map(() => "?").join(",");
-      const productsRes = await env.DB.prepare(`SELECT id, data FROM products WHERE id IN (${placeholders})`).bind(...productIds).all();
-      const currentProducts = productsRes.results.map((r) => JSON.parse(r.data));
+      const CHUNK_SIZE = 30;
+      const currentProducts = [];
+      for (let i = 0; i < productIds.length; i += CHUNK_SIZE) {
+        const chunk = productIds.slice(i, i + CHUNK_SIZE);
+        const placeholders = chunk.map(() => "?").join(",");
+        const productsRes = await env.DB.prepare(`SELECT id, data FROM products WHERE id IN (${placeholders})`).bind(...chunk).all();
+        if (productsRes && productsRes.results) {
+          currentProducts.push(...productsRes.results.map((r) => JSON.parse(r.data)));
+        }
+      }
+      for (const item of order.items) {
+        const pId = String(item.product?.id || item.id || "");
+        const currentProd = currentProducts.find((p) => String(p.id) === pId);
+        if (currentProd) {
+          const availableStock = getAvailableStock(currentProd, item.variantId);
+          if (availableStock <= 0) {
+            return new Response(JSON.stringify({
+              error: `"${currentProd.title || "Product"}" is out of stock.`
+            }), { status: 400 });
+          }
+          if (item.quantity > availableStock) {
+            return new Response(JSON.stringify({
+              error: `Only ${availableStock} items available for "${currentProd.title || "Product"}". You ordered ${item.quantity}.`
+            }), { status: 400 });
+          }
+        }
+      }
       const newProducts = deductOrderStock(currentProducts, order);
       changedProducts = newProducts.filter((p) => order.items.some((item) => String(item.product?.id || item.id) === String(p.id)));
       if (changedProducts.length > 0) {
@@ -2538,7 +2717,11 @@ async function onRequestPost12(context) {
       }
     }
     if (stmts.length > 0) {
-      await env.DB.batch(stmts);
+      const BATCH_SIZE = 40;
+      for (let i = 0; i < stmts.length; i += BATCH_SIZE) {
+        const batchChunk = stmts.slice(i, i + BATCH_SIZE);
+        await env.DB.batch(batchChunk);
+      }
     }
     const itemsToDeduct = (order.items || []).map((item) => {
       let variantIndex;
@@ -2554,10 +2737,18 @@ async function onRequestPost12(context) {
       };
     });
     if (itemsToDeduct.length > 0) {
-      await notifyMasterOfStockDeduction(env, request, itemsToDeduct, context);
+      if (context && typeof context.waitUntil === "function") {
+        context.waitUntil(notifyMasterOfStockDeduction(env, request, itemsToDeduct, context));
+      } else {
+        await notifyMasterOfStockDeduction(env, request, itemsToDeduct, context);
+      }
     }
     if (changedProducts && changedProducts.length > 0) {
-      await broadcastStockToRetails(env, request, changedProducts, context);
+      if (context && typeof context.waitUntil === "function") {
+        context.waitUntil(broadcastStockToRetails(env, request, changedProducts, context));
+      } else {
+        await broadcastStockToRetails(env, request, changedProducts, context);
+      }
       try {
         const cache2 = caches.default;
         const pubUrl = new URL("/api/public_state", request.url);
@@ -2571,7 +2762,7 @@ async function onRequestPost12(context) {
     }
     return Response.json({ success: true, order });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    return new Response(JSON.stringify({ error: error.message || "Internal error" }), { status: 500 });
   }
 }
 __name(onRequestPost12, "onRequestPost");
@@ -2593,11 +2784,12 @@ async function onRequestPost13(context) {
 __name(onRequestPost13, "onRequestPost");
 
 // api/public_state.ts
-async function onRequestGet4(context) {
+async function onRequestGet5(context) {
   const { request, env, waitUntil } = context;
   const cache2 = caches.default;
+  const cacheKey = new Request(new URL("/api/public_state", request.url).toString());
   try {
-    let response = await cache2.match(request);
+    let response = await cache2.match(cacheKey);
     if (response) {
       return response;
     }
@@ -2656,14 +2848,14 @@ async function onRequestGet4(context) {
       }
     });
     if (waitUntil && typeof waitUntil === "function") {
-      waitUntil(cache2.put(request, response.clone()));
+      waitUntil(cache2.put(cacheKey, response.clone()));
     }
     return response;
   } catch (error) {
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 }
-__name(onRequestGet4, "onRequestGet");
+__name(onRequestGet5, "onRequestGet");
 
 // api/register.ts
 async function onRequestPost14(context) {
@@ -2853,8 +3045,8 @@ async function onRequestPost18(context) {
     const stmts = [];
     let count = 0;
     if (deletedIds && Array.isArray(deletedIds) && deletedIds.length > 0 && !isStockOnly) {
-      for (let i = 0; i < deletedIds.length; i += 50) {
-        const chunkIds = deletedIds.slice(i, i + 50);
+      for (let i = 0; i < deletedIds.length; i += 25) {
+        const chunkIds = deletedIds.slice(i, i + 25);
         const placeholders = chunkIds.map(() => "?").join(",");
         stmts.push(env.DB.prepare(`DELETE FROM products WHERE id IN (${placeholders})`).bind(...chunkIds));
         count += chunkIds.length;
@@ -2863,12 +3055,15 @@ async function onRequestPost18(context) {
     if (products && Array.isArray(products)) {
       const productIds = products.map((p) => p.id);
       const currentProducts = /* @__PURE__ */ new Map();
-      for (let i = 0; i < productIds.length; i += 50) {
-        const chunkIds = productIds.slice(i, i + 50);
+      for (let i = 0; i < productIds.length; i += 25) {
+        const chunkIds = productIds.slice(i, i + 25);
         const placeholders = chunkIds.map(() => "?").join(",");
         const res = await env.DB.prepare(`SELECT id, data FROM products WHERE id IN (${placeholders})`).bind(...chunkIds).all();
-        for (const r of res.results) {
-          currentProducts.set(String(r.id), JSON.parse(r.data));
+        for (const r of res.results || []) {
+          try {
+            currentProducts.set(String(r.id), JSON.parse(r.data));
+          } catch (e) {
+          }
         }
       }
       for (const p of products) {
@@ -2908,7 +3103,6 @@ async function onRequestPost18(context) {
               merged.price = current.price;
               merged.autoPrice = false;
               merged.customPrice = current.customPrice;
-            } else if (current.customPrice && current.autoPrice) {
             }
             if (merged.variants && current.variants) {
               merged.variants = merged.variants.map((mv) => {
@@ -2933,30 +3127,46 @@ async function onRequestPost18(context) {
       }
     }
     if (stmts.length > 0) {
-      for (let i = 0; i < stmts.length; i += 50) {
-        const chunk = stmts.slice(i, i + 50);
+      for (let i = 0; i < stmts.length; i += 25) {
+        const chunk = stmts.slice(i, i + 25);
         await env.DB.batch(chunk);
       }
     }
-    const cache2 = caches.default;
-    const url = new URL("/api/public_state", request.url);
-    if (context.waitUntil) {
-      context.waitUntil(cache2.delete(new Request(url.toString())));
-    } else {
-      await cache2.delete(new Request(url.toString()));
+    if (data.categories && Array.isArray(data.categories) && data.categories.length > 0 && !isStockOnly) {
+      try {
+        const storeSettingsRes = await env.DB.prepare("SELECT value FROM settings WHERE key = 'websiteSettings'").first();
+        if (storeSettingsRes && storeSettingsRes.value) {
+          const storeSettings = JSON.parse(storeSettingsRes.value);
+          if (!storeSettings.categories || storeSettings.categories.length === 0) {
+            storeSettings.categories = data.categories;
+            await env.DB.prepare("INSERT INTO settings (key, value) VALUES ('websiteSettings', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value").bind(JSON.stringify(storeSettings)).run();
+          }
+        }
+      } catch (e) {
+      }
+    }
+    try {
+      const cache2 = caches.default;
+      const url = new URL("/api/public_state", request.url);
+      if (context.waitUntil) {
+        context.waitUntil(cache2.delete(new Request(url.toString())));
+      } else {
+        await cache2.delete(new Request(url.toString()));
+      }
+    } catch (e) {
     }
     return new Response(JSON.stringify({ success: true, processed: count }), {
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error.message || "Internal sync error" }), {
       status: 500,
       headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
     });
   }
 }
 __name(onRequestPost18, "onRequestPost");
-async function onRequestOptions() {
+async function onRequestOptions2() {
   return new Response(null, {
     headers: {
       "Access-Control-Allow-Origin": "*",
@@ -2965,7 +3175,7 @@ async function onRequestOptions() {
     }
   });
 }
-__name(onRequestOptions, "onRequestOptions");
+__name(onRequestOptions2, "onRequestOptions");
 
 // api/sync_check.ts
 async function onRequestPost19(context) {
@@ -3003,7 +3213,7 @@ async function onRequestPost19(context) {
   }
 }
 __name(onRequestPost19, "onRequestPost");
-async function onRequestOptions2() {
+async function onRequestOptions3() {
   return new Response(null, {
     headers: {
       "Access-Control-Allow-Origin": "*",
@@ -3012,10 +3222,10 @@ async function onRequestOptions2() {
     }
   });
 }
-__name(onRequestOptions2, "onRequestOptions");
+__name(onRequestOptions3, "onRequestOptions");
 
 // api/sync_data.ts
-async function onRequestGet5(context) {
+async function onRequestGet6(context) {
   const { request, env } = context;
   try {
     const authHeader = request.headers.get("Authorization");
@@ -3051,8 +3261,8 @@ async function onRequestGet5(context) {
     return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
   }
 }
-__name(onRequestGet5, "onRequestGet");
-async function onRequestOptions3() {
+__name(onRequestGet6, "onRequestGet");
+async function onRequestOptions4() {
   return new Response(null, {
     headers: {
       "Access-Control-Allow-Origin": "*",
@@ -3061,7 +3271,7 @@ async function onRequestOptions3() {
     }
   });
 }
-__name(onRequestOptions3, "onRequestOptions");
+__name(onRequestOptions4, "onRequestOptions");
 
 // api/sync_deduct_stock.ts
 async function onRequestPost20(context) {
@@ -3188,7 +3398,7 @@ async function onRequestPost20(context) {
   }
 }
 __name(onRequestPost20, "onRequestPost");
-async function onRequestOptions4() {
+async function onRequestOptions5() {
   return new Response(null, {
     headers: {
       "Access-Control-Allow-Origin": "*",
@@ -3197,7 +3407,7 @@ async function onRequestOptions4() {
     }
   });
 }
-__name(onRequestOptions4, "onRequestOptions");
+__name(onRequestOptions5, "onRequestOptions");
 
 // api/tiktok.ts
 async function onRequestPost21({ request, env }) {
@@ -3351,7 +3561,8 @@ async function onRequest(context) {
     "/api/facebook",
     "/api/tiktok",
     "/api/ga4",
-    "/api/send_telegram"
+    "/api/send_telegram",
+    "/api/proxy_image"
   ];
   if (publicPaths.includes(path)) {
     return next();
@@ -3361,10 +3572,22 @@ async function onRequest(context) {
   const cookieHeader = request.headers.get("Cookie") || "";
   const cookies = Object.fromEntries(cookieHeader.split(";").map((c) => c.trim().split("=")));
   const adminToken = cookies["admin_token"];
-  const storeSettingsRes = await env.DB.prepare("SELECT value FROM settings WHERE key = ?").bind("websiteSettings").all();
-  const storeSettings = storeSettingsRes.results.length > 0 ? JSON.parse(storeSettingsRes.results[0].value) : {};
   if (path === "/api/sync_apply") {
-    if (!tokenFromHeader || !storeSettings?.apiSync?.connectedMasterApiKey || tokenFromHeader !== storeSettings.apiSync.connectedMasterApiKey) {
+    const storeSettingsRes = await env.DB.prepare("SELECT value FROM settings WHERE key = ?").bind("websiteSettings").all();
+    const storeSettings = storeSettingsRes.results.length > 0 ? JSON.parse(storeSettingsRes.results[0].value) : {};
+    let isAdminAuth = false;
+    if (adminToken) {
+      try {
+        const secret = new TextEncoder().encode(env.JWT_SECRET || "default_secret_change_in_production");
+        await jwtVerify(adminToken, secret);
+        isAdminAuth = true;
+      } catch (e) {
+      }
+    }
+    const isMasterKeyAuth = Boolean(
+      tokenFromHeader && storeSettings?.apiSync?.connectedMasterApiKey && tokenFromHeader.trim() === storeSettings.apiSync.connectedMasterApiKey.trim()
+    );
+    if (!isAdminAuth && !isMasterKeyAuth) {
       return new Response(JSON.stringify({ error: "Unauthorized retail sync" }), { status: 401, headers: { "Content-Type": "application/json" } });
     }
     return next();
@@ -3397,7 +3620,7 @@ async function onRequest(context) {
 }
 __name(onRequest, "onRequest");
 
-// ../.wrangler/tmp/pages-0KlM6w/functionsRoutes-0.40811200037596085.mjs
+// ../.wrangler/tmp/pages-6YtyPp/functionsRoutes-0.8179905289252916.mjs
 var routes = [
   {
     routePath: "/api/admin_orders",
@@ -3484,6 +3707,20 @@ var routes = [
     modules: [onRequestPost9]
   },
   {
+    routePath: "/api/proxy_image",
+    mountPath: "/api",
+    method: "GET",
+    middlewares: [],
+    modules: [onRequestGet4]
+  },
+  {
+    routePath: "/api/proxy_image",
+    mountPath: "/api",
+    method: "OPTIONS",
+    middlewares: [],
+    modules: [onRequestOptions]
+  },
+  {
     routePath: "/api/public_add_to_order",
     mountPath: "/api",
     method: "POST",
@@ -3516,7 +3753,7 @@ var routes = [
     mountPath: "/api",
     method: "GET",
     middlewares: [],
-    modules: [onRequestGet4]
+    modules: [onRequestGet5]
   },
   {
     routePath: "/api/register",
@@ -3551,7 +3788,7 @@ var routes = [
     mountPath: "/api",
     method: "OPTIONS",
     middlewares: [],
-    modules: [onRequestOptions]
+    modules: [onRequestOptions2]
   },
   {
     routePath: "/api/sync_apply",
@@ -3565,7 +3802,7 @@ var routes = [
     mountPath: "/api",
     method: "OPTIONS",
     middlewares: [],
-    modules: [onRequestOptions2]
+    modules: [onRequestOptions3]
   },
   {
     routePath: "/api/sync_check",
@@ -3579,21 +3816,21 @@ var routes = [
     mountPath: "/api",
     method: "GET",
     middlewares: [],
-    modules: [onRequestGet5]
+    modules: [onRequestGet6]
   },
   {
     routePath: "/api/sync_data",
     mountPath: "/api",
     method: "OPTIONS",
     middlewares: [],
-    modules: [onRequestOptions3]
+    modules: [onRequestOptions4]
   },
   {
     routePath: "/api/sync_deduct_stock",
     mountPath: "/api",
     method: "OPTIONS",
     middlewares: [],
-    modules: [onRequestOptions4]
+    modules: [onRequestOptions5]
   },
   {
     routePath: "/api/sync_deduct_stock",
@@ -3625,7 +3862,7 @@ var routes = [
   }
 ];
 
-// ../../../.npm/_npx/32026684e21afda6/node_modules/path-to-regexp/dist.es2015/index.js
+// ../../../.npm/_npx/38f3295754dfa028/node_modules/path-to-regexp/dist.es2015/index.js
 function lexer(str) {
   var tokens = [];
   var i = 0;
@@ -3951,7 +4188,7 @@ function pathToRegexp(path, keys, options) {
 }
 __name(pathToRegexp, "pathToRegexp");
 
-// ../../../.npm/_npx/32026684e21afda6/node_modules/wrangler/templates/pages-template-worker.ts
+// ../../../.npm/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
 var escapeRegex = /[.+?^${}()|[\]\\]/g;
 function* executeRequest(request) {
   const requestPath = new URL(request.url).pathname;

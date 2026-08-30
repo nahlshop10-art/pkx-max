@@ -97,6 +97,22 @@
       ]
     },
     {
+      "routePath": "/api/proxy_image",
+      "mountPath": "/api",
+      "method": "GET",
+      "module": [
+        "api/proxy_image.ts:onRequestGet"
+      ]
+    },
+    {
+      "routePath": "/api/proxy_image",
+      "mountPath": "/api",
+      "method": "OPTIONS",
+      "module": [
+        "api/proxy_image.ts:onRequestOptions"
+      ]
+    },
+    {
       "routePath": "/api/public_add_to_order",
       "mountPath": "/api",
       "method": "POST",
