@@ -7,7 +7,7 @@ import {
   Trash2, Move, RefreshCcw, ChevronDown, ChevronUp, Image as ImageIcon,
   LayoutGrid, Activity, Check, SlidersHorizontal, Calendar as CalendarIcon,
   ChevronRight, Edit3, Copy, RefreshCw, Palette, Factory, BadgePercent, Globe, CreditCard, Truck, JapaneseYen, Target, LogOut, User, ShieldAlert, UserCheck, UserX, Unlock, Lock,
-  Printer, CheckSquare, PackagePlus, AlertCircle, FileArchive, Calculator, PackageX, Download,
+  Printer, CheckSquare, PackagePlus, AlertCircle, FileArchive, FolderArchive, Calculator, PackageX, Download,
   HelpCircle, Shield, Layers, Database, Info, ExternalLink,
   TrendingUp, ShoppingBag, CircleDollarSign, Undo2, MinusCircle, ClipboardList, ClipboardCheck, XCircle, Tag,
   Star, Key, FileText, Type, AlignLeft, Share2, Lightbulb
@@ -24,6 +24,7 @@ import { getDefaultImageOptimization, setDefaultImageOptimization, ImageOptimiza
 import ProductEditorModal from './ProductEditorModal';
 import OrderDetailsModal from './OrderDetailsModal';
 import ZipImportModal from './components/ZipImportModal';
+import FbZipExportModal from './components/FbZipExportModal';
 import { DatePicker } from './components/DatePicker';
 import DiscountManager from './DiscountManager';
 import CustomersManager from './CustomersManager';
@@ -287,12 +288,14 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showZipImport, setShowZipImport] = useState(false);
+  const [showFbZipExport, setShowFbZipExport] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [confirmAction, setConfirmAction] = useState<{ title: string; message: string; onConfirm: () => void } | null>(null);
 
   useHistoryModal(isAddingProduct, () => setIsAddingProduct(false), 'add-product');
   useHistoryModal(!!editingProduct, () => setEditingProduct(null), 'edit-product');
   useHistoryModal(showZipImport, () => setShowZipImport(false), 'zip-import');
+  useHistoryModal(showFbZipExport, () => setShowFbZipExport(false), 'fb-zip-export');
   useHistoryModal(!!confirmAction, () => setConfirmAction(null), 'confirm-action');
 
   const handleTabChange = (tab: any) => {
@@ -1657,8 +1660,17 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
             )}
 
             <button 
-              onClick={() => setShowZipImport(true)}
+              onClick={() => setShowFbZipExport(true)}
               className="ml-auto px-3 py-2 bg-[var(--dash-card)] rounded-lg border border-[var(--dash-border)] hover:bg-[var(--dash-border)] transition-colors text-white font-medium flex items-center gap-2"
+              title="Download FB Auto-Sender In-Stock Dataset"
+            >
+              <Download size={18} className="text-blue-400" />
+              <span className="hidden sm:inline">Download Fb Zip</span>
+            </button>
+
+            <button 
+              onClick={() => setShowZipImport(true)}
+              className="px-3 py-2 bg-[var(--dash-card)] rounded-lg border border-[var(--dash-border)] hover:bg-[var(--dash-border)] transition-colors text-white font-medium flex items-center gap-2"
             >
               <FileArchive size={18} className="text-[#fafafa]" />
               <span className="hidden sm:inline">Import ZIP</span>
@@ -2463,6 +2475,23 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
                 </div>
                 <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
               </div>
+
+              {/* Download FB Zip (FB Auto-Sender Dataset) */}
+              <div 
+                onClick={() => setShowFbZipExport(true)}
+                className="flex items-center justify-between py-3.5 px-3.5 md:py-4 md:px-5 cursor-pointer hover:bg-white/[0.02] active:bg-white/[0.04] transition-colors group select-none"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="text-blue-400 shrink-0 flex items-center justify-center w-6 h-6">
+                    <FolderArchive size={20} strokeWidth={1.75} />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-white text-sm md:text-base font-medium tracking-wide">Download Fb Zip</span>
+                    <span className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded font-mono font-medium">In-Stock</span>
+                  </div>
+                </div>
+                <ChevronRight size={16} className="text-gray-500 group-hover:text-gray-300 transition-colors shrink-0" />
+              </div>
             </div>
 
             {/* Group 6: System Config */}
@@ -2723,6 +2752,15 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
         />
       )}
 
+      {showFbZipExport && (
+        <FbZipExportModal
+          onClose={() => setShowFbZipExport(false)}
+          products={products}
+          categories={categories}
+          themePrimary={websiteSettings.themeColors?.primary}
+        />
+      )}
+
       {/* Order Details Modal */}
       {selectedOrder && (
         <OrderDetailsModal
@@ -2825,7 +2863,14 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
         <QtyRulesManager settings={websiteSettings} setSettings={setWebsiteSettings} onClose={() => setSettingsView('main')} />
       )}
       {settingsView === 'customise' && perms.sections.settings && (
-        <CustomiseManager settings={websiteSettings} setSettings={setWebsiteSettings} onClose={() => setSettingsView('main')} />
+        <CustomiseManager 
+          settings={websiteSettings} 
+          setSettings={setWebsiteSettings} 
+          onClose={() => setSettingsView('main')} 
+          products={products}
+          categories={categories}
+          onDownloadFbZip={() => setShowFbZipExport(true)}
+        />
       )}
       {settingsView === 'notification' && perms.sections.settings && (
         <NotificationManager websiteSettings={websiteSettings} setWebsiteSettings={setWebsiteSettings} onClose={() => setSettingsView('main')} />

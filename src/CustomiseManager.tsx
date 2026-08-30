@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Save, Check } from 'lucide-react';
-import { WebsiteSettings } from './types';
+import { ArrowLeft, Save, Check, FolderArchive, Download } from 'lucide-react';
+import { WebsiteSettings, Product, Category } from './types';
 import ActionButtonsCustomiser from './components/ActionButtonsCustomiser';
+import FbZipExportModal from './components/FbZipExportModal';
 import { cloudStore } from './lib/cloudStore';
 
 interface CustomiseManagerProps {
   settings: WebsiteSettings;
   setSettings: React.Dispatch<React.SetStateAction<WebsiteSettings>>;
   onClose: () => void;
+  products?: Product[];
+  categories?: Category[];
+  onDownloadFbZip?: () => void;
 }
 
 const POPULAR_FONTS = [
@@ -20,11 +24,19 @@ const POPULAR_FONTS = [
   "Oxygen", "Dosis", "Bitter", "Arimo", "Pacifico"
 ];
 
-export default function CustomiseManager({ settings, setSettings, onClose }: CustomiseManagerProps) {
+export default function CustomiseManager({ 
+  settings, 
+  setSettings, 
+  onClose,
+  products = [],
+  categories = [],
+  onDownloadFbZip
+}: CustomiseManagerProps) {
   const [draftSettings, setDraftSettings] = useState<WebsiteSettings>(() => JSON.parse(JSON.stringify(settings)));
   const [activeTab, setActiveTab] = useState<'website' | 'buttons' | 'dashboard'>('website');
   const [saved, setSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showLocalFbZipModal, setShowLocalFbZipModal] = useState(false);
 
   const defaultThemeColors = {
     primary: '#ff4d6d',
@@ -366,9 +378,49 @@ export default function CustomiseManager({ settings, setSettings, onClose }: Cus
               </div>
 
             </div>
+
+            <div className="flex justify-between items-center mb-2 mt-8">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <FolderArchive size={20} className="text-blue-400" />
+                FB Auto-Sender Dataset
+              </h3>
+            </div>
+
+            <div className="bg-[var(--dash-card)] p-4 rounded-xl border border-[var(--dash-border)] space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h4 className="text-white font-medium text-sm">In-Stock Products Dataset (.ZIP)</h4>
+                  <p className="text-xs text-gray-400 mt-0.5">Generate and download a single .ZIP archive containing all in-stock product images and formatted text.txt captions for FB Messenger auto-sender.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onDownloadFbZip) {
+                      onDownloadFbZip();
+                    } else {
+                      setShowLocalFbZipModal(true);
+                    }
+                  }}
+                  style={{ backgroundColor: themeColors.primary || '#ff4d6d' }}
+                  className="px-4 py-2.5 rounded-xl font-bold text-xs text-white hover:brightness-110 active:scale-95 transition-all shadow-md flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+                >
+                  <Download size={16} />
+                  <span>Download Fb Zip</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
+
+      {showLocalFbZipModal && (
+        <FbZipExportModal
+          onClose={() => setShowLocalFbZipModal(false)}
+          products={products}
+          categories={categories}
+          themePrimary={themeColors.primary}
+        />
+      )}
     </div>
   );
 }
