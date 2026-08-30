@@ -7,12 +7,13 @@ import {
   FolderArchive, 
   CheckCircle2, 
   AlertCircle, 
-  Layers, 
   SlidersHorizontal,
   ChevronDown,
   Info,
   Sparkles,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Eye,
+  Settings2
 } from 'lucide-react';
 import JSZip from 'jszip';
 import { Product, Category } from '../types';
@@ -186,6 +187,8 @@ export default function FbZipExportModal({
   const [fallbackCategory, setFallbackCategory] = useState<string>('GENERAL');
   const [folderNaming, setFolderNaming] = useState<'sequential' | 'productId'>('sequential');
   const [maxImagesPerProduct, setMaxImagesPerProduct] = useState<number>(3);
+  const [isCustomCount, setIsCustomCount] = useState<boolean>(false);
+  const [showPreview, setShowPreview] = useState<boolean>(false);
   const [showAdvanced, setShowAdvanced] = useState<boolean>(false);
   const [selectedPreviewIndex, setSelectedPreviewIndex] = useState<number>(0);
 
@@ -323,7 +326,7 @@ export default function FbZipExportModal({
           completedProducts++;
           const pct = Math.round((completedProducts / total) * 90);
           setProgressPercent(pct);
-          setStatusMessage(`Packaging product ${completedProducts}/${total}: "${prod.title.slice(0, 24)}..."`);
+          setStatusMessage(`Packaging ${completedProducts}/${total}: "${prod.title.slice(0, 20)}..."`);
         }));
 
         // Allow browser UI to update
@@ -336,7 +339,7 @@ export default function FbZipExportModal({
       }
 
       // Generate final ZIP file
-      setStatusMessage('Compressing and generating high-res .ZIP package...');
+      setStatusMessage('Packaging and finalizing ZIP...');
       setProgressPercent(95);
 
       const zipBlob = await zip.generateAsync(
@@ -378,99 +381,92 @@ export default function FbZipExportModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-md flex justify-center items-center p-3 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto">
       <motion.div 
-        initial={{ opacity: 0, scale: 0.96, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 10 }}
-        transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        className="bg-[var(--dash-card)] border border-[var(--dash-border)]/80 rounded-3xl w-full max-w-2xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh] my-auto"
+        initial={{ opacity: 0, y: 20, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 20, scale: 0.98 }}
+        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+        className="bg-[#10141d] border border-white/10 rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[85vh]"
       >
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-[var(--dash-border)]/60 flex justify-between items-center bg-[var(--dash-bg)]/60">
+        <div className="p-4 sm:p-5 border-b border-white/10 flex justify-between items-center bg-[#151a24]">
           <div className="flex items-center gap-3">
             <div 
-              className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-md shadow-black/20"
-              style={{ backgroundColor: `${themePrimary}20`, color: themePrimary }}
+              className="w-9 h-9 rounded-xl flex items-center justify-center shadow-inner shrink-0"
+              style={{ backgroundColor: `${themePrimary}25`, color: themePrimary }}
             >
-              <FolderArchive size={22} strokeWidth={2} />
+              <FolderArchive size={19} strokeWidth={2.2} />
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-                Download FB Zip
-                <span className="text-[11px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                  In-Stock Only
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                  Download FB Zip
+                </h2>
+                <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                  In-Stock
                 </span>
-              </h2>
-              <p className="text-xs text-gray-400">High-Res Images &amp; Captions for FB Messenger Auto-Sender</p>
+              </div>
+              <p className="text-[11px] text-gray-400">High-Res images &amp; captions for Auto-Sender</p>
             </div>
           </div>
           <button 
             onClick={onClose} 
             disabled={exportState === 'exporting'}
-            className="p-2 bg-[var(--dash-card)] rounded-xl border border-[var(--dash-border)] hover:bg-[var(--dash-border)] text-gray-400 hover:text-white transition-colors disabled:opacity-30 cursor-pointer"
+            className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-colors disabled:opacity-30 cursor-pointer"
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
         {/* Content Body */}
-        <div className="p-4 sm:p-6 overflow-y-auto space-y-5 custom-scrollbar">
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-4 custom-scrollbar">
           
-          {/* Status / Overview Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div className="bg-[var(--dash-bg)]/80 border border-emerald-500/30 rounded-2xl p-3.5 flex flex-col justify-between">
-              <span className="text-xs font-medium text-emerald-400 flex items-center gap-1.5">
-                <CheckCircle2 size={14} /> In-Stock
+          {/* Compact 1-Line Status Metric Strip */}
+          <div className="grid grid-cols-3 gap-2 bg-[#151a24] border border-white/5 rounded-2xl p-2.5 sm:p-3 text-center">
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase font-semibold text-emerald-400 flex items-center justify-center gap-1">
+                <CheckCircle2 size={11} /> In-Stock
               </span>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-2xl font-black text-white">{inStockProducts.length}</span>
-                <span className="text-xs text-gray-400">products</span>
-              </div>
+              <span className="text-lg font-black text-white mt-0.5">{inStockProducts.length}</span>
             </div>
 
-            <div className="bg-[var(--dash-bg)]/80 border border-[var(--dash-border)]/60 rounded-2xl p-3.5 flex flex-col justify-between">
-              <span className="text-xs font-medium text-gray-400 flex items-center gap-1.5">
-                <AlertCircle size={14} className="text-amber-400/80" /> Stock Out
+            <div className="flex flex-col border-x border-white/5">
+              <span className="text-[10px] uppercase font-semibold text-gray-400 flex items-center justify-center gap-1">
+                <AlertCircle size={11} /> Stock-Out
               </span>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-2xl font-black text-gray-300">{outOfStockCount}</span>
-                <span className="text-xs text-gray-500">skipped</span>
-              </div>
+              <span className="text-lg font-black text-gray-400 mt-0.5">{outOfStockCount}</span>
             </div>
 
-            <div className="col-span-2 sm:col-span-1 bg-[var(--dash-bg)]/80 border border-blue-500/30 rounded-2xl p-3.5 flex flex-col justify-between">
-              <span className="text-xs font-medium text-blue-400 flex items-center gap-1.5">
-                <ImageIcon size={14} /> High-Res Pics
+            <div className="flex flex-col">
+              <span className="text-[10px] uppercase font-semibold text-blue-400 flex items-center justify-center gap-1">
+                <ImageIcon size={11} /> Photos
               </span>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-2xl font-black text-white">~{estimatedImagesCount}</span>
-                <span className="text-xs text-gray-400">images</span>
-              </div>
+              <span className="text-lg font-black text-blue-300 mt-0.5">~{estimatedImagesCount}</span>
             </div>
           </div>
 
           {/* Exporting Progress View */}
           {exportState === 'exporting' && (
-            <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-4">
+            <div className="bg-[#151a24] border border-white/10 rounded-2xl p-5 flex flex-col items-center justify-center text-center space-y-3.5">
               <div 
-                className="w-14 h-14 rounded-full border-4 border-t-transparent animate-spin flex items-center justify-center"
+                className="w-12 h-12 rounded-full border-3 border-t-transparent animate-spin flex items-center justify-center"
                 style={{ borderColor: `${themePrimary}30`, borderTopColor: themePrimary }}
               />
-              <div className="space-y-1 max-w-md">
-                <h3 className="text-base font-bold text-white">Downloading Images &amp; Packaging Dataset</h3>
-                <p className="text-xs text-gray-400 truncate">{statusMessage}</p>
+              <div className="space-y-1 max-w-xs">
+                <h3 className="text-sm font-bold text-white">Downloading Images &amp; Packaging</h3>
+                <p className="text-[11px] text-gray-400 truncate">{statusMessage}</p>
               </div>
 
               {/* Progress Bar */}
-              <div className="w-full max-w-md space-y-1.5">
-                <div className="flex justify-between text-xs font-mono text-gray-400">
+              <div className="w-full max-w-xs space-y-1">
+                <div className="flex justify-between text-[11px] font-mono text-gray-400">
                   <span>Progress</span>
                   <span className="font-bold text-white">{progressPercent}%</span>
                 </div>
-                <div className="w-full h-2.5 bg-black/40 rounded-full overflow-hidden border border-white/5">
+                <div className="w-full h-2 bg-black/60 rounded-full overflow-hidden border border-white/5">
                   <motion.div 
-                    className="h-full rounded-full transition-all duration-300"
+                    className="h-full rounded-full transition-all duration-200"
                     style={{ 
                       width: `${progressPercent}%`,
                       backgroundColor: themePrimary 
@@ -481,34 +477,34 @@ export default function FbZipExportModal({
 
               <button
                 onClick={handleCancel}
-                className="text-xs text-gray-400 hover:text-white px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors mt-2"
+                className="text-xs text-gray-400 hover:text-white px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors mt-1"
               >
-                Cancel Export
+                Cancel
               </button>
             </div>
           )}
 
           {/* Success View */}
           {exportState === 'success' && (
-            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-3">
-              <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <CheckCircle2 size={28} />
+            <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-5 flex flex-col items-center justify-center text-center space-y-2.5">
+              <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <CheckCircle2 size={24} />
               </div>
-              <h3 className="text-lg font-bold text-white">Export Completed Successfully!</h3>
-              <p className="text-xs text-emerald-300 max-w-md">
-                Downloaded <span className="font-bold">{exportedCount} in-stock products</span> with <span className="font-bold">{totalImagesExported} high-resolution images</span> formatted for Facebook Messenger auto-sender.
+              <h3 className="text-base font-bold text-white">Download Ready!</h3>
+              <p className="text-xs text-emerald-300">
+                Downloaded <strong className="text-white">{exportedCount} products</strong> with <strong className="text-white">{totalImagesExported} high-res images</strong> and captions.
               </p>
-              <div className="pt-2 flex gap-3">
+              <div className="pt-2 flex gap-2 w-full">
                 <button
                   onClick={() => setExportState('idle')}
-                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold transition-colors"
+                  className="flex-1 py-2.5 rounded-xl bg-white/10 text-white text-xs font-semibold hover:bg-white/15 transition-colors"
                 >
                   Export Again
                 </button>
                 <button
                   onClick={onClose}
                   style={{ backgroundColor: themePrimary }}
-                  className="px-5 py-2 rounded-xl text-white text-xs font-bold shadow-md hover:brightness-110 transition-all"
+                  className="flex-1 py-2.5 rounded-xl text-white text-xs font-bold shadow-md hover:brightness-110 transition-all"
                 >
                   Done
                 </button>
@@ -518,14 +514,14 @@ export default function FbZipExportModal({
 
           {/* Error View */}
           {exportState === 'error' && (
-            <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-5 flex items-start gap-3">
-              <AlertCircle size={20} className="text-rose-400 shrink-0 mt-0.5" />
+            <div className="bg-rose-500/10 border border-rose-500/30 rounded-2xl p-4 flex items-start gap-3">
+              <AlertCircle size={18} className="text-rose-400 shrink-0 mt-0.5" />
               <div className="space-y-1 flex-1">
-                <h4 className="text-sm font-bold text-rose-300">Export Failed</h4>
-                <p className="text-xs text-rose-400/90">{errorMessage}</p>
+                <h4 className="text-xs font-bold text-rose-300">Export Failed</h4>
+                <p className="text-[11px] text-rose-400/90">{errorMessage}</p>
                 <button
                   onClick={() => setExportState('idle')}
-                  className="mt-2 text-xs font-semibold text-white underline hover:no-underline"
+                  className="mt-1 text-xs font-semibold text-white underline"
                 >
                   Try Again
                 </button>
@@ -533,153 +529,157 @@ export default function FbZipExportModal({
             </div>
           )}
 
-          {/* Configuration & Controls Section (Idle State) */}
+          {/* Controls Section (Idle State) */}
           {exportState === 'idle' && (
             <>
-              {/* Max Pictures Limit Control (Requested by user) */}
-              <div className="bg-[var(--dash-bg)]/90 border border-blue-500/30 rounded-2xl p-4 space-y-3 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <ImageIcon size={18} className="text-blue-400" />
-                    <div>
-                      <h4 className="text-xs font-bold text-white uppercase tracking-wider">Max Pictures per Product</h4>
-                      <p className="text-[11px] text-gray-400">If a product has multiple gallery styles, limits how many images to export per folder.</p>
-                    </div>
+              {/* Max Pictures Limit Control (Touch friendly segmented buttons) */}
+              <div className="bg-[#151a24] border border-white/10 rounded-2xl p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <ImageIcon size={15} className="text-blue-400" />
+                    <span className="text-xs font-bold text-white">Photos per Product</span>
                   </div>
+                  <span className="text-[11px] font-mono text-blue-300/90 font-medium">
+                    {maxImagesPerProduct === 0 ? 'All Photos' : `Max ${maxImagesPerProduct} Photos`}
+                  </span>
+                </div>
 
-                  {/* Quick Preset Buttons */}
-                  <div className="flex items-center gap-1.5 self-start sm:self-auto">
-                    {[1, 2, 3, 5, 0].map((count) => (
+                {/* Segmented Pill Selector with 44px Touch Targets */}
+                <div className="grid grid-cols-5 gap-1.5 p-1 bg-black/40 rounded-xl border border-white/5">
+                  {[1, 2, 3, 5, 0].map((count) => {
+                    const isSelected = !isCustomCount && maxImagesPerProduct === count;
+                    return (
                       <button
                         key={count}
                         type="button"
-                        onClick={() => setMaxImagesPerProduct(count)}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                          maxImagesPerProduct === count 
-                            ? 'bg-blue-500 text-white shadow-sm' 
-                            : 'bg-white/5 hover:bg-white/10 text-gray-300'
+                        onClick={() => {
+                          setIsCustomCount(false);
+                          setMaxImagesPerProduct(count);
+                        }}
+                        className={`h-9 rounded-lg text-xs font-bold transition-all flex items-center justify-center cursor-pointer ${
+                          isSelected
+                            ? 'bg-blue-600 text-white shadow-sm'
+                            : 'text-gray-400 hover:text-white hover:bg-white/5'
                         }`}
                       >
                         {count === 0 ? 'All' : count}
                       </button>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
 
-                <div className="flex items-center gap-3 pt-1">
-                  <div className="flex-1">
+                {/* Custom Count Toggle / Input */}
+                <div className="flex items-center justify-between pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomCount(!isCustomCount)}
+                    className="text-[11px] text-gray-400 hover:text-blue-300 flex items-center gap-1 cursor-pointer transition-colors"
+                  >
+                    <span>{isCustomCount ? '▼ Hide custom limit' : '✎ Set custom number'}</span>
+                  </button>
+
+                  <span className="text-[10px] text-gray-500">
+                    {maxImagesPerProduct === 0 
+                      ? 'Exports every uploaded image' 
+                      : `Exports top ${maxImagesPerProduct} pictures + caption`}
+                  </span>
+                </div>
+
+                {isCustomCount && (
+                  <div className="pt-1 flex items-center gap-2">
                     <input 
                       type="number"
+                      inputMode="numeric"
                       min="1"
                       max="50"
                       value={maxImagesPerProduct === 0 ? '' : maxImagesPerProduct}
                       onChange={(e) => {
-                        const val = e.target.value === '' ? 0 : parseInt(e.target.value);
-                        setMaxImagesPerProduct(isNaN(val) ? 0 : Math.max(0, val));
+                        const val = parseInt(e.target.value);
+                        setMaxImagesPerProduct(isNaN(val) ? 1 : Math.max(1, Math.min(50, val)));
                       }}
-                      placeholder="0 = Download all pictures"
-                      className="w-full bg-[var(--dash-card)] text-white border border-[var(--dash-border)] rounded-xl px-3.5 py-2 font-mono text-xs focus:border-blue-500 outline-none"
+                      placeholder="e.g. 4"
+                      className="w-24 bg-black/50 text-white text-center font-bold border border-blue-500/50 rounded-xl py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500"
                     />
-                  </div>
-                  <span className="text-xs text-blue-300/80 font-mono shrink-0">
-                    {maxImagesPerProduct === 0 
-                      ? 'Downloading all uploaded photos' 
-                      : `Saving up to ${maxImagesPerProduct} high-res photos per product`}
-                  </span>
-                </div>
-              </div>
-
-              {/* Live Caption & Folder Preview Box */}
-              <div className="bg-[var(--dash-bg)]/90 border border-[var(--dash-border)]/80 rounded-2xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FileText size={16} className="text-cyan-400" />
-                    <span className="text-xs font-bold text-white uppercase tracking-wider">Live text.txt Caption Preview</span>
-                  </div>
-                  
-                  {inStockProducts.length > 1 && (
-                    <select
-                      value={selectedPreviewIndex}
-                      onChange={(e) => setSelectedPreviewIndex(Number(e.target.value))}
-                      className="text-[11px] bg-[var(--dash-card)] text-gray-300 border border-[var(--dash-border)] rounded-lg px-2 py-1 outline-none max-w-[180px] truncate"
-                    >
-                      {inStockProducts.slice(0, 20).map((p, idx) => (
-                        <option key={p.id || idx} value={idx}>
-                          {idx + 1}. {p.title}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
-                {sampleProduct ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    {/* Left: Raw text.txt representation */}
-                    <div className="bg-black/50 border border-white/10 rounded-xl p-3 font-mono text-xs text-emerald-300 whitespace-pre-wrap leading-relaxed shadow-inner select-all">
-                      {sampleCaption}
-                    </div>
-
-                    {/* Right: Explanatory Breakdown */}
-                    <div className="space-y-2 text-xs text-gray-400 flex flex-col justify-center bg-white/[0.02] border border-white/5 rounded-xl p-3">
-                      <div className="flex justify-between items-center pb-1.5 border-b border-white/5">
-                        <span>Category (Uppercase):</span>
-                        <span className="font-bold text-white font-mono">
-                          {sampleProduct.category ? sampleProduct.category.toUpperCase() : fallbackCategory}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center pb-1.5 border-b border-white/5">
-                        <span>Per Piece Price:</span>
-                        <span className="font-bold text-cyan-300 font-mono">
-                          {Math.round(Number(sampleProduct.price) || 0)} TK
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span>MOQ-6 Price ({moqDiscount} TK off):</span>
-                        <span className="font-bold text-amber-300 font-mono">
-                          {Math.max(0, Math.round(Number(sampleProduct.price) || 0) - moqDiscount)} TK
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-4 text-xs text-gray-400">
-                    No in-stock products available for preview.
+                    <span className="text-[11px] text-gray-300">photos maximum per folder</span>
                   </div>
                 )}
               </div>
 
-              {/* Archive Hierarchy Specs */}
-              <div className="bg-[var(--dash-bg)]/40 border border-white/5 rounded-2xl p-4">
-                <h4 className="text-xs font-semibold text-gray-300 mb-2 flex items-center gap-1.5">
-                  <Info size={14} className="text-blue-400" />
-                  Dataset Archive Structure
-                </h4>
-                <div className="font-mono text-[11px] text-gray-400 space-y-1 pl-1">
-                  <div>📁 <span className="text-gray-200">export_dataset/</span></div>
-                  <div className="pl-4">├── 📁 <span className="text-cyan-300">1/</span> (Product 1)</div>
-                  <div className="pl-8">├── 🖼️ <span className="text-amber-200">image_1.webp</span> (Original High-Res)</div>
-                  {maxImagesPerProduct !== 1 && (
-                    <div className="pl-8">├── 🖼️ <span className="text-amber-200">image_2.webp</span> (Gallery Photo)</div>
-                  )}
-                  <div className="pl-8">└── 📄 <span className="text-emerald-300">text.txt</span> (Formatted caption)</div>
-                  <div className="pl-4">├── 📁 <span className="text-cyan-300">2/</span> (Product 2)</div>
-                  <div className="pl-8">└── ...</div>
-                </div>
-              </div>
-
-              {/* Advanced Settings Accordion */}
-              <div className="border border-[var(--dash-border)]/60 rounded-2xl overflow-hidden bg-[var(--dash-bg)]/50">
+              {/* Collapsible Live text.txt Caption Preview */}
+              <div className="border border-white/10 rounded-2xl overflow-hidden bg-[#151a24]">
                 <button
-                  onClick={() => setShowAdvanced(!showAdvanced)}
-                  className="w-full p-3.5 flex items-center justify-between text-xs font-semibold text-gray-300 hover:text-white transition-colors"
+                  type="button"
+                  onClick={() => setShowPreview(!showPreview)}
+                  className="w-full p-3 sm:p-3.5 flex items-center justify-between text-xs font-semibold text-gray-200 hover:text-white transition-colors cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
-                    <SlidersHorizontal size={14} className="text-pink-400" />
-                    Customise Pricing &amp; Structure
+                    <FileText size={15} className="text-cyan-400" />
+                    <span>Caption Preview (text.txt)</span>
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded-full border border-cyan-400/20">
+                      {showPreview ? 'Hide' : 'View'}
+                    </span>
+                    <ChevronDown 
+                      size={14} 
+                      className={`text-gray-400 transition-transform duration-200 ${showPreview ? 'rotate-180' : ''}`} 
+                    />
+                  </div>
+                </button>
+
+                <AnimatePresence>
+                  {showPreview && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="border-t border-white/5 p-3.5 space-y-2.5 bg-black/20"
+                    >
+                      {inStockProducts.length > 1 && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-[11px] text-gray-400 shrink-0">Sample:</span>
+                          <select
+                            value={selectedPreviewIndex}
+                            onChange={(e) => setSelectedPreviewIndex(Number(e.target.value))}
+                            className="flex-1 text-xs bg-[#10141d] text-gray-200 border border-white/10 rounded-lg px-2 py-1 outline-none truncate"
+                          >
+                            {inStockProducts.slice(0, 20).map((p, idx) => (
+                              <option key={p.id || idx} value={idx}>
+                                {idx + 1}. {p.title}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      {sampleProduct ? (
+                        <div className="bg-black/60 border border-white/10 rounded-xl p-3 font-mono text-xs text-emerald-300 whitespace-pre-wrap leading-relaxed shadow-inner">
+                          {sampleCaption}
+                        </div>
+                      ) : (
+                        <div className="text-center py-2 text-xs text-gray-400">
+                          No in-stock products available.
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Advanced Options Accordion (Pricing discount & category) */}
+              <div className="border border-white/10 rounded-2xl overflow-hidden bg-[#151a24]">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="w-full p-3 sm:p-3.5 flex items-center justify-between text-xs font-semibold text-gray-300 hover:text-white transition-colors cursor-pointer"
+                >
+                  <span className="flex items-center gap-2">
+                    <Settings2 size={15} className="text-pink-400" />
+                    <span>Pricing &amp; Folder Options</span>
                   </span>
                   <ChevronDown 
-                    size={16} 
-                    className={`text-gray-500 transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`} 
+                    size={14} 
+                    className={`text-gray-400 transition-transform duration-200 ${showAdvanced ? 'rotate-180' : ''}`} 
                   />
                 </button>
 
@@ -689,39 +689,37 @@ export default function FbZipExportModal({
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      className="border-t border-[var(--dash-border)]/40 p-4 space-y-3.5 bg-[var(--dash-card)]/40 text-xs"
+                      className="border-t border-white/5 p-3.5 space-y-3 bg-black/20 text-xs"
                     >
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-1.5">
-                          <label className="text-gray-300 font-medium">MOQ-6 Discount Amount (TK)</label>
+                        <div className="space-y-1">
+                          <label className="text-gray-300 font-medium">MOQ-6 Discount (TK)</label>
                           <input 
                             type="number"
+                            inputMode="numeric"
                             min="0"
-                            max="500"
                             value={moqDiscount}
                             onChange={(e) => setMoqDiscount(Math.max(0, parseInt(e.target.value) || 0))}
-                            className="w-full bg-[var(--dash-bg)] text-white border border-[var(--dash-border)] rounded-xl px-3 py-2 font-mono text-xs focus:border-pink-500 outline-none"
+                            className="w-full bg-[#10141d] text-white border border-white/10 rounded-xl px-3 py-1.5 font-mono text-xs focus:border-pink-500 outline-none"
                           />
-                          <p className="text-[10px] text-gray-400">Deducted from selling price for MOQ-6 caption (Default: 5 TK).</p>
                         </div>
 
-                        <div className="space-y-1.5">
-                          <label className="text-gray-300 font-medium">Fallback Category Name</label>
+                        <div className="space-y-1">
+                          <label className="text-gray-300 font-medium">Fallback Category</label>
                           <input 
                             type="text"
                             value={fallbackCategory}
                             onChange={(e) => setFallbackCategory(e.target.value.toUpperCase())}
-                            className="w-full bg-[var(--dash-bg)] text-white border border-[var(--dash-border)] rounded-xl px-3 py-2 uppercase font-mono text-xs focus:border-pink-500 outline-none"
+                            className="w-full bg-[#10141d] text-white border border-white/10 rounded-xl px-3 py-1.5 uppercase font-mono text-xs focus:border-pink-500 outline-none"
                             placeholder="GENERAL"
                           />
-                          <p className="text-[10px] text-gray-400">Used if a product has no category assigned (Default: GENERAL).</p>
                         </div>
                       </div>
 
-                      <div className="space-y-1.5 pt-2 border-t border-white/5">
-                        <label className="text-gray-300 font-medium">Folder Numbering Format</label>
-                        <div className="flex gap-3">
-                          <label className="flex items-center gap-2 cursor-pointer text-gray-300">
+                      <div className="space-y-1.5 pt-1">
+                        <label className="text-gray-300 font-medium">Folder Numbering</label>
+                        <div className="flex gap-4">
+                          <label className="flex items-center gap-1.5 cursor-pointer text-gray-300 text-xs">
                             <input 
                               type="radio" 
                               name="folderNaming" 
@@ -729,9 +727,9 @@ export default function FbZipExportModal({
                               onChange={() => setFolderNaming('sequential')}
                               className="accent-pink-500"
                             />
-                            <span>Sequential Numbers (1, 2, 3...)</span>
+                            <span>1, 2, 3...</span>
                           </label>
-                          <label className="flex items-center gap-2 cursor-pointer text-gray-300">
+                          <label className="flex items-center gap-1.5 cursor-pointer text-gray-300 text-xs">
                             <input 
                               type="radio" 
                               name="folderNaming" 
@@ -739,7 +737,7 @@ export default function FbZipExportModal({
                               onChange={() => setFolderNaming('productId')}
                               className="accent-pink-500"
                             />
-                            <span>Product IDs (e.g. P001, P002...)</span>
+                            <span>Product ID (P001...)</span>
                           </label>
                         </div>
                       </div>
@@ -752,12 +750,12 @@ export default function FbZipExportModal({
 
         </div>
 
-        {/* Footer Action Bar */}
-        <div className="p-4 border-t border-[var(--dash-border)]/60 bg-[var(--dash-bg)]/80 flex items-center gap-3">
+        {/* Footer Action Bar with Mobile-First High Touch Targets */}
+        <div className="p-3.5 sm:p-4 border-t border-white/10 bg-[#151a24] flex items-center gap-2.5 pb-[max(0.875rem,env(safe-area-inset-bottom))]">
           <button 
             onClick={onClose}
             disabled={exportState === 'exporting'}
-            className="px-4 py-3 rounded-2xl border border-[var(--dash-border)] text-gray-300 hover:text-white font-medium hover:bg-[var(--dash-border)] transition-colors text-xs sm:text-sm disabled:opacity-40"
+            className="h-11 sm:h-12 px-4 rounded-xl border border-white/10 text-gray-300 hover:text-white font-semibold hover:bg-white/5 transition-colors text-xs sm:text-sm disabled:opacity-40 cursor-pointer"
           >
             Close
           </button>
@@ -766,11 +764,11 @@ export default function FbZipExportModal({
             <button 
               onClick={handleStartExport}
               disabled={inStockProducts.length === 0}
-              style={{ backgroundColor: themePrimary, color: '#ffffff' }}
-              className="flex-1 py-3 px-5 rounded-2xl font-bold text-xs sm:text-sm hover:brightness-110 active:scale-[0.99] transition-all shadow-lg flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: themePrimary }}
+              className="flex-1 h-11 sm:h-12 px-4 rounded-xl font-bold text-xs sm:text-sm text-white hover:brightness-110 active:scale-[0.99] transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Download size={18} strokeWidth={2.2} />
-              <span>Download Fb Zip ({inStockProducts.length} In-Stock Products)</span>
+              <Download size={16} strokeWidth={2.2} />
+              <span className="truncate">Download FB Zip ({inStockProducts.length})</span>
             </button>
           )}
         </div>
