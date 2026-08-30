@@ -47,6 +47,14 @@ export async function onRequestGet({ request, env }: any) {
       headers.set('Access-Control-Allow-Origin', '*');
       headers.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
       headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+      
+      const cType = headers.get('Content-Type');
+      if (!cType || cType.includes('text/html')) {
+        const ext = targetUrl.split('?')[0].split('.').pop()?.toLowerCase();
+        if (ext === 'webp') headers.set('Content-Type', 'image/webp');
+        else if (ext === 'png') headers.set('Content-Type', 'image/png');
+        else if (ext === 'jpg' || ext === 'jpeg') headers.set('Content-Type', 'image/jpeg');
+      }
       return new Response(res.body, { status: res.status, headers });
     }
     return new Response('Remote image not found', { 
