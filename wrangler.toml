@@ -20,6 +20,6 @@ bucket_name = "paikarix-images"
 [vars]
 ENVIRONMENT = "production"
 # R2 Public Development URL or Custom Domain (e.g. "cdn.yourstore.com" or "pub-xxxx.r2.dev")
-R2_PUBLIC_DOMAIN = "pub-104fa03129834715b1010a887b9d06f4.r2.dev"
+R2_PUBLIC_DOMAIN = "https://pub-104fa03129834715b1010a887b9d06f4.r2.dev"
 # Secure JWT Secret key for admin authentication
 JWT_SECRET = "pkx_sec_9f8b1c4e7d2a50638194b7e2d0a1f5c83e7b9a4d6f021c5e8b3a7d9f2c4e6a8b"
