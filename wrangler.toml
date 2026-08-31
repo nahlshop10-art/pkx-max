@@ -1,4 +1,4 @@
-name = "paikarix-store"
+name = "pkx-max"
 pages_build_output_dir = "dist"
 compatibility_date = "2024-03-20"
 compatibility_flags = ["nodejs_compat"]
@@ -6,20 +6,20 @@ compatibility_flags = ["nodejs_compat"]
 [placement]
 mode = "smart"
 
-# D1 Database binding
+# D1 Database binding - NEW max-db
 [[d1_databases]]
 binding = "DB"
-database_name = "pkx-v1-db"
-database_id = "391296c1-bd7b-4649-a810-611487f27582"
+database_name = "max-db"
+database_id = "a785d61d-8c9a-477e-b2df-e738082c9f72"
 
-# R2 Bucket binding
+# R2 Bucket binding - NEW max-images
 [[r2_buckets]]
 binding = "BUCKET"
-bucket_name = "pkx-v1-images"
+bucket_name = "max-images"
 
 [vars]
 ENVIRONMENT = "production"
-# R2 Public Development URL or Custom Domain (e.g. "cdn.yourstore.com" or "pub-xxxx.r2.dev")
-R2_PUBLIC_DOMAIN = "https://pub-104fa03129834715b1010a887b9d06f4.r2.dev"
+# R2 Public Development URL for max-images
+R2_PUBLIC_DOMAIN = "pub-e5254e3b24604306b8ea63f93412de76.r2.dev"
 # Secure JWT Secret key for admin authentication
 JWT_SECRET = "pkx_sec_9f8b1c4e7d2a50638194b7e2d0a1f5c83e7b9a4d6f021c5e8b3a7d9f2c4e6a8b"

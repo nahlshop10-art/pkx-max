@@ -1,5 +1,5 @@
 export function getCustomDomain(env: any): string {
-    let customDomain = env.R2_PUBLIC_DOMAIN || 'pub-104fa03129834715b1010a887b9d06f4.r2.dev';
+    let customDomain = env.R2_PUBLIC_DOMAIN || 'pub-e5254e3b24604306b8ea63f93412de76.r2.dev';
     return customDomain.replace(/^https?:\/\//, '').replace(/\/$/, '');
 }
 

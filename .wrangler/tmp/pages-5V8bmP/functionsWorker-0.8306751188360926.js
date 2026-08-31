@@ -3,7 +3,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 
 // api/_domain.ts
 function getCustomDomain(env) {
-  let customDomain = env.R2_PUBLIC_DOMAIN || "pub-6a0fdc5513454bd19473508e0d154f70.r2.dev";
+  let customDomain = env.R2_PUBLIC_DOMAIN || "pub-e5254e3b24604306b8ea63f93412de76.r2.dev";
   return customDomain.replace(/^https?:\/\//, "").replace(/\/$/, "");
 }
 __name(getCustomDomain, "getCustomDomain");
@@ -3620,7 +3620,7 @@ async function onRequest(context) {
 }
 __name(onRequest, "onRequest");
 
-// ../.wrangler/tmp/pages-H7RAEs/functionsRoutes-0.012751486795192335.mjs
+// ../.wrangler/tmp/pages-5V8bmP/functionsRoutes-0.19235386396298493.mjs
 var routes = [
   {
     routePath: "/api/admin_orders",
