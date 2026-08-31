@@ -9,13 +9,13 @@ mode = "smart"
 # D1 Database binding
 [[d1_databases]]
 binding = "DB"
-database_name = "paikarix-db"
+database_name = "pkx-v1-db"
 database_id = "7a2554ae-66ce-46c9-9d81-8c486cac8ed4"
 
 # R2 Bucket binding
 [[r2_buckets]]
 binding = "BUCKET"
-bucket_name = "paikarix-images"
+bucket_name = "pkx-v1-images"
 
 [vars]
 ENVIRONMENT = "production"
