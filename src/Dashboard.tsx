@@ -10,7 +10,7 @@ import {
   Printer, CheckSquare, PackagePlus, AlertCircle, FileArchive, FolderArchive, Calculator, PackageX, Download,
   HelpCircle, Shield, Layers, Database, Info, ExternalLink,
   TrendingUp, ShoppingBag, CircleDollarSign, Undo2, MinusCircle, ClipboardList, ClipboardCheck, XCircle, Tag,
-  Star, Key, FileText, Type, AlignLeft, Share2, Lightbulb, Mail, Clock
+  Star, Key, FileText, Type, AlignLeft, Share2, Lightbulb, Mail, Clock, BarChart2
 } from 'lucide-react';
 import { Product, Order, OrderStatus, Category, WebsiteSettings, DeliveryCharge, MarketingSettings, GA4Settings, SeoSettings, CourierSettings, PriceCalculatorSettings, AdminUser, DiscountRule, DiscountType, DEFAULT_ADMIN_PERMISSIONS } from './types';
 import { restoreOrderStock, deductOrderStock, notifyMasterStockSync, adjustOrderStockDiff, notifyMasterStockSyncDiff } from './lib/stockUtils';
