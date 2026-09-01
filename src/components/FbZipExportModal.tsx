@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import JSZip from 'jszip';
 import { Product, Category, WebsiteSettings } from '../types';
+import { cn } from '../lib/utils';
 
 interface FbZipExportModalProps {
   onClose: () => void;
