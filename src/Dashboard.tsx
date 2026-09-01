@@ -475,12 +475,14 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
     const fetchAdminData = async () => {
       const state = await cloudStore.getAdminState();
       if (state) {
+        if (state.products && state.products.length > 0) setProducts(state.products);
         if (state.orders) setOrders(state.orders);
         if (state.incompleteOrders) setIncompleteOrders(state.incompleteOrders);
         if (state.adminUsers) setAdminUsers(state.adminUsers);
         if (state.customers) setCustomers(state.customers);
         
         if (state.settings) {
+          if (state.settings.categories) setCategories(state.settings.categories);
           if (state.settings.websiteSettings) setWebsiteSettings(state.settings.websiteSettings);
           if (state.settings.marketingSettings) setMarketingSettings(state.settings.marketingSettings);
           if (state.settings.courierSettings) setCourierSettings(state.settings.courierSettings);
@@ -972,13 +974,20 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
   const rowCount = Math.ceil(displayProducts.length / cols);
   
   const listRef = useRef<HTMLDivElement>(null);
-  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(null);
+  const [scrollEl, setScrollEl] = useState<HTMLDivElement | null>(() => scrollRef.current);
+
+  const setScrollContainerRef = React.useCallback((node: HTMLDivElement | null) => {
+    if (scrollRef) {
+      scrollRef.current = node;
+    }
+    setScrollEl(node);
+  }, [scrollRef]);
 
   useEffect(() => {
-    if (scrollRef.current) {
+    if (scrollRef.current && scrollRef.current !== scrollEl) {
       setScrollEl(scrollRef.current);
     }
-  }, [scrollRef.current, activeTab]);
+  }, [currentAdmin, activeTab, scrollEl]);
   
   const estimateRowHeight = React.useCallback(() => {
     if (typeof window === 'undefined') return 240;
@@ -989,7 +998,7 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
     return 300;
   }, []);
 
-  const getScrollElement = React.useCallback(() => scrollEl, [scrollEl]);
+  const getScrollElement = React.useCallback(() => scrollEl || scrollRef.current, [scrollEl]);
 
   const virtualizer = useVirtualizer({
     count: rowCount,
@@ -1851,7 +1860,7 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
       </AnimatePresence>
 
       <div 
-        ref={scrollRef} 
+        ref={setScrollContainerRef} 
         className={cn(
           "flex-grow min-h-0 overflow-y-auto relative z-0 md:p-8 overscroll-y-contain", 
           activeTab === 'Dashboard' ? 'px-1.5 pt-1 pb-20' : 'px-4 pt-4 pb-20'
