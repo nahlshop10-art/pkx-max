@@ -93,7 +93,7 @@ export default function SupplierManager({ settings, setSettings, onClose }: Supp
         <button
           onClick={onClose}
           style={{ backgroundColor: themeColor }}
-          className="px-4 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer shrink-0"
+          className="px-5 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer shrink-0"
         >
           Done
         </button>

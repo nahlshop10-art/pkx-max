@@ -301,34 +301,41 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
-            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0"
+            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0 cursor-pointer"
             title="Go back"
           >
             <ChevronLeft size={20} />
           </button>
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
-              <User size={20} />
-            </div>
-            <div>
-              <h1 className="text-base md:text-lg font-bold text-white tracking-tight flex items-center gap-2">
-                Customer Intelligence & Blacklist
-              </h1>
-              <p className="text-[11px] text-slate-400 font-medium hidden sm:block">
-                Purchase history, cancellation rates, blacklist control, and automated spam filtering
-              </p>
-            </div>
+          <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
+            <User size={20} />
+          </div>
+          <div>
+            <h1 className="text-base md:text-lg font-bold text-white tracking-tight flex items-center gap-2">
+              Customer Intelligence & Blacklist
+            </h1>
+            <p className="text-[11px] text-slate-400 font-medium hidden sm:block">
+              Purchase history, cancellation rates, blacklist control, and automated spam filtering
+            </p>
           </div>
         </div>
 
-        {/* Tab switcher in top bar */}
-        <div className="flex items-center bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-1 gap-1">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-semibold text-white transition-colors cursor-pointer shrink-0"
+        >
+          Done
+        </button>
+      </div>
+
+      {/* Sub-header Tab Bar */}
+      <div className="px-4 py-2.5 bg-[var(--dash-bg)]/95 backdrop-blur-md border-b border-[var(--dash-border)]/60 flex items-center shrink-0 z-10">
+        <div className="flex items-center bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-1 gap-1 w-full max-w-md mx-auto">
           {(['Analytics', 'Blocked', 'Settings'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={cn(
-                "px-3 md:px-4 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer",
+                "flex-1 py-2 text-center text-xs font-bold rounded-lg transition-all cursor-pointer",
                 activeTab === tab 
                   ? "bg-pink-500 text-white shadow-md shadow-pink-500/20" 
                   : "text-slate-400 hover:text-white hover:bg-white/5"
@@ -340,7 +347,7 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-8 space-y-5 max-w-5xl mx-auto w-full pb-32 overscroll-y-contain custom-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-8 space-y-5 max-w-5xl mx-auto w-full pb-36 overscroll-y-contain custom-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
         {activeTab === 'Analytics' && (
           <div className="flex flex-col gap-4">
             
@@ -397,12 +404,13 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
               </div>
               
               {dateFilter === 'Custom' && (
-                <div className="flex items-center gap-2 pt-2 border-t border-[#1e293b]/50">
+                <div className="flex items-center gap-3 pt-2 border-t border-[var(--dash-border)]/50">
                   <div className="flex-1">
                     <DatePicker 
                       label="From" 
                       value={customFromDate} 
                       onChange={setCustomFromDate} 
+                      align="left"
                     />
                   </div>
                   <div className="flex-1">
@@ -410,6 +418,7 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
                       label="To" 
                       value={customToDate} 
                       onChange={setCustomToDate} 
+                      align="right"
                     />
                   </div>
                 </div>
@@ -423,7 +432,7 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
                 placeholder="Search by customer phone, name, or order ID..." 
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full h-11 bg-[#0b1120] border border-[#1e293b] rounded-xl px-4 pl-10 text-xs md:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-pink-500 transition-colors shadow-lg"
+                className="w-full h-11 bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl px-4 pl-10 text-xs md:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-pink-500 transition-colors shadow-lg"
               />
               <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             </div>
@@ -467,8 +476,8 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
                 
                 return (
                 <div key={customer.phone} className={cn(
-                  "bg-[#0b1120] border rounded-2xl p-4 md:p-5 flex flex-col justify-between gap-4 relative overflow-hidden transition-all shadow-xl",
-                  isSelected ? "border-pink-500 ring-1 ring-pink-500/40" : "border-[#1e293b]/70 hover:border-slate-700"
+                  "bg-[var(--dash-card)] border rounded-2xl p-4 md:p-5 flex flex-col justify-between gap-4 relative overflow-hidden transition-all shadow-xl",
+                  isSelected ? "border-pink-500 ring-1 ring-pink-500/40" : "border-[var(--dash-border)]/70 hover:border-slate-700"
                 )}>
                   <div className="absolute -top-4 -right-4 text-[72px] font-black text-white/[0.03] pointer-events-none select-none">
                     #{customer.rank}
@@ -524,25 +533,25 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
                   </div>
 
                   <div className="grid grid-cols-4 gap-2 z-10 relative pt-1">
-                    <div className="bg-[#070b14] p-2.5 rounded-xl flex flex-col items-center border border-[#1e293b]/60">
+                    <div className="bg-[var(--dash-bg)] p-2.5 rounded-xl flex flex-col items-center border border-[var(--dash-border)]/60">
                       <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-0.5">Spent</div>
                       <div className="font-bold text-white text-xs md:text-sm">
                         {formatPrice(customer.totalSpent)}
                       </div>
                     </div>
-                    <div className="bg-[#070b14] p-2.5 rounded-xl flex flex-col items-center border border-[#1e293b]/60">
+                    <div className="bg-[var(--dash-bg)] p-2.5 rounded-xl flex flex-col items-center border border-[var(--dash-border)]/60">
                       <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-0.5">Orders</div>
                       <div className="font-bold text-pink-400 text-xs md:text-sm flex items-center gap-1">
                         {customer.totalOrders}
                       </div>
                     </div>
-                    <div className="bg-[#070b14] p-2.5 rounded-xl flex flex-col items-center border border-[#1e293b]/60">
+                    <div className="bg-[var(--dash-bg)] p-2.5 rounded-xl flex flex-col items-center border border-[var(--dash-border)]/60">
                       <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-0.5">Canceled</div>
                       <div className="font-bold text-rose-400 text-xs md:text-sm">
                         {customer.cancelledOrders}
                       </div>
                     </div>
-                    <div className="bg-[#070b14] p-2.5 rounded-xl flex flex-col items-center border border-[#1e293b]/60">
+                    <div className="bg-[var(--dash-bg)] p-2.5 rounded-xl flex flex-col items-center border border-[var(--dash-border)]/60">
                       <div className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-0.5">Success</div>
                       <div className="font-bold text-emerald-400 text-xs md:text-sm">
                         {customer.successRate}%
@@ -553,7 +562,7 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
                 );
               })}
               {sortedCustomers.length === 0 && (
-                <div className="col-span-2 text-center text-slate-500 py-12 bg-[#0b1120] rounded-2xl border border-[#1e293b]">
+                <div className="col-span-2 text-center text-slate-500 py-12 bg-[var(--dash-card)] rounded-2xl border border-[var(--dash-border)]">
                   No customers found matching your filter criteria.
                 </div>
               )}
@@ -565,7 +574,7 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {sortedCustomers.filter(c => c.isBlocked).map(customer => (
-                <div key={customer.phone} className="bg-[#0b1120] border border-rose-500/30 rounded-2xl p-4 md:p-5 flex flex-col justify-between gap-4 relative overflow-hidden shadow-xl">
+                <div key={customer.phone} className="bg-[var(--dash-card)] border border-rose-500/30 rounded-2xl p-4 md:p-5 flex flex-col justify-between gap-4 relative overflow-hidden shadow-xl">
                   <div className="flex justify-between items-start relative z-10">
                     <div>
                       <div className="font-bold text-rose-400 flex items-center gap-2 text-base">
@@ -586,13 +595,13 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 relative z-10">
-                    <div className="bg-[#070b14] p-3 rounded-xl flex flex-col items-center border border-[#1e293b]">
+                    <div className="bg-[var(--dash-bg)] p-3 rounded-xl flex flex-col items-center border border-[var(--dash-border)]">
                       <div className="text-[10px] text-slate-500 font-bold uppercase mb-0.5">Total Cancelled</div>
                       <div className="font-bold text-rose-400 text-base">
                         {customer.cancelledOrders}
                       </div>
                     </div>
-                    <div className="bg-[#070b14] p-3 rounded-xl flex flex-col items-center border border-[#1e293b]">
+                    <div className="bg-[var(--dash-bg)] p-3 rounded-xl flex flex-col items-center border border-[var(--dash-border)]">
                       <div className="text-[10px] text-slate-500 font-bold uppercase mb-0.5">Success Rate</div>
                       <div className="font-bold text-slate-300 text-base">
                         {customer.successRate}%
@@ -603,7 +612,7 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
               ))}
             </div>
             {sortedCustomers.filter(c => c.isBlocked).length === 0 && (
-              <div className="text-center text-slate-500 py-12 bg-[#0b1120] rounded-2xl border border-[#1e293b]">
+              <div className="text-center text-slate-500 py-12 bg-[var(--dash-card)] rounded-2xl border border-[var(--dash-border)]">
                 No customers are currently blacklisted.
               </div>
             )}
@@ -612,7 +621,7 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
 
         {activeTab === 'Settings' && (
           <div className="space-y-4 max-w-3xl mx-auto">
-            <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-3">
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0">
@@ -626,7 +635,7 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
                 <button 
                   onClick={() => handleSettingsUpdate({ systemEnabled: !systemEnabled })}
                   className={cn(
-                    "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0",
+                    "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0 cursor-pointer",
                     systemEnabled ? "bg-pink-500 shadow-md shadow-pink-500/20" : "bg-slate-700/60"
                   )}
                 >
@@ -641,8 +650,8 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
             </div>
 
             <div className={cn("space-y-4 transition-all duration-300", !systemEnabled && "opacity-40 pointer-events-none")}>
-              <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-[#1e293b]/50">
+              <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[var(--dash-border)]/50">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
                       <ShieldAlert size={20} />
@@ -655,7 +664,7 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
                   <button 
                     onClick={() => handleSettingsUpdate({ autoBlockEnabled: !customerSettings.autoBlockEnabled })}
                     className={cn(
-                      "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0",
+                      "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0 cursor-pointer",
                       customerSettings.autoBlockEnabled ? "bg-rose-500 shadow-md shadow-rose-500/20" : "bg-slate-700/60"
                     )}
                   >
@@ -669,7 +678,7 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
                 </div>
 
                 {customerSettings.autoBlockEnabled && (
-                  <div className="flex items-center justify-between bg-[#070b14] border border-[#1e293b] rounded-xl p-3 px-4">
+                  <div className="flex items-center justify-between bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-3 px-4">
                     <span className="text-xs text-slate-300 font-semibold">Max Cancellations Allowed:</span>
                     <div className="flex items-center gap-3">
                       <button 
@@ -689,8 +698,8 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
               </div>
 
               {/* WhatsApp Message Template */}
-              <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
-                <div className="flex items-center gap-3 pb-3 border-b border-[#1e293b]/50">
+              <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+                <div className="flex items-center gap-3 pb-3 border-b border-[var(--dash-border)]/50">
                   <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
                     <MessageCircle size={20} />
                   </div>
@@ -706,9 +715,9 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
                     onChange={(e) => handleSettingsUpdate({ whatsappMessage: e.target.value })}
                     placeholder="Hello {name}, thank you for ordering from our store."
                     rows={3}
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl p-3.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 transition-colors resize-none"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-3.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 transition-colors resize-none"
                   />
-                  <div className="bg-[#070b14] border border-[#1e293b]/60 rounded-xl p-3 space-y-1.5">
+                  <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)]/60 rounded-xl p-3 space-y-1.5">
                     <span className="text-[11px] font-bold text-slate-400 block uppercase">Dynamic Tags:</span>
                     <div className="flex flex-wrap gap-2 text-[11px] text-slate-300 font-mono">
                       <span className="bg-white/5 border border-white/10 px-2 py-0.5 rounded-lg select-all">{"{name}"}</span>
@@ -738,7 +747,7 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] max-w-[400px] bg-[#0b1120] border border-[#1e293b] rounded-2xl shadow-2xl z-[120] p-6 lg:left-[calc(50%+120px)]"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] max-w-[400px] bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-2xl shadow-2xl z-[120] p-6 lg:left-[calc(50%+120px)]"
             >
               <h2 className="text-lg font-bold text-white mb-2">Delete Customer Records?</h2>
               <p className="text-xs text-slate-400 mb-6 leading-relaxed">
@@ -748,14 +757,14 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
                   disabled={isDeleting}
-                  className="flex-1 py-2.5 bg-white/5 text-slate-300 font-semibold text-xs rounded-xl border border-white/10 hover:bg-white/10 transition-colors disabled:opacity-50"
+                  className="flex-1 py-2.5 bg-white/5 text-slate-300 font-semibold text-xs rounded-xl border border-white/10 hover:bg-white/10 transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDeleteCustomers}
                   disabled={isDeleting}
-                  className="flex-1 py-2.5 bg-rose-500 text-white font-bold text-xs rounded-xl hover:bg-rose-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-rose-500/20"
+                  className="flex-1 py-2.5 bg-rose-500 text-white font-bold text-xs rounded-xl hover:bg-rose-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-rose-500/20 cursor-pointer"
                 >
                   {isDeleting ? (
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

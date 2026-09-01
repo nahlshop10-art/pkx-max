@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ArrowLeft,
+  ChevronLeft,
   Download, 
   FileText, 
   FolderArchive, 
@@ -375,59 +376,64 @@ export default function FbZipExportModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       
-      {/* 1. Header matching exact user mockup */}
-      <div className="flex items-center justify-between px-4 py-3.5 border-b border-[#151d2f] bg-[#0c1220] shrink-0 md:px-7 md:py-4">
+      {/* 1. Standardized Header */}
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
-            className="p-1.5 -ml-1.5 text-gray-300 hover:text-white transition-colors rounded-full hover:bg-white/5 cursor-pointer"
+            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0 cursor-pointer"
+            title="Go back"
           >
-            <ArrowLeft size={22} />
+            <ChevronLeft size={20} />
           </button>
           
-          <div className="w-9 h-9 rounded-xl bg-[#2e1020] text-[#f43f5e] flex items-center justify-center shrink-0 border border-[#f43f5e]/20">
-            <FolderArchive size={19} strokeWidth={2} />
+          <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-400 flex items-center justify-center shrink-0 shadow-inner">
+            <FolderArchive size={20} strokeWidth={2} />
           </div>
 
           <div className="flex items-center gap-2.5">
-            <h1 className="text-base sm:text-lg font-bold text-white tracking-wide">
+            <h1 className="text-base md:text-lg font-bold text-white tracking-tight">
               Download FB Zip
             </h1>
-            <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded bg-[#052e16] text-[#4ade80] border border-[#166534]/50">
+            <span className="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               IN-STOCK
             </span>
           </div>
         </div>
 
-        <button className="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 cursor-pointer">
-          <MoreVertical size={20} />
+        <button
+          onClick={onClose}
+          style={{ backgroundColor: themePrimary || 'var(--theme-primary, #ff4d6d)' }}
+          className="px-5 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer shrink-0"
+        >
+          Done
         </button>
       </div>
 
       {/* 2. Main Scrollable Container */}
-      <div className="flex-1 overflow-y-auto px-4 py-5 md:p-7 space-y-4 max-w-2xl mx-auto w-full pb-32 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto px-4 py-5 md:p-8 space-y-4 max-w-3xl mx-auto w-full pb-36 custom-scrollbar">
 
         {/* Export Progress Notification (Visible during active export) */}
         {exportState === 'exporting' && (
-          <div className="bg-[#0f172a] rounded-2xl p-5 border border-blue-500/40 shadow-lg space-y-3.5 animate-in fade-in">
+          <div className="bg-[var(--dash-card)] rounded-2xl p-5 border border-pink-500/40 shadow-xl space-y-3.5 animate-in fade-in">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-pink-500/20 text-pink-400 flex items-center justify-center">
                   <RefreshCw size={16} className="animate-spin" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-white">Downloading Images &amp; Building ZIP</h3>
-                  <p className="text-xs text-gray-400 truncate max-w-xs sm:max-w-md">{statusMessage}</p>
+                  <p className="text-xs text-slate-400 truncate max-w-xs sm:max-w-md">{statusMessage}</p>
                 </div>
               </div>
-              <span className="font-mono text-sm font-bold text-blue-400">{progressPercent}%</span>
+              <span className="font-mono text-sm font-bold text-pink-400">{progressPercent}%</span>
             </div>
 
             <div className="w-full h-2 bg-black/50 rounded-full overflow-hidden border border-white/5">
               <motion.div 
-                className="h-full rounded-full bg-blue-500 transition-all duration-200"
+                className="h-full rounded-full bg-pink-500 transition-all duration-200"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
@@ -435,7 +441,7 @@ export default function FbZipExportModal({
             <div className="flex justify-end">
               <button
                 onClick={handleCancel}
-                className="text-xs text-gray-400 hover:text-white px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                className="text-xs text-slate-400 hover:text-white px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
               >
                 Cancel Export
               </button>
@@ -445,7 +451,7 @@ export default function FbZipExportModal({
 
         {/* Export Success Notification */}
         {exportState === 'success' && (
-          <div className="bg-[#052e16]/40 border border-[#166534] rounded-2xl p-4.5 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4.5 flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
                 <CheckCircle2 size={20} />
@@ -459,7 +465,7 @@ export default function FbZipExportModal({
             </div>
             <button
               onClick={() => setExportState('idle')}
-              className="px-3.5 py-1.5 rounded-xl bg-white/10 text-white text-xs font-semibold hover:bg-white/15 transition-colors shrink-0"
+              className="px-3.5 py-1.5 rounded-xl bg-white/10 text-white text-xs font-semibold hover:bg-white/15 transition-colors shrink-0 cursor-pointer"
             >
               Export Again
             </button>
@@ -469,55 +475,55 @@ export default function FbZipExportModal({
         {/* Top 3 Metric Cards Grid */}
         <div className="grid grid-cols-3 gap-2.5 sm:gap-3.5">
           {/* In-Stock */}
-          <div className="bg-[#0e1626] rounded-2xl p-3.5 sm:p-4 border border-[#1a253c] shadow-sm flex flex-col justify-between">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#10b981] uppercase tracking-wide">
-              <CheckCircle2 size={13} className="text-[#10b981]" /> IN-STOCK
+          <div className="bg-[var(--dash-card)] rounded-2xl p-3.5 sm:p-4 border border-[var(--dash-border)]/70 shadow-xl flex flex-col justify-between">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-400 uppercase tracking-wide">
+              <CheckCircle2 size={13} className="text-emerald-400" /> IN-STOCK
             </div>
             <div className="mt-2.5">
               <div className="text-2xl sm:text-3xl font-extrabold text-white">{inStockProducts.length}</div>
-              <div className="text-[11px] text-gray-400 mt-0.5 font-normal">Ready to export</div>
+              <div className="text-[11px] text-slate-400 mt-0.5 font-normal">Ready to export</div>
             </div>
           </div>
 
           {/* Stock Out */}
-          <div className="bg-[#0e1626] rounded-2xl p-3.5 sm:p-4 border border-[#1a253c] shadow-sm flex flex-col justify-between">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#f59e0b] uppercase tracking-wide">
-              <span className="w-3 h-3 rounded-full border-[1.5px] border-[#f59e0b] flex items-center justify-center text-[7px] font-black">!</span> 
+          <div className="bg-[var(--dash-card)] rounded-2xl p-3.5 sm:p-4 border border-[var(--dash-border)]/70 shadow-xl flex flex-col justify-between">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-400 uppercase tracking-wide">
+              <span className="w-3 h-3 rounded-full border-[1.5px] border-amber-400 flex items-center justify-center text-[7px] font-black">!</span> 
               STOCK OUT
             </div>
             <div className="mt-2.5">
               <div className="text-2xl sm:text-3xl font-extrabold text-white">{outOfStockCount}</div>
-              <div className="text-[11px] text-gray-400 mt-0.5 font-normal">Auto-skipped</div>
+              <div className="text-[11px] text-slate-400 mt-0.5 font-normal">Auto-skipped</div>
             </div>
           </div>
 
           {/* High-Res Pics */}
-          <div className="bg-[#0e1626] rounded-2xl p-3.5 sm:p-4 border border-[#1a253c] shadow-sm flex flex-col justify-between">
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#38bdf8] uppercase tracking-wide">
-              <ImageIcon size={13} className="text-[#38bdf8]" /> HIGH-RES PICS
+          <div className="bg-[var(--dash-card)] rounded-2xl p-3.5 sm:p-4 border border-[var(--dash-border)]/70 shadow-xl flex flex-col justify-between">
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-pink-400 uppercase tracking-wide">
+              <ImageIcon size={13} className="text-pink-400" /> HIGH-RES PICS
             </div>
             <div className="mt-2.5">
               <div className="text-2xl sm:text-3xl font-extrabold text-white">~{estimatedImagesCount}</div>
-              <div className="text-[11px] text-gray-400 mt-0.5 font-normal">Images total</div>
+              <div className="text-[11px] text-slate-400 mt-0.5 font-normal">Images total</div>
             </div>
           </div>
         </div>
 
         {/* Card 2: Photos per Product */}
-        <div className="bg-[#0e1626] rounded-2xl p-4 sm:p-5 border border-[#1a253c] shadow-sm space-y-3.5">
+        <div className="bg-[var(--dash-card)] rounded-2xl p-4 sm:p-6 border border-[var(--dash-border)]/70 shadow-xl space-y-4">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#1e293b]/70 text-[#38bdf8] flex items-center justify-center shrink-0 border border-[#38bdf8]/20">
+              <div className="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center shrink-0 border border-pink-500/20">
                 <ImageIcon size={18} strokeWidth={2} />
               </div>
               <div>
                 <h2 className="text-sm sm:text-base font-bold text-white">Photos per Product</h2>
-                <p className="text-xs text-gray-400 mt-0.5 font-normal">
+                <p className="text-xs text-slate-400 mt-0.5 font-normal">
                   Limit how many gallery photos to include per product folder.
                 </p>
               </div>
             </div>
-            <span className="text-[11px] font-mono text-[#38bdf8] font-bold bg-[#0c223c] px-2.5 py-1 rounded-md border border-[#0284c7]/30 shrink-0">
+            <span className="text-[11px] font-mono text-pink-400 font-bold bg-pink-500/10 px-2.5 py-1 rounded-md border border-pink-500/20 shrink-0">
               {maxImagesPerProduct === 0 ? 'All Photos' : `Max ${maxImagesPerProduct}`}
             </span>
           </div>
@@ -545,11 +551,12 @@ export default function FbZipExportModal({
                         handleSelectPreset(item.val);
                       }
                     }}
-                    className={`py-2.5 px-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center cursor-pointer border ${
+                    className={cn(
+                      "py-2.5 px-2 rounded-xl text-xs font-semibold transition-all flex items-center justify-center cursor-pointer border",
                       isSelected
-                        ? 'bg-[#1d4ed8] text-white border-[#3b82f6] shadow-md shadow-blue-900/30'
-                        : 'bg-[#080d18] text-gray-300 border-[#1a253c] hover:bg-[#131b2e]'
-                    }`}
+                        ? "bg-pink-500 text-white border-pink-500 shadow-md shadow-pink-500/20 font-bold"
+                        : "bg-[var(--dash-bg)] text-slate-300 border-[var(--dash-border)] hover:bg-white/5 hover:text-white"
+                    )}
                   >
                     {item.label}
                   </button>
@@ -559,8 +566,8 @@ export default function FbZipExportModal({
 
             {/* Custom Input Field (If Custom selected) */}
             {isCustomMode && (
-              <div className="bg-[#080d18] border border-[#3b82f6]/40 rounded-xl p-3 flex items-center gap-3 animate-in fade-in">
-                <span className="text-xs text-gray-300 font-medium">Custom Quantity:</span>
+              <div className="bg-[var(--dash-bg)] border border-pink-500/40 rounded-xl p-3 flex items-center gap-3 animate-in fade-in">
+                <span className="text-xs text-slate-300 font-medium">Custom Quantity:</span>
                 <input 
                   type="number"
                   inputMode="numeric"
@@ -569,28 +576,28 @@ export default function FbZipExportModal({
                   value={customImageLimit}
                   onChange={(e) => handleCustomChange(e.target.value)}
                   placeholder="e.g. 4"
-                  className="w-20 bg-[#0e1626] text-white text-center font-bold border border-[#1a253c] rounded-lg py-1 text-xs outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-20 bg-[var(--dash-card)] text-white text-center font-bold border border-[var(--dash-border)] rounded-lg py-1 text-xs outline-none focus:border-pink-500"
                 />
-                <span className="text-xs text-gray-400">photos max per product</span>
+                <span className="text-xs text-slate-400">photos max per product</span>
               </div>
             )}
 
-            <div className="flex items-center gap-1.5 text-[11px] text-gray-400 pt-0.5">
-              <Info size={13} className="text-[#38bdf8] shrink-0" />
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-400 pt-0.5">
+              <Info size={13} className="text-pink-400 shrink-0" />
               <span>All images are exported in original full resolution (no compression/blur).</span>
             </div>
           </div>
         </div>
 
         {/* Card 3: FB Caption & Price Rules */}
-        <div className="bg-[#0e1626] rounded-2xl p-4 sm:p-5 border border-[#1a253c] shadow-sm space-y-3.5">
+        <div className="bg-[var(--dash-card)] rounded-2xl p-4 sm:p-6 border border-[var(--dash-border)]/70 shadow-xl space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#064e3b]/40 text-[#34d399] flex items-center justify-center shrink-0 border border-[#34d399]/20">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center shrink-0 border border-pink-500/20">
               <FileText size={18} strokeWidth={2} />
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-bold text-white">FB Caption &amp; Price Rules</h2>
-              <p className="text-xs text-gray-400 mt-0.5 font-normal">
+              <p className="text-xs text-slate-400 mt-0.5 font-normal">
                 Formatted specifically for FB Messenger Auto-Sender app.
               </p>
             </div>
@@ -599,7 +606,7 @@ export default function FbZipExportModal({
           <div className="space-y-3 pt-1">
             {/* MOQ-6 Discount */}
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-200">MOQ-6 Discount Amount (TK)</label>
+              <label className="text-xs font-semibold text-slate-200">MOQ-6 Discount Amount (TK)</label>
               <div className="relative">
                 <input 
                   type="number"
@@ -608,32 +615,32 @@ export default function FbZipExportModal({
                   max="500"
                   value={moqDiscount}
                   onChange={(e) => setMoqDiscount(Math.max(0, parseInt(e.target.value) || 0))}
-                  className="w-full bg-[#080d18] text-white border border-[#1a253c] rounded-xl px-3.5 py-2.5 font-mono text-xs focus:ring-1 focus:ring-emerald-500 outline-none"
+                  className="w-full bg-[var(--dash-bg)] text-white border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 font-mono text-xs focus:border-pink-500 outline-none"
                 />
-                <span className="absolute right-3.5 top-2.5 text-xs font-bold text-gray-400">TK OFF</span>
+                <span className="absolute right-3.5 top-2.5 text-xs font-bold text-slate-400">TK OFF</span>
               </div>
-              <p className="text-[11px] text-gray-500">Deducted from selling price for MOQ-6 caption (Default: 5 TK).</p>
+              <p className="text-[11px] text-slate-500">Deducted from selling price for MOQ-6 caption (Default: 5 TK).</p>
             </div>
 
             {/* Fallback Category */}
             <div className="space-y-1">
-              <label className="text-xs font-semibold text-gray-200">Fallback Category Name</label>
+              <label className="text-xs font-semibold text-slate-200">Fallback Category Name</label>
               <input 
                 type="text"
                 value={fallbackCategory}
                 onChange={(e) => setFallbackCategory(e.target.value.toUpperCase())}
-                className="w-full bg-[#080d18] text-white border border-[#1a253c] rounded-xl px-3.5 py-2.5 uppercase font-mono text-xs focus:ring-1 focus:ring-emerald-500 outline-none"
+                className="w-full bg-[var(--dash-bg)] text-white border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 uppercase font-mono text-xs focus:border-pink-500 outline-none"
                 placeholder="GENERAL"
               />
-              <p className="text-[11px] text-gray-500">Used if a product has no category (Default: GENERAL).</p>
+              <p className="text-[11px] text-slate-500">Used if a product has no category (Default: GENERAL).</p>
             </div>
 
             {/* Live Text Preview Box */}
-            <div className="bg-[#080d18] border border-[#1a253c] rounded-xl p-3.5 space-y-2.5 mt-2">
+            <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-3.5 space-y-2.5 mt-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#10b981]" />
-                  <span className="text-[11px] font-bold text-gray-300 uppercase tracking-wider">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                  <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider">
                     LIVE TEXT PREVIEW
                   </span>
                 </div>
@@ -643,7 +650,7 @@ export default function FbZipExportModal({
                     <select
                       value={selectedPreviewIndex}
                       onChange={(e) => setSelectedPreviewIndex(Number(e.target.value))}
-                      className="text-xs bg-[#0e1626] text-gray-200 border border-[#1a253c] rounded-lg pl-2.5 pr-7 py-1 outline-none max-w-[180px] sm:max-w-[220px] truncate appearance-none cursor-pointer"
+                      className="text-xs bg-[var(--dash-card)] text-slate-200 border border-[var(--dash-border)] rounded-lg pl-2.5 pr-7 py-1 outline-none max-w-[180px] sm:max-w-[220px] truncate appearance-none cursor-pointer"
                     >
                       {inStockProducts.slice(0, 30).map((p, idx) => (
                         <option key={p.id || idx} value={idx}>
@@ -651,12 +658,12 @@ export default function FbZipExportModal({
                         </option>
                       ))}
                     </select>
-                    <ChevronDown size={14} className="absolute right-2 top-2 text-gray-400 pointer-events-none" />
+                    <ChevronDown size={14} className="absolute right-2 top-2 text-slate-400 pointer-events-none" />
                   </div>
                 )}
               </div>
 
-              <div className="bg-[#040711] border border-[#141d30] rounded-xl p-3 font-mono text-xs text-[#34d399] whitespace-pre-wrap leading-relaxed">
+              <div className="bg-black/30 border border-[var(--dash-border)] rounded-xl p-3 font-mono text-xs text-emerald-400 whitespace-pre-wrap leading-relaxed">
                 {sampleCaption || 'No in-stock products available for preview.'}
               </div>
             </div>
@@ -664,14 +671,14 @@ export default function FbZipExportModal({
         </div>
 
         {/* Card 4: ZIP Folder Structure */}
-        <div className="bg-[#0e1626] rounded-2xl p-4 sm:p-5 border border-[#1a253c] shadow-sm space-y-3.5">
+        <div className="bg-[var(--dash-card)] rounded-2xl p-4 sm:p-6 border border-[var(--dash-border)]/70 shadow-xl space-y-4">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#4c0519]/40 text-[#fb7185] flex items-center justify-center shrink-0 border border-[#fb7185]/20">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 text-pink-400 flex items-center justify-center shrink-0 border border-pink-500/20">
               <FolderTree size={18} strokeWidth={2} />
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-bold text-white">ZIP Folder Structure</h2>
-              <p className="text-xs text-gray-400 mt-0.5 font-normal">
+              <p className="text-xs text-slate-400 mt-0.5 font-normal">
                 Choose how product subfolders inside the ZIP archive should be named.
               </p>
             </div>
@@ -682,79 +689,81 @@ export default function FbZipExportModal({
             {/* Sequential */}
             <div 
               onClick={() => setFolderNaming('sequential')}
-              className={`p-3.5 rounded-xl border cursor-pointer flex items-center gap-3 transition-all ${
+              className={cn(
+                "p-3.5 rounded-xl border cursor-pointer flex items-center gap-3 transition-all",
                 folderNaming === 'sequential' 
-                  ? 'bg-[#2e0919]/50 border-[#f43f5e] text-white' 
-                  : 'bg-[#080d18] border-[#1a253c] text-gray-300 hover:bg-[#131b2e]'
-              }`}
+                  ? "bg-pink-500/10 border-pink-500 text-white" 
+                  : "bg-[var(--dash-bg)] border-[var(--dash-border)] text-slate-300 hover:bg-white/5"
+              )}
             >
-              <div className="w-4 h-4 rounded-full border-2 border-[#f43f5e] flex items-center justify-center shrink-0">
-                {folderNaming === 'sequential' && <div className="w-2 h-2 rounded-full bg-[#f43f5e]" />}
+              <div className="w-4 h-4 rounded-full border-2 border-pink-500 flex items-center justify-center shrink-0">
+                {folderNaming === 'sequential' && <div className="w-2 h-2 rounded-full bg-pink-500" />}
               </div>
               <div>
                 <div className="text-xs font-bold">Sequential Numbers (1, 2, 3...)</div>
-                <div className="text-[11px] text-gray-400 mt-0.5">Recommended for FB Auto Sender</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Recommended for FB Auto Sender</div>
               </div>
             </div>
 
             {/* Product IDs */}
             <div 
               onClick={() => setFolderNaming('productId')}
-              className={`p-3.5 rounded-xl border cursor-pointer flex items-center gap-3 transition-all ${
+              className={cn(
+                "p-3.5 rounded-xl border cursor-pointer flex items-center gap-3 transition-all",
                 folderNaming === 'productId' 
-                  ? 'bg-[#2e0919]/50 border-[#f43f5e] text-white' 
-                  : 'bg-[#080d18] border-[#1a253c] text-gray-300 hover:bg-[#131b2e]'
-              }`}
+                  ? "bg-pink-500/10 border-pink-500 text-white" 
+                  : "bg-[var(--dash-bg)] border-[var(--dash-border)] text-slate-300 hover:bg-white/5"
+              )}
             >
-              <div className="w-4 h-4 rounded-full border-2 border-gray-500 flex items-center justify-center shrink-0">
-                {folderNaming === 'productId' && <div className="w-2 h-2 rounded-full bg-[#f43f5e]" />}
+              <div className="w-4 h-4 rounded-full border-2 border-slate-500 flex items-center justify-center shrink-0">
+                {folderNaming === 'productId' && <div className="w-2 h-2 rounded-full bg-pink-500" />}
               </div>
               <div>
                 <div className="text-xs font-bold">Product IDs (P001, P002...)</div>
-                <div className="text-[11px] text-gray-400 mt-0.5">Uses your internal product SKU/ID</div>
+                <div className="text-[11px] text-slate-400 mt-0.5">Uses your internal product SKU/ID</div>
               </div>
             </div>
           </div>
 
           {/* Directory Visual Tree */}
-          <div className="bg-[#050914] border border-[#141d30] rounded-xl p-3.5 font-mono text-xs text-gray-300 space-y-1.5">
+          <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-3.5 font-mono text-xs text-slate-300 space-y-1.5">
             <div className="flex items-center gap-1.5">
               <span>📁</span>
               <span className="font-bold text-white">export_dataset/</span>
             </div>
-            <div className="pl-4 flex items-center gap-1.5 text-gray-300">
-              <span className="text-gray-500">└──</span>
+            <div className="pl-4 flex items-center gap-1.5 text-slate-300">
+              <span className="text-slate-500">└──</span>
               <span>📁</span>
-              <span className="text-[#38bdf8] font-bold">{folderNaming === 'sequential' ? '1/' : 'P001/'}</span>
-              <span className="text-gray-400">(Product 1)</span>
+              <span className="text-pink-400 font-bold">{folderNaming === 'sequential' ? '1/' : 'P001/'}</span>
+              <span className="text-slate-400">(Product 1)</span>
             </div>
-            <div className="pl-8 flex items-center gap-1.5 text-gray-400">
-              <span className="text-gray-600">├──</span>
+            <div className="pl-8 flex items-center gap-1.5 text-slate-400">
+              <span className="text-slate-600">├──</span>
               <span>🖼️</span>
-              <span className="text-[#fde047]">image_1.webp</span>
-              <span className="text-gray-500">(Original High-Res)</span>
+              <span className="text-amber-300">image_1.webp</span>
+              <span className="text-slate-500">(Original High-Res)</span>
             </div>
             {maxImagesPerProduct !== 1 && (
-              <div className="pl-8 flex items-center gap-1.5 text-gray-400">
-                <span className="text-gray-600">├──</span>
+              <div className="pl-8 flex items-center gap-1.5 text-slate-400">
+                <span className="text-slate-600">├──</span>
                 <span>🖼️</span>
-                <span className="text-[#fde047]">image_2.webp</span>
-                <span className="text-gray-500">(Gallery Photo)</span>
+                <span className="text-amber-300">image_2.webp</span>
+                <span className="text-slate-500">(Gallery Photo)</span>
               </div>
             )}
-            <div className="pl-8 flex items-center gap-1.5 text-gray-400">
-              <span className="text-gray-600">└──</span>
+            <div className="pl-8 flex items-center gap-1.5 text-slate-400">
+              <span className="text-slate-600">└──</span>
               <span>📄</span>
-              <span className="text-[#34d399]">text.txt</span>
-              <span className="text-gray-500">(Formatted caption)</span>
+              <span className="text-emerald-400">text.txt</span>
+              <span className="text-slate-500">(Formatted caption)</span>
             </div>
-            <div className="pl-4 flex items-center gap-1.5 text-gray-300">
-              <span className="text-gray-500">└──</span>
+            <div className="pl-4 flex items-center gap-1.5 text-slate-300">
+              <span className="text-slate-500">└──</span>
               <span>📁</span>
-              <span className="text-[#38bdf8] font-bold">{folderNaming === 'sequential' ? '2/' : 'P002/'}</span>
-              <span className="text-gray-400">(Product 2)</span>
+              <span className="text-pink-400 font-bold">{folderNaming === 'sequential' ? '2/' : 'P002/'}</span>
+              <span className="text-slate-400">(Product 2)</span>
             </div>
-            <div className="pl-8 text-gray-600">
+            <div className="pl-8 text-slate-600">
               └── .....
             </div>
           </div>
@@ -762,13 +771,13 @@ export default function FbZipExportModal({
 
       </div>
 
-      {/* 3. Sticky Bottom Action Bar matching user mockup */}
-      <div className="fixed bottom-0 left-0 right-0 md:left-[240px] px-4 py-3 bg-[#0c1220] border-t border-[#151d2f] z-[110] shadow-2xl pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      {/* 3. Sticky Bottom Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 md:left-[240px] px-4 py-3 bg-[var(--dash-bg)]/95 backdrop-blur-md border-t border-[var(--dash-border)]/70 z-[110] shadow-2xl pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="max-w-2xl mx-auto flex items-center gap-3">
           <button 
             onClick={onClose}
             disabled={exportState === 'exporting'}
-            className="px-5 py-3 rounded-2xl bg-[#131b2e] border border-[#1e293b] text-gray-200 hover:text-white font-semibold hover:bg-[#1a253c] transition-colors text-xs sm:text-sm disabled:opacity-40 cursor-pointer"
+            className="px-5 py-3 rounded-xl bg-white/5 border border-white/10 text-slate-200 hover:text-white font-semibold hover:bg-white/10 transition-colors text-xs sm:text-sm disabled:opacity-40 cursor-pointer"
           >
             Back
           </button>
@@ -776,7 +785,8 @@ export default function FbZipExportModal({
           <button 
             onClick={handleStartExport}
             disabled={exportState === 'exporting' || inStockProducts.length === 0}
-            className="flex-1 py-3 px-5 rounded-2xl bg-[#ff3b69] hover:bg-[#ff2458] active:scale-98 font-bold text-xs sm:text-sm text-white transition-all shadow-lg shadow-pink-900/30 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{ backgroundColor: themePrimary || 'var(--theme-primary, #ff4d6d)' }}
+            className="flex-1 py-3 px-5 rounded-xl hover:brightness-110 active:scale-98 font-bold text-xs sm:text-sm text-white transition-all shadow-lg shadow-pink-500/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {exportState === 'exporting' ? (
               <>
@@ -793,8 +803,8 @@ export default function FbZipExportModal({
         </div>
 
         {/* Subtitle footer */}
-        <div className="flex items-center justify-center gap-1.5 text-[11px] text-gray-400 mt-2">
-          <Lock size={11} className="text-gray-400" />
+        <div className="flex items-center justify-center gap-1.5 text-[11px] text-slate-400 mt-2">
+          <Lock size={11} className="text-slate-400" />
           <span>Secure export • Original quality</span>
         </div>
       </div>

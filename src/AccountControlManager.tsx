@@ -171,16 +171,9 @@ export default function AccountControlManager({ adminUsers, setAdminUsers, curre
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs md:text-sm text-white bg-pink-500 hover:bg-pink-600 active:scale-95 transition-all shadow-lg shadow-pink-500/20 disabled:opacity-50 cursor-pointer shrink-0"
+            className="px-5 py-2 rounded-xl font-bold text-xs md:text-sm text-white bg-pink-500 hover:bg-pink-600 active:scale-95 transition-all shadow-lg shadow-pink-500/20 disabled:opacity-50 cursor-pointer shrink-0"
           >
-            {isSaving ? (
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : saved ? (
-              <Check size={16} className="text-white stroke-[3]" />
-            ) : (
-              <Save size={16} />
-            )}
-            <span>{saved ? 'Saved' : isSaving ? 'Saving...' : 'Save Changes'}</span>
+            {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save'}
           </button>
         )}
       </div>

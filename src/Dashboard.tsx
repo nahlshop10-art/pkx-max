@@ -3443,10 +3443,9 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
           onClick={handleSave}
           disabled={isSaving}
           style={{ backgroundColor: themeColor }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-pink-500/20 cursor-pointer"
+          className="px-5 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer shrink-0 disabled:opacity-50"
         >
-          {saved ? <Check size={16} /> : <Save size={16} />}
-          {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save Settings'}
+          {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save'}
         </button>
       </div>
 
@@ -3897,10 +3896,9 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
           onClick={handleSave}
           disabled={isSaving}
           style={{ backgroundColor: themeColor }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-pink-500/20 cursor-pointer"
+          className="px-5 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer shrink-0 disabled:opacity-50"
         >
-          {saved ? <Check size={16} /> : <Save size={16} />}
-          {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save Pixels'}
+          {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save'}
         </button>
       </div>
 
@@ -4316,10 +4314,9 @@ function CourierManager({ settings, setSettings, onClose, themePrimary }: { sett
           onClick={handleSave}
           disabled={isSaving}
           style={{ backgroundColor: themeColor }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-pink-500/20 cursor-pointer"
+          className="px-5 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer shrink-0 disabled:opacity-50"
         >
-          {saved ? <Check size={16} /> : <Save size={16} />}
-          {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save Keys'}
+          {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save'}
         </button>
       </div>
 
@@ -4535,10 +4532,9 @@ function PriceCalculatorManager({ settings, setSettings, onClose, themePrimary }
           onClick={handleSave}
           disabled={isSaving}
           style={{ backgroundColor: themeColor }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-pink-500/20 cursor-pointer"
+          className="px-5 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer shrink-0 disabled:opacity-50"
         >
-          {saved ? <Check size={16} /> : <Save size={16} />}
-          {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save Parameters'}
+          {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save'}
         </button>
       </div>
 
@@ -5044,9 +5040,9 @@ function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdm
                 <button 
                   type="submit"
                   style={{ backgroundColor: themeColor }}
-                  className="w-full sm:w-auto px-5 py-2.5 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-98 transition-all shadow-lg shadow-pink-500/20 cursor-pointer shrink-0"
+                  className="px-5 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer shrink-0"
                 >
-                  Save Session Time
+                  Save
                 </button>
               </div>
               {logoutMsg.text && (
@@ -5250,10 +5246,9 @@ function QtyRulesManager({ settings, setSettings, onClose, themePrimary }: { set
           onClick={handleSave} 
           disabled={isSaving}
           style={{ backgroundColor: themeColor }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-pink-500/20 cursor-pointer"
+          className="px-5 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer shrink-0 disabled:opacity-50"
         >
-          {saved ? <Check size={16} /> : <Save size={16} />}
-          {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save Rules'}
+          {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save'}
         </button>
       </div>
 
@@ -5404,11 +5399,10 @@ export function SeoSettingsManager({ settings, setSettings, onClose, themePrimar
           onClick={handleSave}
           disabled={isSaving}
           style={{ backgroundColor: themeColor }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all disabled:opacity-50 shadow-lg shadow-pink-500/20 cursor-pointer"
+          className="px-5 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer shrink-0 disabled:opacity-50"
           id="seo_save_btn"
         >
-          {saved ? <Check size={16} /> : <Save size={16} />}
-          {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save Changes'}
+          {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save'}
         </button>
       </div>
 
@@ -5652,10 +5646,9 @@ export function ImageSettingsManager({ onClose, themePrimary }: { onClose: () =>
         <button
           onClick={handleSave}
           style={{ backgroundColor: themeColor }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer"
+          className="px-5 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer shrink-0"
         >
-          {saved ? <Check size={16} /> : <Save size={16} />}
-          {saved ? 'Saved' : 'Save Config'}
+          {saved ? 'Saved' : 'Save'}
         </button>
       </div>
 

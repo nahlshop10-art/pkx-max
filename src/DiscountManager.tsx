@@ -179,7 +179,7 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
                   type="number" 
                   value={editingDiscount.priority}
                   onChange={e => setEditingDiscount({...editingDiscount, priority: parseInt(e.target.value) || 0})}
-                  className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
+                  className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
                 />
               </div>
             </div>
@@ -187,8 +187,8 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
 
           {/* Step 2: Type */}
           {step === 2 && (
-            <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4 animate-in fade-in duration-200">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300 pb-3 border-b border-[#1e293b]/50">
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4 animate-in fade-in duration-200">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300 pb-3 border-b border-[var(--dash-border)]/50">
                 2. Select Discount Type
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -204,7 +204,7 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
                     onClick={() => setEditingDiscount({...editingDiscount, type: t.id as DiscountType})}
                     className={cn(
                       "p-4 rounded-xl border cursor-pointer transition-all flex flex-col justify-between space-y-2 group",
-                      editingDiscount.type === t.id ? "bg-pink-500/10 border-pink-500 shadow-md shadow-pink-500/10" : "bg-[#070b14] border-[#1e293b] hover:border-slate-700"
+                      editingDiscount.type === t.id ? "bg-pink-500/10 border-pink-500 shadow-md shadow-pink-500/10" : "bg-[var(--dash-bg)] border-[var(--dash-border)] hover:border-slate-700"
                     )}
                   >
                     <div className="flex items-center justify-between">
@@ -222,8 +222,8 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
 
           {/* Step 3: Conditions */}
           {step === 3 && (
-            <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4 animate-in fade-in duration-200">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300 pb-3 border-b border-[#1e293b]/50">
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4 animate-in fade-in duration-200">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300 pb-3 border-b border-[var(--dash-border)]/50">
                 3. Qualifying Conditions
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -234,7 +234,7 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
                     value={editingDiscount.conditions.minOrderAmount || ''}
                     onChange={e => setEditingDiscount({...editingDiscount, conditions: {...editingDiscount.conditions, minOrderAmount: parseFloat(e.target.value) || undefined}})}
                     placeholder="e.g. 1000"
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
                   />
                 </div>
                 <div>
@@ -244,7 +244,7 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
                     value={editingDiscount.conditions.maxOrderAmount || ''}
                     onChange={e => setEditingDiscount({...editingDiscount, conditions: {...editingDiscount.conditions, maxOrderAmount: parseFloat(e.target.value) || undefined}})}
                     placeholder="e.g. 5000"
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
                   />
                 </div>
               </div>
@@ -253,8 +253,8 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
 
           {/* Step 4: Action */}
           {step === 4 && (
-            <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4 animate-in fade-in duration-200">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300 pb-3 border-b border-[#1e293b]/50">
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4 animate-in fade-in duration-200">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300 pb-3 border-b border-[var(--dash-border)]/50">
                 4. Discount Amount / Values
               </h2>
               {editingDiscount.type === 'percentage' && (
@@ -265,7 +265,7 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
                     value={editingDiscount.action.percentage || ''}
                     onChange={e => setEditingDiscount({...editingDiscount, action: {...editingDiscount.action, percentage: parseFloat(e.target.value) || undefined}})}
                     placeholder="e.g. 20"
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
                   />
                 </div>
               )}
@@ -277,7 +277,7 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
                     value={editingDiscount.action.fixedAmount || ''}
                     onChange={e => setEditingDiscount({...editingDiscount, action: {...editingDiscount.action, fixedAmount: parseFloat(e.target.value) || undefined}})}
                     placeholder="e.g. 150"
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
                   />
                 </div>
               )}
@@ -291,7 +291,7 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
                         value={editingDiscount.action.couponCode || ''}
                         onChange={e => setEditingDiscount({...editingDiscount, action: {...editingDiscount.action, couponCode: e.target.value.toUpperCase()}})}
                         placeholder="e.g. EID2026"
-                        className="flex-1 bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 uppercase font-mono tracking-wider"
+                        className="flex-1 bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 uppercase font-mono tracking-wider"
                       />
                       <button 
                         onClick={() => setEditingDiscount({...editingDiscount, action: {...editingDiscount.action, couponCode: Math.random().toString(36).substring(2, 8).toUpperCase()}})}
@@ -308,8 +308,8 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
 
           {/* Step 5: Limits */}
           {step === 5 && (
-            <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4 animate-in fade-in duration-200">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300 pb-3 border-b border-[#1e293b]/50">
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4 animate-in fade-in duration-200">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300 pb-3 border-b border-[var(--dash-border)]/50">
                 5. Usage Limits
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -320,7 +320,7 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
                     value={editingDiscount.limits.maxUsageGlobal || ''}
                     onChange={e => setEditingDiscount({...editingDiscount, limits: {...editingDiscount.limits, maxUsageGlobal: parseInt(e.target.value) || undefined}})}
                     placeholder="e.g. 100"
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
                   />
                 </div>
                 <div>
@@ -330,7 +330,7 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
                     value={editingDiscount.limits.maxUsagePerUser || ''}
                     onChange={e => setEditingDiscount({...editingDiscount, limits: {...editingDiscount.limits, maxUsagePerUser: parseInt(e.target.value) || undefined}})}
                     placeholder="e.g. 1"
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
                   />
                 </div>
               </div>
@@ -339,8 +339,8 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
 
           {/* Step 6: Schedule */}
           {step === 6 && (
-            <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4 animate-in fade-in duration-200">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300 pb-3 border-b border-[#1e293b]/50">
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4 animate-in fade-in duration-200">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300 pb-3 border-b border-[var(--dash-border)]/50">
                 6. Active Schedule & Time Window
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -350,7 +350,7 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
                     type="datetime-local" 
                     value={editingDiscount.time.startDate || ''}
                     onChange={e => setEditingDiscount({...editingDiscount, time: {...editingDiscount.time, startDate: e.target.value}})}
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
                   />
                 </div>
                 <div>
@@ -359,7 +359,7 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
                     type="datetime-local" 
                     value={editingDiscount.time.endDate || ''}
                     onChange={e => setEditingDiscount({...editingDiscount, time: {...editingDiscount.time, endDate: e.target.value}})}
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
                   />
                 </div>
               </div>
@@ -368,10 +368,10 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
         </div>
 
         {/* Wizard Bottom Navigation */}
-        <div className="sticky bottom-0 bg-[#070b14]/90 backdrop-blur-md border-t border-[#1e293b] p-3.5 md:p-4 flex items-center justify-between z-20 shrink-0">
+        <div className="sticky bottom-0 bg-[var(--dash-bg)]/95 backdrop-blur-md border-t border-[var(--dash-border)]/70 p-3.5 md:p-4 flex items-center justify-between z-20 shrink-0">
           <button 
             onClick={() => step > 1 ? setStep(step - 1) : setEditingDiscount(null)}
-            className="px-4 py-2.5 rounded-xl border border-slate-700 hover:bg-white/5 text-slate-300 font-semibold text-xs transition-colors"
+            className="px-4 py-2.5 rounded-xl border border-slate-700 hover:bg-white/5 text-slate-300 font-semibold text-xs transition-colors cursor-pointer"
           >
             {step === 1 ? 'Cancel' : '← Previous Step'}
           </button>
@@ -388,9 +388,9 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
             <button 
               onClick={handleSaveDiscount}
               style={{ backgroundColor: themeColor }}
-              className="px-6 py-2.5 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 flex items-center gap-2 cursor-pointer"
+              className="px-5 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer shrink-0 disabled:opacity-50"
             >
-              <Save size={16} /> Save Discount Rule
+              Save
             </button>
           )}
         </div>
@@ -399,13 +399,13 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
-            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0"
+            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0 cursor-pointer"
             title="Go back"
           >
             <ChevronLeft size={20} />

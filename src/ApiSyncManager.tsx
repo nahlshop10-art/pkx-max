@@ -179,12 +179,12 @@ export function ApiSyncManager({ settings, setSettings, onClose }: ApiSyncManage
 
   return (
     <div 
-      className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]"
+      className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]"
       id="api_sync_manager_view"
     >
       {/* Top Header Bar */}
       <div 
-        className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0"
+        className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0"
         id="api_sync_header"
       >
         <div className="flex items-center gap-3">
@@ -211,21 +211,14 @@ export function ApiSyncManager({ settings, setSettings, onClose }: ApiSyncManage
           </div>
         </div>
 
-        <button
+        <button 
           onClick={handleSave}
           disabled={isSaving}
           style={{ backgroundColor: themeColor }}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 disabled:opacity-50 cursor-pointer shrink-0"
+          className="px-5 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer shrink-0 disabled:opacity-50"
           id="api_sync_save_btn"
         >
-          {isSaving ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : saved ? (
-            <Check size={16} className="text-white stroke-[3]" />
-          ) : (
-            <Save size={16} />
-          )}
-          <span>{saved ? 'Saved' : isSaving ? 'Saving...' : 'Save Settings'}</span>
+          {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save'}
         </button>
       </div>
 

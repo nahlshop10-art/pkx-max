@@ -231,7 +231,7 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
         {!showSettings ? (
           <button 
             onClick={() => setShowSettings(true)} 
-            className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs md:text-sm bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-95 cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs md:text-sm bg-white/5 hover:bg-white/10 border border-white/10 text-white transition-all active:scale-95 cursor-pointer shrink-0"
           >
             <Settings size={15} /> Settings
           </button>
@@ -239,10 +239,9 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
           <button 
             onClick={() => { handleSave(); setShowSettings(false); }} 
             style={{ backgroundColor: themeColor }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer"
+            className="px-5 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer shrink-0 disabled:opacity-50"
           >
-            <Save size={15} />
-            Save Settings
+            Save
           </button>
         )}
       </div>
@@ -295,9 +294,9 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
                 </div>
 
                 {/* Duplicate Control */}
-                <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-3">
+                <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-3">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">Duplicate Merging Window</h3>
-                  <div className="flex bg-[#070b14] rounded-xl border border-[#1e293b] focus-within:border-pink-500 overflow-hidden transition-colors">
+                  <div className="flex bg-[var(--dash-bg)] rounded-xl border border-[var(--dash-border)] focus-within:border-pink-500 overflow-hidden transition-colors">
                     <input 
                       type="number" 
                       value={duplicateControlValue} 
@@ -307,7 +306,7 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
                     <select 
                       value={duplicateControlUnit}
                       onChange={e => setDuplicateControlUnit(e.target.value as any)}
-                      className="bg-[#0b1120] px-4 text-slate-300 text-xs font-semibold focus:outline-none border-l border-[#1e293b]"
+                      className="bg-[var(--dash-card)] px-4 text-slate-300 text-xs font-semibold focus:outline-none border-l border-[var(--dash-border)]"
                     >
                       <option value="minutes">Minutes</option>
                       <option value="hours">Hours</option>
@@ -318,24 +317,24 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
                 </div>
 
                 {/* WhatsApp Message */}
-                <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-3">
+                <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-3">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">Recovery Outreach Template</h3>
                   <textarea 
                     value={whatsappMessage} 
                     onChange={e => setWhatsappMessage(e.target.value)} 
                     rows={3}
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl p-3 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 resize-none transition-colors"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-3 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 resize-none transition-colors"
                   />
                   <p className="text-[11px] text-slate-500">Default message prefilled when launching WhatsApp recovery.</p>
                 </div>
 
                 {/* Data Retention */}
-                <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-3">
+                <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-3">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">Storage Retention Period</h3>
                   <select 
                     value={retentionPeriodDays}
                     onChange={e => setRetentionPeriodDays(e.target.value)}
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl p-3 text-xs md:text-sm text-white focus:outline-none font-semibold"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-3 text-xs md:text-sm text-white focus:outline-none font-semibold"
                   >
                     <option value="0">Keep Forever (No Auto-Delete)</option>
                     <option value="1">1 Day</option>
@@ -351,7 +350,7 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
         ) : (
           <div className="p-4 md:p-8 space-y-4 max-w-4xl mx-auto w-full pb-28">
             {/* Filters Section */}
-            <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-5 shadow-xl space-y-3.5">
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-5 shadow-xl space-y-3.5">
               <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
                 {dayFilterOptions.map(days => (
                   <button 
@@ -360,8 +359,8 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
                     className={cn(
                       "shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer",
                       dateFilter === days 
-                        ? "bg-amber-500/10 text-amber-400 border-amber-500/40" 
-                        : "bg-[#070b14] text-slate-400 border-[#1e293b] hover:border-slate-700"
+                        ? "bg-pink-500/10 text-pink-400 border-pink-500/40" 
+                        : "bg-[var(--dash-bg)] text-slate-400 border-[var(--dash-border)] hover:border-slate-700"
                     )}
                   >
                     {days} Day{days !== '1' ? 's' : ''}
@@ -372,8 +371,8 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
                   className={cn(
                     "shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer",
                     dateFilter === 'ALL' 
-                      ? "bg-amber-500/10 text-amber-400 border-amber-500/40" 
-                      : "bg-[#070b14] text-slate-400 border-[#1e293b] hover:border-slate-700"
+                      ? "bg-pink-500/10 text-pink-400 border-pink-500/40" 
+                      : "bg-[var(--dash-bg)] text-slate-400 border-[var(--dash-border)] hover:border-slate-700"
                   )}
                 >
                   All Time
@@ -383,8 +382,8 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
                   className={cn(
                     "shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1.5 cursor-pointer",
                     dateFilter === 'CUSTOM' 
-                      ? "bg-amber-500/10 text-amber-400 border-amber-500/40" 
-                      : "bg-[#070b14] text-slate-400 border-[#1e293b] hover:border-slate-700"
+                      ? "bg-pink-500/10 text-pink-400 border-pink-500/40" 
+                      : "bg-[var(--dash-bg)] text-slate-400 border-[var(--dash-border)] hover:border-slate-700"
                   )}
                 >
                   <Calendar size={13} /> Custom
@@ -392,25 +391,25 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
               </div>
 
               {dateFilter === 'CUSTOM' && (
-                <div className="flex items-center gap-3 pt-2 border-t border-[#1e293b]/50">
+                <div className="flex items-center gap-3 pt-2 border-t border-[var(--dash-border)]/50">
                   <input 
                     type="date" 
                     value={customStartDate} 
                     onChange={e => setCustomStartDate(e.target.value)} 
-                    className="bg-[#070b14] border border-[#1e293b] text-xs text-white rounded-xl px-3 py-2 focus:outline-none" 
+                    className="bg-[var(--dash-bg)] border border-[var(--dash-border)] text-xs text-white rounded-xl px-3 py-2 focus:outline-none" 
                   />
                   <span className="text-xs text-slate-400 font-semibold">to</span>
                   <input 
                     type="date" 
                     value={customEndDate} 
                     onChange={e => setCustomEndDate(e.target.value)} 
-                    className="bg-[#070b14] border border-[#1e293b] text-xs text-white rounded-xl px-3 py-2 focus:outline-none" 
+                    className="bg-[var(--dash-bg)] border border-[var(--dash-border)] text-xs text-white rounded-xl px-3 py-2 focus:outline-none" 
                   />
                 </div>
               )}
 
               {/* List Header Actions */}
-              <div className="flex items-center justify-between pt-2 border-t border-[#1e293b]/50">
+              <div className="flex items-center justify-between pt-2 border-t border-[var(--dash-border)]/50">
                 <span className="text-xs font-bold text-slate-300">
                   {filteredOrders.length} Abandoned Checkouts
                 </span>
@@ -418,9 +417,9 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
                 <div className="flex items-center gap-4">
                   {filteredOrders.length > 0 && selectedOrders.size > 0 && (
                      <div className="flex items-center gap-2">
-                       <button onClick={() => handleDownload('csv')} className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer"><Download size={13} /> CSV</button>
+                       <button onClick={() => handleDownload('csv')} className="text-xs font-bold text-pink-400 hover:text-pink-300 flex items-center gap-1 cursor-pointer"><Download size={13} /> CSV</button>
                        <span className="text-slate-700">|</span>
-                       <button onClick={() => handleDownload('excel')} className="text-xs font-bold text-amber-400 hover:text-amber-300 flex items-center gap-1 cursor-pointer"><Download size={13} /> Excel</button>
+                       <button onClick={() => handleDownload('excel')} className="text-xs font-bold text-pink-400 hover:text-pink-300 flex items-center gap-1 cursor-pointer"><Download size={13} /> Excel</button>
                      </div>
                   )}
 
@@ -432,7 +431,7 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
                       className={cn(
                         "w-4.5 h-4.5 rounded-lg border flex items-center justify-center transition-colors",
                         filteredOrders.length > 0 && selectedOrders.size === filteredOrders.length 
-                          ? "bg-amber-500 border-amber-500 text-white" 
+                          ? "bg-pink-500 border-pink-500 text-white" 
                           : "border-slate-600 text-transparent"
                       )}
                     >
@@ -446,7 +445,7 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
 
             {/* Data List */}
             {filteredOrders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 px-4 bg-[#0b1120] rounded-2xl border border-[#1e293b]">
+              <div className="flex flex-col items-center justify-center py-16 px-4 bg-[var(--dash-card)] rounded-2xl border border-[var(--dash-border)]">
                 <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-500 mb-3">
                   <ShoppingCart size={22} />
                 </div>
@@ -462,9 +461,9 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
                     <div 
                       key={order.id} 
                       className={cn(
-                        "bg-[#0b1120] border p-4 md:p-5 rounded-2xl shadow-xl transition-all flex flex-col justify-between gap-3",
-                        order.contacted ? "border-slate-700/60 opacity-80" : "border-[#1e293b]/70 hover:border-slate-700",
-                        isSelected && "ring-1 ring-amber-500/50 border-amber-500/50"
+                        "bg-[var(--dash-card)] border p-4 md:p-5 rounded-2xl shadow-xl transition-all flex flex-col justify-between gap-3",
+                        order.contacted ? "border-slate-700/60 opacity-80" : "border-[var(--dash-border)]/70 hover:border-slate-700",
+                        isSelected && "ring-1 ring-pink-500/50 border-pink-500/50"
                       )}
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -472,7 +471,7 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
                           <button 
                             className={cn(
                               "w-5 h-5 rounded-lg border flex-shrink-0 flex items-center justify-center transition-colors cursor-pointer mt-0.5",
-                              isSelected ? "bg-amber-500 border-amber-500 text-white" : "border-slate-600 text-transparent"
+                              isSelected ? "bg-pink-500 border-pink-500 text-white" : "border-slate-600 text-transparent"
                             )}
                             onClick={(e) => toggleSelection(order.id, e)}
                           >
@@ -558,10 +557,10 @@ function DetailOverlay({ orderId, orders, onClose, toggleContacted, openWhatsApp
   const totalPrice = order.cartItems?.reduce((sum, item) => sum + ((item.variantPrice ?? item.product.price) * item.quantity), 0) || 0;
 
   return (
-    <div className="fixed inset-0 z-[110] bg-[#070b14]/90 backdrop-blur-md flex justify-end">
-      <div className="bg-[#0b1120] w-full max-w-lg h-full overflow-y-auto border-l border-[#1e293b] flex flex-col shadow-2xl">
+    <div className="fixed inset-0 z-[110] bg-[var(--dash-bg)]/90 backdrop-blur-md flex justify-end">
+      <div className="bg-[var(--dash-card)] w-full max-w-lg h-full overflow-y-auto border-l border-[var(--dash-border)] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="p-4 md:p-5 border-b border-[#1e293b] flex items-center justify-between sticky top-0 bg-[#0b1120]/90 backdrop-blur-md z-10">
+        <div className="p-4 md:p-5 border-b border-[var(--dash-border)] flex items-center justify-between sticky top-0 bg-[var(--dash-card)]/90 backdrop-blur-md z-10">
           <div className="flex items-center gap-3">
             <button 
               onClick={onClose} 
@@ -585,9 +584,9 @@ function DetailOverlay({ orderId, orders, onClose, toggleContacted, openWhatsApp
         {/* Content */}
         <div className="p-4 md:p-6 space-y-5 flex-1">
           {/* Customer Info Card */}
-          <div className="bg-[#070b14] border border-[#1e293b] rounded-2xl p-4 md:p-5 shadow-xl space-y-4">
+          <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-2xl p-4 md:p-5 shadow-xl space-y-4">
             <div className="flex items-start gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center text-lg font-bold shrink-0">
+              <div className="w-12 h-12 rounded-2xl bg-pink-500/10 border border-pink-500/20 text-pink-400 flex items-center justify-center text-lg font-bold shrink-0">
                 {order.name ? order.name.substring(0, 2).toUpperCase() : 'U'}
               </div>
               <div className="flex-1 min-w-0">
@@ -598,7 +597,7 @@ function DetailOverlay({ orderId, orders, onClose, toggleContacted, openWhatsApp
                     <span className="font-mono text-white">{formatWhatsAppPhone(order.phone)}</span>
                     <button 
                       onClick={() => navigator.clipboard.writeText(formatWhatsAppPhone(order.phone))} 
-                      className="text-amber-400 hover:text-amber-300 ml-1"
+                      className="text-pink-400 hover:text-pink-300 ml-1"
                       title="Copy Phone"
                     >
                       <Copy size={12} />
@@ -615,7 +614,7 @@ function DetailOverlay({ orderId, orders, onClose, toggleContacted, openWhatsApp
             </div>
 
             {/* Actions */}
-            <div className="grid grid-cols-2 gap-2.5 pt-2 border-t border-[#1e293b]/50">
+            <div className="grid grid-cols-2 gap-2.5 pt-2 border-t border-[var(--dash-border)]/50">
               <button 
                 onClick={(e) => toggleContacted(order.id, e)}
                 className={cn(
@@ -637,15 +636,15 @@ function DetailOverlay({ orderId, orders, onClose, toggleContacted, openWhatsApp
           </div>
 
           {/* Cart Items Card */}
-          <div className="bg-[#070b14] border border-[#1e293b] rounded-2xl p-4 md:p-5 shadow-xl space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-[#1e293b]/50">
+          <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-2xl p-4 md:p-5 shadow-xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--dash-border)]/50">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300">
                 Cart Items ({order.cartItems?.length || 0})
               </h4>
-              <span className="text-xs font-bold text-amber-400">Total: {formatPrice(totalPrice)}</span>
+              <span className="text-xs font-bold text-pink-400">Total: {formatPrice(totalPrice)}</span>
             </div>
 
-            <div className="divide-y divide-[#1e293b]/50">
+            <div className="divide-y divide-[var(--dash-border)]/50">
               {order.cartItems?.map((item, idx) => (
                 <div key={idx} className="flex gap-3.5 py-3 first:pt-0 last:pb-0">
                   <div 
