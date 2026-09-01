@@ -98,7 +98,7 @@ export default function CustomiseManager({
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto pb-safe bg-[var(--dash-bg)]">
+      <div className="flex-1 overflow-y-auto pb-32 bg-[var(--dash-bg)]">
         <div className="flex border-b border-[var(--dash-border)]">
           <button 
             className={`flex-1 py-4 text-center text-sm font-medium ${activeTab === 'website' ? 'text-[#fafafa] border-b-2 border-[#fafafa]' : 'text-gray-400'}`}
