@@ -56,9 +56,9 @@ export default function AntiSpamManager({ websiteSettings, setWebsiteSettings, o
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
@@ -68,7 +68,7 @@ export default function AntiSpamManager({ websiteSettings, setWebsiteSettings, o
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
               <ShieldAlert size={20} />
             </div>
             <div>
@@ -101,14 +101,14 @@ export default function AntiSpamManager({ websiteSettings, setWebsiteSettings, o
 
       {/* Main Content */}
       <div 
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 max-w-3xl mx-auto w-full pb-28 overscroll-y-contain custom-scrollbar"
+        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-5 max-w-3xl mx-auto w-full pb-32 overscroll-y-contain custom-scrollbar"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Master Control */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0 shadow-inner">
+              <div className="w-11 h-11 rounded-2xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
                 <ShieldCheck size={22} />
               </div>
               <div>
@@ -120,8 +120,8 @@ export default function AntiSpamManager({ websiteSettings, setWebsiteSettings, o
             <button
               onClick={() => setEnabled(!enabled)}
               className={cn(
-                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0",
-                enabled ? "bg-rose-500 shadow-md shadow-rose-500/20" : "bg-slate-700/60"
+                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0 cursor-pointer",
+                enabled ? "bg-pink-500 shadow-md shadow-pink-500/20" : "bg-slate-700/60"
               )}
             >
               <div
@@ -135,20 +135,20 @@ export default function AntiSpamManager({ websiteSettings, setWebsiteSettings, o
         </div>
 
         {enabled && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-200">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+          <div className="space-y-5 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
               
               {/* Rate Limits */}
-              <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
-                <div className="flex justify-between items-center pb-3 border-b border-[#1e293b]/50">
+              <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+                <div className="flex justify-between items-center pb-3 border-b border-[var(--dash-border)]/40">
                   <div className="flex items-center gap-2 text-white font-bold text-xs uppercase tracking-wider">
-                    <Zap size={15} className="text-amber-400" /> Rate Limits
+                    <Zap size={15} className="text-pink-400" /> Rate Limits
                   </div>
                   <button
                     onClick={() => setRateLimitEnabled(!rateLimitEnabled)}
                     className={cn(
-                      "w-10 h-5.5 rounded-full relative transition-all duration-200 p-0.5 focus:outline-none",
-                      rateLimitEnabled ? "bg-amber-500" : "bg-slate-700/60"
+                      "w-10 h-5.5 rounded-full relative transition-all duration-200 p-0.5 focus:outline-none cursor-pointer",
+                      rateLimitEnabled ? "bg-pink-500" : "bg-slate-700/60"
                     )}
                   >
                     <div
@@ -163,7 +163,7 @@ export default function AntiSpamManager({ websiteSettings, setWebsiteSettings, o
                 <div className="space-y-3 pt-1">
                   <div>
                     <label className="text-[11px] font-semibold text-slate-400 mb-1.5 block">Short-Term Rapid Checkout Limit</label>
-                    <div className="flex items-center gap-2 bg-[#070b14] border border-[#1e293b] rounded-xl p-2 px-3">
+                    <div className="flex items-center gap-2 bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-2 px-3">
                       <input 
                         type="number" 
                         value={shortTermOrdersCount} 
@@ -183,7 +183,7 @@ export default function AntiSpamManager({ websiteSettings, setWebsiteSettings, o
 
                   <div>
                     <label className="text-[11px] font-semibold text-slate-400 mb-1.5 block">Hourly Order Cap</label>
-                    <div className="flex items-center gap-2 bg-[#070b14] border border-[#1e293b] rounded-xl p-2 px-3">
+                    <div className="flex items-center gap-2 bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-2 px-3">
                       <input 
                         type="number" 
                         value={hourlyOrdersCount} 
@@ -196,7 +196,7 @@ export default function AntiSpamManager({ websiteSettings, setWebsiteSettings, o
 
                   <div>
                     <label className="text-[11px] font-semibold text-slate-400 mb-1.5 block">Daily Order Cap</label>
-                    <div className="flex items-center gap-2 bg-[#070b14] border border-[#1e293b] rounded-xl p-2 px-3">
+                    <div className="flex items-center gap-2 bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-2 px-3">
                       <input 
                         type="number" 
                         value={dailyOrdersCount} 
@@ -210,16 +210,16 @@ export default function AntiSpamManager({ websiteSettings, setWebsiteSettings, o
               </div>
 
               {/* Device Tracking */}
-              <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
-                <div className="flex justify-between items-center pb-3 border-b border-[#1e293b]/50">
+              <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+                <div className="flex justify-between items-center pb-3 border-b border-[var(--dash-border)]/40">
                   <div className="flex items-center gap-2 text-white font-bold text-xs uppercase tracking-wider">
-                    <Smartphone size={15} className="text-purple-400" /> Device Tracking
+                    <Smartphone size={15} className="text-pink-400" /> Device Tracking
                   </div>
                   <button
                     onClick={() => setDeviceTrackingEnabled(!deviceTrackingEnabled)}
                     className={cn(
-                      "w-10 h-5.5 rounded-full relative transition-all duration-200 p-0.5 focus:outline-none",
-                      deviceTrackingEnabled ? "bg-purple-500" : "bg-slate-700/60"
+                      "w-10 h-5.5 rounded-full relative transition-all duration-200 p-0.5 focus:outline-none cursor-pointer",
+                      deviceTrackingEnabled ? "bg-pink-500" : "bg-slate-700/60"
                     )}
                   >
                     <div
@@ -235,7 +235,7 @@ export default function AntiSpamManager({ websiteSettings, setWebsiteSettings, o
                   Fingerprints device screen, canvas hashes, and headers to prevent automated script submissions.
                 </p>
 
-                <div className="bg-[#070b14] border border-[#1e293b] rounded-xl p-3 space-y-1.5">
+                <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-3 space-y-1.5">
                   <label className="text-[11px] font-semibold text-slate-400 block">Block Expiry Duration</label>
                   <div className="flex items-center gap-2">
                     <input 
@@ -253,37 +253,14 @@ export default function AntiSpamManager({ websiteSettings, setWebsiteSettings, o
             </div>
 
             {/* Info notice */}
-            <div className="bg-rose-500/5 border border-rose-500/20 rounded-2xl p-4 flex gap-3 text-xs text-slate-300">
-              <AlertOctagon className="w-5 h-5 flex-shrink-0 text-rose-400 mt-0.5" />
+            <div className="bg-pink-500/5 border border-pink-500/20 rounded-2xl p-4 flex gap-3 text-xs text-slate-300">
+              <AlertOctagon className="w-5 h-5 flex-shrink-0 text-pink-400 mt-0.5" />
               <p className="leading-relaxed">
                 When rate limits are breached, users receive a polite "Too many attempts, please wait" notice to safeguard server resources and maintain inventory integrity.
               </p>
             </div>
           </div>
         )}
-      </div>
-
-      {/* Sticky Bottom Bar */}
-      <div className="sticky bottom-0 bg-[#070b14]/90 backdrop-blur-md border-t border-[#1e293b] p-3.5 md:p-4 flex items-center justify-between z-20 shrink-0">
-        <button
-          onClick={onClose}
-          className="px-4 py-2.5 rounded-xl border border-slate-700 hover:bg-white/5 text-slate-300 font-semibold text-xs transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          style={{ backgroundColor: themeColor }}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 disabled:opacity-50 cursor-pointer"
-        >
-          {isSaving ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <Check size={16} className="stroke-[3]" />
-          )}
-          Save Settings
-        </button>
       </div>
     </div>
   );

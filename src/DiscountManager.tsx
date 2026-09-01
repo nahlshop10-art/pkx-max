@@ -82,9 +82,9 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
 
   if (editingDiscount) {
     return (
-      <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+      <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
         {/* Wizard Header */}
-        <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+        <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
           <div className="flex items-center gap-3">
             <button 
               onClick={() => setEditingDiscount(null)} 
@@ -109,20 +109,20 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
 
         {/* Wizard Content */}
         <div 
-          className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 max-w-3xl mx-auto w-full pb-28 overscroll-y-contain custom-scrollbar"
+          className="flex-1 overflow-y-auto p-4 md:p-8 space-y-5 max-w-3xl mx-auto w-full pb-32 overscroll-y-contain custom-scrollbar"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
           {/* Step Pill Tracker */}
-          <div className="flex items-center justify-between bg-[#0b1120] border border-[#1e293b]/70 p-3 rounded-2xl shadow-md gap-1">
+          <div className="flex items-center justify-between bg-[var(--dash-card)] border border-[var(--dash-border)]/70 p-2.5 rounded-2xl shadow-md gap-1">
             {[1, 2, 3, 4, 5, 6].map(s => (
               <button
                 key={s}
                 onClick={() => setStep(s)}
                 className={cn(
-                  "flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5",
+                  "flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer",
                   step === s ? "bg-pink-500 text-white shadow-md shadow-pink-500/20" : 
-                  step > s ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : 
-                  "bg-[#070b14] text-slate-500 hover:text-slate-300"
+                  step > s ? "bg-pink-500/10 text-pink-400 border border-pink-500/20" : 
+                  "bg-[var(--dash-bg)] text-slate-500 hover:text-slate-300"
                 )}
               >
                 {step > s ? <Check size={13} className="stroke-[3]" /> : s}
@@ -135,8 +135,8 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
 
           {/* Step 1: Info */}
           {step === 1 && (
-            <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4 animate-in fade-in duration-200">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300 pb-3 border-b border-[#1e293b]/50">
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4 animate-in fade-in duration-200">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300 pb-3 border-b border-[var(--dash-border)]/40">
                 1. Basic Rule Information
               </h2>
               <div>
@@ -146,11 +146,11 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
                   value={editingDiscount.name}
                   onChange={e => setEditingDiscount({...editingDiscount, name: e.target.value})}
                   placeholder="e.g. Eid Special 20% Off"
-                  className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
+                  className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
                 />
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-[#070b14] rounded-xl border border-[#1e293b]">
+              <div className="flex items-center justify-between p-4 bg-[var(--dash-bg)] rounded-xl border border-[var(--dash-border)]">
                 <div>
                   <span className="text-xs font-bold text-white block">Rule Active Status</span>
                   <p className="text-[11px] text-slate-500 mt-0.5">Toggle whether this discount applies immediately</p>
@@ -158,8 +158,8 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
                 <button 
                   onClick={() => setEditingDiscount({...editingDiscount, status: !editingDiscount.status})}
                   className={cn(
-                    "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0",
-                    editingDiscount.status ? "bg-emerald-500 shadow-md shadow-emerald-500/20" : "bg-slate-700/60"
+                    "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0 cursor-pointer",
+                    editingDiscount.status ? "bg-pink-500 shadow-md shadow-pink-500/20" : "bg-slate-700/60"
                   )}
                 >
                   <div
@@ -434,50 +434,50 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
         </button>
       </div>
 
-      {/* Main Content List */}
+      {/* Main Content */}
       <div 
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-3xl mx-auto w-full pb-24 overscroll-y-contain custom-scrollbar"
+        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-5 max-w-3xl mx-auto w-full pb-32 overscroll-y-contain custom-scrollbar"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {discounts.length === 0 ? (
-          <div className="bg-[#0b1120] border border-dashed border-[#1e293b] rounded-2xl p-10 text-center space-y-3">
-            <Percent size={36} className="mx-auto text-slate-600 mb-1" />
-            <h3 className="text-sm font-bold text-white">No Discounts Configured</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Create your first promotional discount rule or coupon code to boost conversions.
-            </p>
+          <div className="text-center py-16 px-4 rounded-2xl border border-dashed border-[var(--dash-border)] bg-[var(--dash-card)]/40 space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-pink-500/10 border border-pink-500/20 text-pink-400 flex items-center justify-center mx-auto">
+              <Percent size={28} />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white">No Discounts Configured</h3>
+              <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                Create your first promotional discount rule or coupon code to boost conversions.
+              </p>
+            </div>
             <button
               onClick={handleAdd}
               style={{ backgroundColor: themeColor }}
-              className="px-5 py-2.5 rounded-xl font-bold text-xs text-white hover:brightness-110 active:scale-95 transition-all shadow-md inline-flex items-center gap-1.5 mt-2"
+              className="px-5 py-2.5 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer inline-flex items-center gap-2"
             >
-              <Plus size={14} className="stroke-[3]" /> Create First Discount
+              <Plus size={16} /> Create First Discount
             </button>
           </div>
         ) : (
-          <div className="space-y-3">
-            {discounts.sort((a, b) => b.priority - a.priority).map(discount => (
+          <div className="space-y-3.5">
+            {discounts.map(discount => (
               <div 
                 key={discount.id} 
-                className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-5 shadow-xl space-y-3 transition-all hover:border-slate-700"
+                className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-5 shadow-xl space-y-3.5 hover:border-slate-600 transition-all"
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
+                  <div className="space-y-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-sm md:text-base font-bold text-white truncate">
+                      <h3 className="font-bold text-white text-sm md:text-base truncate">
                         {discount.name}
                       </h3>
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-pink-500/10 text-pink-300 border border-pink-500/20">
-                        {discount.type.replace(/_/g, ' ')}
-                      </span>
-                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white/5 text-slate-400 border border-white/10">
-                        Priority: #{discount.priority}
+                      <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-pink-500/10 text-pink-400 border border-pink-500/20">
+                        {discount.type}
                       </span>
                     </div>
-
-                    <p className="text-xs text-slate-400 mt-1.5 font-medium flex items-center gap-2">
-                      {discount.type === 'percentage' && <span className="text-emerald-400 font-bold">{discount.action.percentage}% OFF</span>}
-                      {discount.type === 'fixed' && <span className="text-emerald-400 font-bold">{formatPrice(discount.action.fixedAmount || 0)} OFF</span>}
+                    <p className="text-xs text-slate-400 flex items-center gap-2 flex-wrap">
+                      {discount.type === 'percentage' && <span className="text-pink-400 font-bold">{discount.action.percentageValue}% OFF</span>}
+                      {discount.type === 'fixed' && <span className="text-pink-400 font-bold">{formatPrice(discount.action.fixedAmount || 0)} OFF</span>}
                       {discount.type === 'free_delivery' && <span className="text-blue-400 font-bold">Free Shipping</span>}
                       {discount.type === 'coupon' && <span className="text-pink-400 font-mono font-bold">Code: {discount.action.couponCode}</span>}
                       {discount.conditions.minOrderAmount && (
@@ -492,7 +492,7 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
                     onClick={() => handleToggleStatus(discount.id)}
                     className={cn(
                       "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0",
-                      discount.status ? "bg-emerald-500 shadow-md shadow-emerald-500/20" : "bg-slate-700/60"
+                      discount.status ? "bg-pink-500 shadow-md shadow-pink-500/20" : "bg-slate-700/60"
                     )}
                   >
                     <div
@@ -504,7 +504,7 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-[#1e293b]/50">
+                <div className="flex items-center justify-between pt-3 border-t border-[var(--dash-border)]/40">
                   <span className="text-[11px] text-slate-500">
                     {discount.status ? '● Active in store' : '○ Inactive'}
                   </span>
@@ -512,14 +512,14 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
                   <div className="flex items-center gap-1.5">
                     <button 
                       onClick={() => handleEdit(discount)}
-                      className="p-2 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-xl transition-colors"
+                      className="p-2 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-xl transition-colors cursor-pointer"
                       title="Edit rule"
                     >
                       <Edit3 size={15} />
                     </button>
                     <button 
                       onClick={() => handleDelete(discount.id)}
-                      className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-colors"
+                      className="p-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-xl transition-colors cursor-pointer"
                       title="Delete rule"
                     >
                       <Trash2 size={15} />
@@ -530,20 +530,6 @@ export default function DiscountManager({ websiteSettings, setWebsiteSettings, p
             ))}
           </div>
         )}
-      </div>
-
-      {/* Sticky Bottom Bar */}
-      <div className="sticky bottom-0 bg-[#070b14]/90 backdrop-blur-md border-t border-[#1e293b] p-3.5 md:p-4 flex items-center justify-between z-20 shrink-0">
-        <span className="text-xs text-slate-500">
-          Discounts calculate automatically at checkout
-        </span>
-        <button
-          onClick={onClose}
-          style={{ backgroundColor: themeColor }}
-          className="px-6 py-2.5 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer"
-        >
-          Done
-        </button>
       </div>
     </div>
   );

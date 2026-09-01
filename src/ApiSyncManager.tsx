@@ -231,18 +231,18 @@ export function ApiSyncManager({ settings, setSettings, onClose }: ApiSyncManage
 
       {/* Main Content Body */}
       <div 
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 max-w-3xl mx-auto w-full pb-28 overscroll-y-contain custom-scrollbar"
+        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-5 max-w-3xl mx-auto w-full pb-32 overscroll-y-contain custom-scrollbar"
         style={{ WebkitOverflowScrolling: 'touch' }}
         id="api_sync_content"
       >
         {/* Master Switch Card */}
         <div 
-          className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4"
+          className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4"
           id="api_sync_main_card"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0 shadow-inner">
+              <div className="w-11 h-11 rounded-2xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
                 <Zap size={22} />
               </div>
               <div>
@@ -254,8 +254,8 @@ export function ApiSyncManager({ settings, setSettings, onClose }: ApiSyncManage
             <button
               onClick={() => setEnabled(!enabled)}
               className={cn(
-                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0",
-                enabled ? "bg-indigo-500 shadow-md shadow-indigo-500/20" : "bg-slate-700/60"
+                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0 cursor-pointer",
+                enabled ? "bg-pink-500 shadow-md shadow-pink-500/20" : "bg-slate-700/60"
               )}
               id="api_sync_toggle"
             >
@@ -271,9 +271,9 @@ export function ApiSyncManager({ settings, setSettings, onClose }: ApiSyncManage
 
         {/* Collapsible Options when Enabled */}
         {enabled && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-200">
+          <div className="space-y-5 animate-in fade-in slide-in-from-top-2 duration-200">
             {/* Step 1: Role Selection */}
-            <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-300 block">
                 Store Sync Architecture
               </label>
@@ -286,21 +286,21 @@ export function ApiSyncManager({ settings, setSettings, onClose }: ApiSyncManage
                   className={cn(
                     "relative p-4 rounded-xl border text-left transition-all flex flex-col justify-between gap-3 cursor-pointer",
                     isMaster
-                      ? "bg-indigo-500/10 border-indigo-500/60 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/40"
-                      : "bg-[#070b14] border-[#1e293b] hover:border-slate-700 text-slate-300"
+                      ? "bg-pink-500/10 border-pink-500/60 shadow-lg shadow-pink-500/10 ring-1 ring-pink-500/40"
+                      : "bg-[var(--dash-bg)] border-[var(--dash-border)] hover:border-slate-600 text-slate-300"
                   )}
                   id="role_master_btn"
                 >
                   <div className="flex items-center justify-between w-full">
                     <div className={cn(
                       "w-9 h-9 rounded-xl flex items-center justify-center transition-colors",
-                      isMaster ? "bg-indigo-500 text-white" : "bg-white/5 text-slate-400 border border-[#1e293b]"
+                      isMaster ? "bg-pink-500 text-white" : "bg-white/5 text-slate-400 border border-[var(--dash-border)]"
                     )}>
                       <Server size={18} />
                     </div>
                     <div className={cn(
                       "w-5 h-5 rounded-full border flex items-center justify-center transition-colors",
-                      isMaster ? "border-indigo-400 bg-indigo-500 text-white" : "border-slate-600 bg-transparent"
+                      isMaster ? "border-pink-400 bg-pink-500 text-white" : "border-slate-600 bg-transparent"
                     )}>
                       {isMaster && <Check size={12} strokeWidth={3} />}
                     </div>
@@ -321,21 +321,21 @@ export function ApiSyncManager({ settings, setSettings, onClose }: ApiSyncManage
                   className={cn(
                     "relative p-4 rounded-xl border text-left transition-all flex flex-col justify-between gap-3 cursor-pointer",
                     !isMaster
-                      ? "bg-indigo-500/10 border-indigo-500/60 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/40"
-                      : "bg-[#070b14] border-[#1e293b] hover:border-slate-700 text-slate-300"
+                      ? "bg-pink-500/10 border-pink-500/60 shadow-lg shadow-pink-500/10 ring-1 ring-pink-500/40"
+                      : "bg-[var(--dash-bg)] border-[var(--dash-border)] hover:border-slate-600 text-slate-300"
                   )}
                   id="role_retail_btn"
                 >
                   <div className="flex items-center justify-between w-full">
                     <div className={cn(
                       "w-9 h-9 rounded-xl flex items-center justify-center transition-colors",
-                      !isMaster ? "bg-indigo-500 text-white" : "bg-white/5 text-slate-400 border border-[#1e293b]"
+                      !isMaster ? "bg-pink-500 text-white" : "bg-white/5 text-slate-400 border border-[var(--dash-border)]"
                     )}>
                       <Link2 size={18} />
                     </div>
                     <div className={cn(
                       "w-5 h-5 rounded-full border flex items-center justify-center transition-colors",
-                      !isMaster ? "border-indigo-400 bg-indigo-500 text-white" : "border-slate-600 bg-transparent"
+                      !isMaster ? "border-pink-400 bg-pink-500 text-white" : "border-slate-600 bg-transparent"
                     )}>
                       {!isMaster && <Check size={12} strokeWidth={3} />}
                     </div>
@@ -351,152 +351,121 @@ export function ApiSyncManager({ settings, setSettings, onClose }: ApiSyncManage
               </div>
             </div>
 
-            {/* Step 2: Configuration View based on Role */}
-            <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+            {/* Step 2: Role Details */}
+            <div className="space-y-4">
               {isMaster ? (
-                /* MASTER CONFIGURATION */
-                <div className="space-y-4" id="master_config_box">
-                  <div className="flex items-center justify-between pb-3 border-b border-[#1e293b]/50">
-                    <div className="flex items-center gap-2">
-                      <KeyRound size={16} className="text-indigo-400" />
-                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">Master Hub Credentials</h3>
-                    </div>
+                /* Master Credentials */
+                <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-[var(--dash-border)]/40">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                      <KeyRound size={15} className="text-pink-400" /> Master API Access Key
+                    </h3>
                     <button
                       type="button"
                       onClick={handleRegenerateKey}
-                      className="text-xs font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 transition-colors cursor-pointer"
-                      id="regenerate_key_btn"
+                      className="text-xs text-pink-400 hover:text-pink-300 font-semibold transition-colors cursor-pointer"
                     >
-                      <RefreshCw size={13} /> Regenerate Key
+                      Regenerate
                     </button>
                   </div>
 
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Provide your connected Retail stores with this Master API Key and your store URL to authenticate.
-                  </p>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-400 block">
-                      Master Secret API Key
+                  <div>
+                    <label className="text-xs font-semibold text-slate-400 mb-1.5 block">
+                      Provide this key to your retail sub-branches:
                     </label>
                     <div className="flex items-center gap-2">
-                      <div className="relative flex-1">
-                        <input
-                          type="text"
-                          value={masterApiKey}
-                          readOnly
-                          className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-2.5 text-xs md:text-sm font-mono text-slate-200 tracking-wider focus:outline-none select-all"
-                          id="master_api_key_input"
-                        />
-                      </div>
+                      <input
+                        type="text"
+                        readOnly
+                        value={masterApiKey}
+                        className="flex-1 bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2.5 text-xs md:text-sm text-white font-mono select-all focus:outline-none"
+                      />
                       <button
                         type="button"
                         onClick={handleCopy}
-                        className="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-slate-300 hover:text-white transition-all flex items-center gap-1.5 text-xs font-bold shrink-0 cursor-pointer active:scale-95"
-                        id="copy_master_key_btn"
-                        title="Copy Master Key"
+                        className="px-4 py-2.5 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-400 hover:bg-pink-500/20 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
                       >
-                        {copied ? (
-                          <>
-                            <Check size={14} className="text-emerald-400 stroke-[3]" />
-                            <span className="text-emerald-400">Copied</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy size={14} />
-                            <span>Copy</span>
-                          </>
-                        )}
+                        {copied ? <Check size={14} className="stroke-[3]" /> : <Copy size={14} />}
+                        <span>{copied ? 'Copied' : 'Copy'}</span>
                       </button>
                     </div>
                   </div>
                 </div>
               ) : (
-                /* RETAIL CONFIGURATION */
-                <div className="space-y-4" id="retail_config_box">
-                  <div className="flex items-center gap-2 pb-3 border-b border-[#1e293b]/50">
-                    <Globe2 size={16} className="text-indigo-400" />
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">Connect to Master Hub</h3>
+                /* Retail Configuration */
+                <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+                  <div className="pb-3 border-b border-[var(--dash-border)]/40">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                      <Globe2 size={15} className="text-pink-400" /> Connect to Master Wholesale Hub
+                    </h3>
                   </div>
 
-                  <div className="space-y-4">
-                    {/* Master URL input */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-slate-400 block">
-                        Master Store URL <span className="text-rose-400">*</span>
-                      </label>
-                      <input
-                        type="url"
-                        value={connectedMasterUrl}
-                        onChange={(e) => setConnectedMasterUrl(e.target.value)}
-                        placeholder="https://master-store.com"
-                        className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-2.5 text-xs md:text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
-                        id="connected_master_url_input"
-                      />
-                    </div>
-
-                    {/* Master Key input */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-slate-400 block">
-                        Master API Key <span className="text-rose-400">*</span>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs font-semibold text-slate-400 mb-1.5 block">
+                        Master Store URL
                       </label>
                       <input
                         type="text"
-                        value={connectedMasterApiKey}
-                        onChange={(e) => setConnectedMasterApiKey(e.target.value)}
-                        placeholder="Paste 32-character API key from Master store"
-                        className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-2.5 text-xs md:text-sm font-mono text-slate-100 placeholder-slate-600 focus:outline-none focus:border-indigo-500 transition-colors"
-                        id="connected_master_key_input"
+                        value={connectedMasterUrl}
+                        onChange={e => setConnectedMasterUrl(e.target.value)}
+                        placeholder="e.g. https://wholesale-hub.com"
+                        className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
                       />
                     </div>
-                  </div>
 
-                  {/* Actions & Status message */}
-                  <div className="pt-2 flex flex-col gap-3">
-                    <button
-                      type="button"
-                      onClick={handleConnect}
-                      disabled={connectionStatus === 'testing'}
-                      className="w-full py-2.5 px-4 rounded-xl font-bold text-xs md:text-sm bg-indigo-500 hover:bg-indigo-600 text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-indigo-500/20 active:scale-95"
-                      id="test_connection_btn"
-                    >
-                      {connectionStatus === 'testing' ? (
-                        <>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-400 mb-1.5 block">
+                        Master Store API Key
+                      </label>
+                      <input
+                        type="password"
+                        value={connectedMasterApiKey}
+                        onChange={e => setConnectedMasterApiKey(e.target.value)}
+                        placeholder="Paste Master Key here"
+                        className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 transition-colors font-mono"
+                      />
+                    </div>
+
+                    <div className="pt-2 flex gap-3">
+                      <button
+                        type="button"
+                        onClick={handleConnect}
+                        disabled={connectionStatus === 'testing'}
+                        className="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs md:text-sm bg-pink-500 hover:bg-pink-600 text-white transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-pink-500/20"
+                      >
+                        {connectionStatus === 'testing' ? (
                           <RefreshCw size={15} className="animate-spin" />
-                          <span>Verifying Connection...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Link2 size={16} />
-                          <span>Test & Verify Connection</span>
-                        </>
-                      )}
-                    </button>
+                        ) : (
+                          <CheckCircle2 size={15} />
+                        )}
+                        <span>Verify & Connect</span>
+                      </button>
+                    </div>
 
                     {syncMessage && (
                       <div className={cn(
-                        "text-xs p-3 rounded-xl flex items-center gap-2 font-medium leading-relaxed transition-all",
+                        "p-3 rounded-xl text-xs flex items-center gap-2 border",
                         connectionStatus === 'error'
                           ? "bg-rose-500/10 text-rose-300 border border-rose-500/20"
                           : connectionStatus === 'success'
                           ? "bg-emerald-500/10 text-emerald-300 border border-emerald-500/20"
-                          : "bg-indigo-500/10 text-indigo-300 border border-indigo-500/20"
+                          : "bg-pink-500/10 text-pink-300 border border-pink-500/20"
                       )}>
                         {connectionStatus === 'error' && <AlertCircle size={15} className="shrink-0 text-rose-400" />}
                         {connectionStatus === 'success' && <CheckCircle2 size={15} className="shrink-0 text-emerald-400" />}
-                        {connectionStatus === 'idle' && <Info size={15} className="shrink-0 text-indigo-400" />}
+                        {connectionStatus === 'idle' && <Info size={15} className="shrink-0 text-pink-400" />}
                         <span>{syncMessage}</span>
                       </div>
                     )}
 
                     {connectionStatus === 'success' && (
-                      <div className="pt-2 border-t border-[#1e293b]/50 mt-1">
+                      <div className="pt-2 border-t border-[var(--dash-border)]/40 mt-1">
                         <button
                           type="button"
                           onClick={handleForceSync}
                           disabled={isSyncing}
                           className="w-full py-3 px-4 rounded-xl font-bold text-xs md:text-sm bg-emerald-600 hover:bg-emerald-700 text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-600/20 active:scale-95"
-                          id="force_sync_btn"
                         >
                           {isSyncing ? (
                             <>
@@ -518,29 +487,6 @@ export function ApiSyncManager({ settings, setSettings, onClose }: ApiSyncManage
             </div>
           </div>
         )}
-      </div>
-
-      {/* Sticky Bottom Bar */}
-      <div className="sticky bottom-0 bg-[#070b14]/90 backdrop-blur-md border-t border-[#1e293b] p-3.5 md:p-4 flex items-center justify-between z-20 shrink-0">
-        <button
-          onClick={onClose}
-          className="px-4 py-2.5 rounded-xl border border-slate-700 hover:bg-white/5 text-slate-300 font-semibold text-xs transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          style={{ backgroundColor: themeColor }}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 disabled:opacity-50 cursor-pointer"
-        >
-          {isSaving ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <Check size={16} className="stroke-[3]" />
-          )}
-          Save Settings
-        </button>
       </div>
     </div>
   );

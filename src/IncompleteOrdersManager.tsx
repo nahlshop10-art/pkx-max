@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronLeft, Download, Check, MessageCircle, Calendar, Copy, MapPin, Clock, Tag, FileText, Activity, Phone, MoreVertical, X, User, Settings, Save } from 'lucide-react';
+import { ChevronLeft, Download, Check, MessageCircle, Calendar, Copy, MapPin, Clock, Tag, FileText, Activity, Phone, MoreVertical, X, User, Settings, Save, ShoppingCart } from 'lucide-react';
 import { format, subDays, isAfter, isBefore, startOfDay, endOfDay, isToday, isYesterday } from 'date-fns';
 import { WebsiteSettings, IncompleteOrder, Order } from './types';
 import { cn, formatPrice, formatWhatsAppPhone } from './lib/utils';
@@ -202,9 +202,9 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
   const themeColor = websiteSettings.themeColors?.primary || '#ff3b69';
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={showSettings ? () => setShowSettings(false) : onClose} 
@@ -214,7 +214,7 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
               <ShoppingCart size={20} />
             </div>
             <div>
@@ -247,11 +247,11 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto w-full overscroll-y-contain custom-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="flex-1 overflow-y-auto w-full overscroll-y-contain custom-scrollbar pb-32" style={{ WebkitOverflowScrolling: 'touch' }}>
         {showSettings ? (
-          <div className="p-4 md:p-8 space-y-4 max-w-3xl mx-auto w-full pb-28">
+          <div className="p-4 md:p-8 space-y-4 max-w-3xl mx-auto w-full pb-32">
             {/* Tracking System Card */}
-            <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-sm md:text-base font-bold text-white mb-0.5">Live Abandonment Tracking</h2>
@@ -260,8 +260,8 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
                 <button
                   onClick={() => setEnabled(!enabled)}
                   className={cn(
-                    "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0",
-                    enabled ? "bg-amber-500 shadow-md shadow-amber-500/20" : "bg-slate-700/60"
+                    "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0 cursor-pointer",
+                    enabled ? "bg-pink-500 shadow-md shadow-pink-500/20" : "bg-slate-700/60"
                   )}
                 >
                   <div
@@ -278,16 +278,16 @@ export default function IncompleteOrdersManager({ websiteSettings, setWebsiteSet
             {enabled && (
               <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
                 {/* Inactivity Timer */}
-                <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-3">
+                <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-3">
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">Inactivity Trigger Timer</h3>
-                  <div className="flex items-center bg-[#070b14] rounded-xl border border-[#1e293b] focus-within:border-pink-500 overflow-hidden transition-colors">
+                  <div className="flex items-center bg-[var(--dash-bg)] rounded-xl border border-[var(--dash-border)] focus-within:border-pink-500 overflow-hidden transition-colors">
                     <input 
                       type="number" 
                       value={inactivityTimerMinutes} 
                       onChange={e => setInactivityTimerMinutes(e.target.value)} 
                       className="w-full bg-transparent p-3 text-xs md:text-sm text-white focus:outline-none font-bold"
                     />
-                    <div className="flex items-center px-4 text-xs text-slate-400 font-semibold border-l border-[#1e293b]">
+                    <div className="flex items-center px-4 text-xs text-slate-400 font-semibold border-l border-[var(--dash-border)]">
                       Minutes
                     </div>
                   </div>

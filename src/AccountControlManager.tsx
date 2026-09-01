@@ -70,13 +70,13 @@ export default function AccountControlManager({ adminUsers, setAdminUsers, curre
 
   if (selectedUser) {
     return (
-      <div className="fixed inset-0 z-[110] bg-[#070b14]/90 backdrop-blur-md flex justify-end">
-        <div className="bg-[#0b1120] w-full max-w-lg h-full overflow-y-auto border-l border-[#1e293b] flex flex-col shadow-2xl">
-          <div className="p-4 md:p-5 border-b border-[#1e293b] flex items-center justify-between sticky top-0 bg-[#0b1120]/90 backdrop-blur-md z-10">
+      <div className="fixed inset-0 z-[110] bg-[var(--dash-bg)]/90 backdrop-blur-md flex justify-end">
+        <div className="bg-[var(--dash-card)] w-full max-w-lg h-full overflow-y-auto border-l border-[var(--dash-border)] flex flex-col shadow-2xl">
+          <div className="p-4 md:p-5 border-b border-[var(--dash-border)] flex items-center justify-between sticky top-0 bg-[var(--dash-card)]/90 backdrop-blur-md z-10">
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => setSelectedUserId(null)} 
-                className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
+                className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer"
               >
                 <ChevronLeft size={20} />
               </button>
@@ -87,16 +87,16 @@ export default function AccountControlManager({ adminUsers, setAdminUsers, curre
             </div>
             <button 
               onClick={() => setSelectedUserId(null)}
-              className="px-3.5 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-semibold text-white transition-colors"
+              className="px-3.5 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-semibold text-white transition-colors cursor-pointer"
             >
               Done
             </button>
           </div>
 
-          <div className="p-4 md:p-6 space-y-6 flex-1">
+          <div className="p-4 md:p-6 space-y-6 flex-1 pb-24">
             {selectedUser.role === 'Owner' ? (
-              <div className="bg-[#070b14] border border-[#1e293b] rounded-2xl p-8 text-center space-y-3">
-                <ShieldCheck size={36} className="mx-auto text-emerald-400" />
+              <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-2xl p-8 text-center space-y-3">
+                <ShieldCheck size={36} className="mx-auto text-pink-400" />
                 <h3 className="text-sm font-bold text-white">Full Administrator Privileges</h3>
                 <p className="text-xs text-slate-400 leading-relaxed max-w-xs mx-auto">
                   Owner accounts have unrestricted access to all dashboard sections, APIs, and settings.
@@ -141,9 +141,9 @@ export default function AccountControlManager({ adminUsers, setAdminUsers, curre
   }
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
@@ -153,7 +153,7 @@ export default function AccountControlManager({ adminUsers, setAdminUsers, curre
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
               <Shield size={20} />
             </div>
             <div>
@@ -187,20 +187,20 @@ export default function AccountControlManager({ adminUsers, setAdminUsers, curre
 
       {/* Main Content */}
       <div 
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-3xl mx-auto w-full pb-28 overscroll-y-contain custom-scrollbar"
+        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-3xl mx-auto w-full pb-32 overscroll-y-contain custom-scrollbar"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         <div className="space-y-3">
           {users.map(user => (
             <div 
               key={user.id} 
-              className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-5 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors hover:border-slate-700"
+              className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-5 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-colors hover:border-slate-600"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <h3 className="text-sm md:text-base font-bold text-white truncate">{user.email}</h3>
                   {user.id === currentAdmin.id && (
-                    <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">
+                    <span className="bg-pink-500/10 border border-pink-500/20 text-pink-400 text-[10px] uppercase font-bold px-2 py-0.5 rounded-full">
                       You
                     </span>
                   )}
@@ -222,7 +222,7 @@ export default function AccountControlManager({ adminUsers, setAdminUsers, curre
                   <select
                     value={user.role}
                     onChange={(e) => updateUserRole(user.id, e.target.value as AdminRole)}
-                    className="bg-[#070b14] border border-[#1e293b] text-white text-xs rounded-xl px-3 py-2 outline-none focus:border-pink-500 transition-colors"
+                    className="bg-[var(--dash-bg)] border border-[var(--dash-border)] text-white text-xs rounded-xl px-3 py-2 outline-none focus:border-pink-500 transition-colors"
                   >
                     <option value="Owner">Owner</option>
                     <option value="Manager">Manager</option>
@@ -232,7 +232,7 @@ export default function AccountControlManager({ adminUsers, setAdminUsers, curre
                 
                 <button
                   onClick={() => setSelectedUserId(user.id)}
-                  className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-bold text-white transition-all active:scale-95"
+                  className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-bold text-white transition-all active:scale-95 cursor-pointer"
                 >
                   Permissions
                 </button>
@@ -240,27 +240,6 @@ export default function AccountControlManager({ adminUsers, setAdminUsers, curre
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Sticky Bottom Bar */}
-      <div className="sticky bottom-0 bg-[#070b14]/90 backdrop-blur-md border-t border-[#1e293b] p-3.5 md:p-4 flex items-center justify-between z-20 shrink-0">
-        <span className="text-xs text-slate-500">
-          Only Store Owners can alter role permissions
-        </span>
-        {isOwner && (
-          <button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs md:text-sm text-white bg-pink-500 hover:bg-pink-600 active:scale-95 transition-all shadow-lg shadow-pink-500/20 disabled:opacity-50 cursor-pointer"
-          >
-            {isSaving ? (
-              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <Check size={16} className="stroke-[3]" />
-            )}
-            Save Changes
-          </button>
-        )}
       </div>
     </div>
   );
@@ -270,11 +249,11 @@ function PermissionGroup({ title, category, perms, onChange, disabled }: { title
   const keys = Object.keys(perms);
   
   return (
-    <div className="bg-[#070b14] border border-[#1e293b] rounded-2xl overflow-hidden shadow-md">
-      <div className="px-4 py-3 border-b border-[#1e293b] bg-[#0b1120]/50">
+    <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-2xl overflow-hidden shadow-md">
+      <div className="px-4 py-3 border-b border-[var(--dash-border)] bg-[var(--dash-card)]/50">
         <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">{title}</h3>
       </div>
-      <div className="divide-y divide-[#1e293b]/50">
+      <div className="divide-y divide-[var(--dash-border)]/50">
         {keys.map(k => (
           <div key={k} className="flex items-center justify-between p-3.5 px-4 hover:bg-white/[0.02] transition-colors">
             <span className="text-slate-300 text-xs md:text-sm capitalize font-medium">{k.replace(/([A-Z])/g, ' $1')}</span>
@@ -285,7 +264,7 @@ function PermissionGroup({ title, category, perms, onChange, disabled }: { title
               className={cn(
                 "w-10 h-5.5 rounded-full relative transition-all duration-200 p-0.5 focus:outline-none shrink-0",
                 disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
-                perms[k] ? 'bg-emerald-500 shadow-sm shadow-emerald-500/20' : 'bg-slate-700/60'
+                perms[k] ? 'bg-pink-500 shadow-sm shadow-pink-500/20' : 'bg-slate-700/60'
               )}
             >
               <div

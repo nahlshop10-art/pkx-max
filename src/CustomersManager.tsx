@@ -295,9 +295,9 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
@@ -322,7 +322,7 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
         </div>
 
         {/* Tab switcher in top bar */}
-        <div className="flex items-center bg-[#0b1120] border border-[#1e293b] rounded-xl p-1 gap-1">
+        <div className="flex items-center bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-1 gap-1">
           {(['Analytics', 'Blocked', 'Settings'] as const).map(tab => (
             <button
               key={tab}
@@ -340,12 +340,12 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-8 space-y-5 max-w-5xl mx-auto w-full pb-28 overscroll-y-contain custom-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-8 space-y-5 max-w-5xl mx-auto w-full pb-32 overscroll-y-contain custom-scrollbar" style={{ WebkitOverflowScrolling: 'touch' }}>
         {activeTab === 'Analytics' && (
           <div className="flex flex-col gap-4">
             
             {/* Filter and Sort Controls */}
-            <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-5 shadow-xl flex flex-col gap-3.5">
+            <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-5 shadow-xl flex flex-col gap-3.5">
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex gap-2 overflow-x-auto no-scrollbar">
                   {(['All Time', 'Today', 'Last 7 Days', 'Last 30 Days', 'Custom'] as const).map(filter => (
@@ -356,7 +356,7 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
                         "px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border cursor-pointer",
                         dateFilter === filter 
                           ? "bg-pink-500/10 text-pink-400 border-pink-500/40" 
-                          : "bg-[#070b14] text-slate-400 border-[#1e293b] hover:border-slate-700"
+                          : "bg-[var(--dash-bg)] text-slate-400 border-[var(--dash-border)] hover:border-slate-600"
                       )}
                     >
                       {filter}
@@ -364,7 +364,7 @@ export default function CustomersManager({ orders, setOrders, customers = [], se
                   ))}
                 </div>
 
-                <div className="flex items-center gap-1.5 bg-[#070b14] border border-[#1e293b] rounded-xl p-1">
+                <div className="flex items-center gap-1.5 bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-1">
                   <span className="text-[11px] text-slate-500 font-bold uppercase px-2">Sort:</span>
                   <button
                     onClick={() => setSortBy('spent')}

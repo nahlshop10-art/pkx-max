@@ -2213,7 +2213,7 @@ export default function Dashboard({ products, setProducts, orders, setOrders, in
         )}
         {/* Settings Tab */}
         {activeTab === 'Settings' && perms.sections.settings && (
-          <div className="max-w-2xl mx-auto w-full flex flex-col gap-2.5 md:gap-3.5 px-1.5 md:px-4 py-2">
+          <div className="max-w-2xl mx-auto w-full flex flex-col gap-2.5 md:gap-3.5 px-1.5 md:px-4 py-2 pb-36">
             {/* Header */}
             <div className="mb-1">
               <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight">Settings</h1>
@@ -3049,13 +3049,13 @@ function CategoriesManager({ categories, setCategories, onClose, themePrimary }:
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
-            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0"
+            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0 cursor-pointer"
             title="Go back"
           >
             <ChevronLeft size={20} />
@@ -3083,7 +3083,7 @@ function CategoriesManager({ categories, setCategories, onClose, themePrimary }:
       {/* Categories Grid */}
       <div 
         ref={scrollRef} 
-        className="flex-1 overflow-y-auto p-4 md:p-8 overscroll-y-contain custom-scrollbar pb-28"
+        className="flex-1 overflow-y-auto p-4 md:p-8 overscroll-y-contain custom-scrollbar pb-32"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         <div className="max-w-4xl mx-auto w-full space-y-4">
@@ -3091,10 +3091,10 @@ function CategoriesManager({ categories, setCategories, onClose, themePrimary }:
             {categories.map(cat => (
               <div 
                 key={cat.id} 
-                className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 flex flex-col items-center justify-center gap-3 cursor-pointer group hover:border-slate-700 transition-all shadow-xl active:scale-95"
+                className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 flex flex-col items-center justify-center gap-3 cursor-pointer group hover:border-pink-500/50 transition-all shadow-xl active:scale-95"
                 onClick={() => { setEditingCategory(cat); setIsEditing(true); }}
               >
-                <div className="w-16 h-16 rounded-2xl bg-[#070b14] border border-[#1e293b] flex items-center justify-center overflow-hidden group-hover:border-pink-500/50 transition-all shadow-inner relative">
+                <div className="w-16 h-16 rounded-2xl bg-[var(--dash-bg)] border border-[var(--dash-border)] flex items-center justify-center overflow-hidden group-hover:border-pink-500/50 transition-all shadow-inner relative">
                   {cat.icon ? (
                     <img src={cat.icon} alt={cat.name} className="w-full h-full object-cover" />
                   ) : (
@@ -3109,7 +3109,7 @@ function CategoriesManager({ categories, setCategories, onClose, themePrimary }:
           </div>
 
           {categories.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 px-4 bg-[#0b1120] rounded-2xl border border-[#1e293b]">
+            <div className="flex flex-col items-center justify-center py-16 px-4 bg-[var(--dash-card)] rounded-2xl border border-dashed border-[var(--dash-border)]">
               <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-500 mb-3">
                 <LayoutGrid size={22} />
               </div>
@@ -3196,14 +3196,14 @@ function CategoryEditorModal({ category, onSave, onClose, onDelete, themePrimary
   };
 
   return (
-    <div className="fixed inset-0 z-[110] bg-[#070b14]/90 backdrop-blur-md flex justify-end">
-      <div className="bg-[#0b1120] w-full max-w-lg h-full overflow-y-auto border-l border-[#1e293b] flex flex-col shadow-2xl">
+    <div className="fixed inset-0 z-[110] bg-[var(--dash-bg)]/90 backdrop-blur-md flex justify-end">
+      <div className="bg-[var(--dash-card)] w-full max-w-lg h-full overflow-y-auto border-l border-[var(--dash-border)] flex flex-col shadow-2xl">
         {/* Top Bar */}
-        <div className="p-4 md:p-5 border-b border-[#1e293b] flex items-center justify-between sticky top-0 bg-[#0b1120]/90 backdrop-blur-md z-10">
+        <div className="p-4 md:p-5 border-b border-[var(--dash-border)] flex items-center justify-between sticky top-0 bg-[var(--dash-card)]/90 backdrop-blur-md z-10">
           <div className="flex items-center gap-3">
             <button 
               onClick={onClose} 
-              className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-colors"
+              className="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-colors cursor-pointer"
             >
               <ChevronLeft size={20} />
             </button>
@@ -3215,7 +3215,7 @@ function CategoryEditorModal({ category, onSave, onClose, onDelete, themePrimary
           {onDelete && (
             <button 
               onClick={onDelete} 
-              className="w-9 h-9 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 flex items-center justify-center transition-colors"
+              className="w-9 h-9 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 flex items-center justify-center transition-colors cursor-pointer"
               title="Delete Category"
             >
               <Trash2 size={16} />
@@ -3227,7 +3227,7 @@ function CategoryEditorModal({ category, onSave, onClose, onDelete, themePrimary
           className="p-4 md:p-6 flex-1 overflow-y-auto space-y-4 max-w-xl mx-auto w-full overscroll-y-contain pb-28"
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
-          <div className="bg-[#070b14] border border-[#1e293b] rounded-2xl p-4 md:p-5 shadow-xl space-y-4">
+          <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-2xl p-4 md:p-5 shadow-xl space-y-4">
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 block">Category Title *</label>
               <input 
@@ -3235,7 +3235,7 @@ function CategoryEditorModal({ category, onSave, onClose, onDelete, themePrimary
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Traditional Jewelry"
-                className="w-full bg-[#0b1120] border border-[#1e293b] rounded-xl px-3.5 py-3 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
+                className="w-full bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl px-3.5 py-3 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
               />
               <div className="text-[11px] text-slate-500 mt-1.5 font-mono truncate">
                 https://paikarix.com/c/{name.toLowerCase().replace(/\s+/g, '-')}
@@ -3244,13 +3244,13 @@ function CategoryEditorModal({ category, onSave, onClose, onDelete, themePrimary
 
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5 block">Icon / Thumbnail</label>
-              <div className="bg-[#0b1120] border border-[#1e293b] rounded-xl p-4 flex items-center justify-start gap-4">
+              <div className="bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl p-4 flex items-center justify-start gap-4">
                 {icon ? (
                   <div className="relative inline-block">
-                    <img src={icon} alt="Preview" className="w-20 h-20 object-cover rounded-xl bg-white/5 border border-[#1e293b]" />
+                    <img src={icon} alt="Preview" className="w-20 h-20 object-cover rounded-xl bg-white/5 border border-[var(--dash-border)]" />
                     <button 
                       onClick={() => setIcon('')}
-                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-md"
+                      className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-md cursor-pointer"
                     >
                       <X size={12} />
                     </button>
@@ -3258,7 +3258,7 @@ function CategoryEditorModal({ category, onSave, onClose, onDelete, themePrimary
                 ) : (
                   <button 
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-20 h-20 border-2 border-dashed border-[#1e293b] hover:border-pink-500 rounded-xl flex flex-col items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
+                    className="w-20 h-20 border-2 border-dashed border-[var(--dash-border)] hover:border-pink-500 rounded-xl flex flex-col items-center justify-center text-slate-400 hover:text-white transition-colors cursor-pointer"
                   >
                     <ImageIcon size={20} className="mb-1" />
                     <span className="text-[10px] font-bold">Upload</span>
@@ -3417,19 +3417,19 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
   const themeColor = draftSettings.themeColors?.primary || '#ff3b69';
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
-            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0"
+            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0 cursor-pointer"
             title="Go back"
           >
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 shrink-0 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
               <Globe size={20} />
             </div>
             <div>
@@ -3451,11 +3451,11 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
       </div>
 
       <div 
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-4xl mx-auto w-full overscroll-y-contain custom-scrollbar pb-28"
+        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-4xl mx-auto w-full overscroll-y-contain custom-scrollbar pb-32"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Banner Section */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm md:text-base font-bold text-white mb-0.5">Hero Promotional Banners</h2>
@@ -3464,8 +3464,8 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
             <button 
               onClick={() => setDraftSettings(prev => ({ ...prev, bannerEnabled: !prev.bannerEnabled }))}
               className={cn(
-                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0",
-                draftSettings.bannerEnabled ? "bg-sky-500 shadow-md shadow-sky-500/20" : "bg-slate-700/60"
+                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0 cursor-pointer",
+                draftSettings.bannerEnabled ? "bg-pink-500 shadow-md shadow-pink-500/20" : "bg-slate-700/60"
               )}
             >
               <div
@@ -3478,14 +3478,14 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
           </div>
 
           {draftSettings.bannerEnabled && (
-            <div className="space-y-4 pt-2 border-t border-[#1e293b]/50 animate-in fade-in duration-200">
+            <div className="space-y-4 pt-2 border-t border-[var(--dash-border)]/40 animate-in fade-in duration-200">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {(draftSettings.banners || []).map((banner, idx) => (
-                  <div key={idx} className="relative aspect-[16/5] rounded-xl overflow-hidden border border-[#1e293b] group shadow-inner">
+                  <div key={idx} className="relative aspect-[16/5] rounded-xl overflow-hidden border border-[var(--dash-border)] group shadow-inner">
                     <img src={banner} alt={`Banner ${idx}`} className="w-full h-full object-cover" />
                     <button 
                       onClick={() => removeBanner(idx)}
-                      className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-md z-10 opacity-80 group-hover:opacity-100 transition-opacity"
+                      className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-md z-10 opacity-80 group-hover:opacity-100 transition-opacity cursor-pointer"
                     >
                       <X size={12} />
                     </button>
@@ -3496,14 +3496,14 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
               <div 
                 className={cn(
                   "border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center transition-colors cursor-pointer",
-                  isDragging ? "border-sky-400 bg-sky-500/10 text-sky-300" : "border-[#1e293b] text-slate-400 hover:text-white hover:border-slate-600"
+                  isDragging ? "border-pink-400 bg-pink-500/10 text-pink-300" : "border-[var(--dash-border)] text-slate-400 hover:text-white hover:border-pink-500/50"
                 )}
                 onClick={() => fileInputRef.current?.click()}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
               >
-                <ImageIcon size={28} className="mb-1 text-sky-400" />
+                <ImageIcon size={28} className="mb-1 text-pink-400" />
                 <span className="text-xs font-bold text-white">Click or drag banner here to upload</span>
                 <span className="text-[11px] text-slate-500 mt-0.5">Recommended 1600x500 JPG/PNG</span>
               </div>
@@ -3523,7 +3523,7 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
                     value={draftSettings.bannerBorderRadius || '16px'}
                     onChange={(e) => setDraftSettings(prev => ({ ...prev, bannerBorderRadius: e.target.value }))}
                     placeholder="e.g. 16px, 1rem"
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-sky-500 transition-colors font-mono"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-pink-500 transition-colors font-mono"
                   />
                 </div>
               </div>
@@ -3532,25 +3532,25 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
         </div>
 
         {/* Logo Section */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
           <div>
             <h2 className="text-sm md:text-base font-bold text-white mb-0.5">Header Store Logo</h2>
             <p className="text-xs text-slate-400">Primary brand identity shown on desktop and mobile navbar.</p>
           </div>
           <div>
             {draftSettings.logoUrl ? (
-              <div className="relative w-48 h-16 rounded-xl overflow-hidden border border-[#1e293b] bg-white/5 flex items-center justify-center p-2">
+              <div className="relative w-48 h-16 rounded-xl overflow-hidden border border-[var(--dash-border)] bg-white/5 flex items-center justify-center p-2">
                 <img src={draftSettings.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
                 <button 
                   onClick={() => setDraftSettings(prev => ({ ...prev, logoUrl: undefined }))}
-                  className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-md z-10"
+                  className="absolute top-1.5 right-1.5 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-md z-10 cursor-pointer"
                 >
                   <X size={12} />
                 </button>
               </div>
             ) : (
               <div 
-                className="border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center transition-colors cursor-pointer border-[#1e293b] text-slate-400 hover:text-white hover:border-slate-600"
+                className="border-2 border-dashed rounded-xl p-5 flex flex-col items-center justify-center transition-colors cursor-pointer border-[var(--dash-border)] text-slate-400 hover:text-white hover:border-pink-500/50"
                 onClick={() => {
                   const input = document.createElement('input');
                   input.type = 'file';
@@ -3574,7 +3574,7 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
                   input.click();
                 }}
               >
-                <ImageIcon size={24} className="mb-1 text-sky-400" />
+                <ImageIcon size={24} className="mb-1 text-pink-400" />
                 <span className="text-xs font-bold text-white">Click to upload store logo</span>
                 <span className="text-[10px] text-slate-500 mt-0.5">PNG, SVG transparent background recommended</span>
               </div>
@@ -3583,7 +3583,7 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
         </div>
 
         {/* Stock Out Control */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm md:text-base font-bold text-white mb-0.5">Stock Out Section</h2>
@@ -3598,8 +3598,8 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
                 } 
               }))}
               className={cn(
-                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0",
-                draftSettings.stockOutFeature?.enabled ? "bg-sky-500 shadow-md shadow-sky-500/20" : "bg-slate-700/60"
+                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0 cursor-pointer",
+                draftSettings.stockOutFeature?.enabled ? "bg-pink-500 shadow-md shadow-pink-500/20" : "bg-slate-700/60"
               )}
             >
               <div
@@ -3612,7 +3612,7 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
           </div>
           
           {draftSettings.stockOutFeature?.enabled && (
-            <div className="pt-2 border-t border-[#1e293b]/50">
+            <div className="pt-2 border-t border-[var(--dash-border)]/40">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1 block">Minimum Completed Orders Required</label>
               <input 
                 type="number"
@@ -3625,7 +3625,7 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
                   }
                 }))}
                 min="0"
-                className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-sky-500 transition-colors font-bold"
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 transition-colors font-bold"
               />
               <p className="text-[11px] text-slate-500 mt-1">Set to 0 to let all visitors view stock-out items.</p>
             </div>
@@ -3633,7 +3633,7 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
         </div>
 
         {/* Pixel Event Batching & Smart Display */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm md:text-base font-bold text-white mb-0.5">Smart Product Display</h2>
@@ -3642,8 +3642,8 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
             <button 
               onClick={() => setDraftSettings(prev => ({ ...prev, smartProductDisplay: !prev.smartProductDisplay }))}
               className={cn(
-                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0",
-                draftSettings.smartProductDisplay ? "bg-sky-500 shadow-md shadow-sky-500/20" : "bg-slate-700/60"
+                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0 cursor-pointer",
+                draftSettings.smartProductDisplay ? "bg-pink-500 shadow-md shadow-pink-500/20" : "bg-slate-700/60"
               )}
             >
               <div
@@ -3655,7 +3655,7 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
             </button>
           </div>
 
-          <div className="pt-3 border-t border-[#1e293b]/50">
+          <div className="pt-3 border-t border-[var(--dash-border)]/40">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-sm md:text-base font-bold text-white mb-0.5">Product Image Hover Effect</h2>
@@ -3664,8 +3664,8 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
               <button 
                 onClick={() => setDraftSettings(prev => ({ ...prev, productImageHover: !prev.productImageHover }))}
                 className={cn(
-                  "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0",
-                  draftSettings.productImageHover ? "bg-sky-500 shadow-md shadow-sky-500/20" : "bg-slate-700/60"
+                  "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0 cursor-pointer",
+                  draftSettings.productImageHover ? "bg-pink-500 shadow-md shadow-pink-500/20" : "bg-slate-700/60"
                 )}
               >
                 <div
@@ -3680,7 +3680,7 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
         </div>
 
         {/* Receipt Settings Section */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
           <div>
             <h2 className="text-sm md:text-base font-bold text-white mb-0.5">Receipt & Invoice Branding</h2>
             <p className="text-xs text-slate-400">Phone hotline and QR codes printed on thermal and PDF invoices.</p>
@@ -3692,7 +3692,7 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
                 type="text"
                 value={draftSettings.shopPhone || ''}
                 onChange={(e) => setDraftSettings(prev => ({ ...prev, shopPhone: e.target.value }))}
-                className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-sky-500 font-mono"
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-mono"
                 placeholder="09658133593"
               />
             </div>
@@ -3700,18 +3700,18 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1 block">Receipt QR Code</label>
               {draftSettings.receiptQrCodeUrl ? (
-                <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#1e293b] bg-white flex items-center justify-center">
+                <div className="relative w-20 h-20 rounded-xl overflow-hidden border border-[var(--dash-border)] bg-white flex items-center justify-center">
                   <img src={draftSettings.receiptQrCodeUrl} alt="QR Code" className="max-w-full max-h-full object-contain" />
                   <button 
                     onClick={() => setDraftSettings(prev => ({ ...prev, receiptQrCodeUrl: undefined }))}
-                    className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-md"
+                    className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center text-white hover:bg-red-600 shadow-md cursor-pointer"
                   >
                     <X size={10} />
                   </button>
                 </div>
               ) : (
                 <button 
-                  className="border-2 border-dashed w-full h-16 rounded-xl p-2 flex items-center justify-center gap-2 border-[#1e293b] text-slate-400 hover:text-white hover:border-slate-600 cursor-pointer"
+                  className="border-2 border-dashed w-full h-16 rounded-xl p-2 flex items-center justify-center gap-2 border-[var(--dash-border)] text-slate-400 hover:text-white hover:border-pink-500/50 cursor-pointer"
                   onClick={() => {
                     const input = document.createElement('input');
                     input.type = 'file';
@@ -3735,7 +3735,7 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
                     input.click();
                   }}
                 >
-                  <ImageIcon size={18} className="text-sky-400" />
+                  <ImageIcon size={18} className="text-pink-400" />
                   <span className="text-xs font-bold">Upload QR Image</span>
                 </button>
               )}
@@ -3744,7 +3744,7 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
         </div>
 
         {/* Delivery Charge Section */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm md:text-base font-bold text-white mb-0.5">Delivery Charges & Zones</h2>
@@ -3752,7 +3752,7 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
             </div>
             <button 
               onClick={addDeliveryCharge}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs bg-white/5 hover:bg-white/10 text-sky-400 border border-sky-500/20 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/20 transition-all cursor-pointer"
             >
               <Plus size={14} /> Add Zone
             </button>
@@ -3760,13 +3760,13 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
 
           <div className="space-y-3">
             {(draftSettings.deliveryCharges || []).map(dc => (
-              <div key={dc.id} className="bg-[#070b14] border border-[#1e293b] rounded-xl p-3 flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+              <div key={dc.id} className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-3 flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
                 <input 
                   type="text" 
                   value={dc.area}
                   onChange={(e) => updateDeliveryCharge(dc.id, 'area', e.target.value)}
                   placeholder="Zone / Area Name (e.g. Inside Dhaka)"
-                  className="flex-1 bg-[#0b1120] border border-[#1e293b] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                  className="flex-1 bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-pink-500"
                 />
                 <div className="flex gap-2 items-center">
                   <div className="relative w-24">
@@ -3775,7 +3775,7 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
                       value={dc.price || ''}
                       onChange={(e) => updateDeliveryCharge(dc.id, 'price', Math.floor(Number(e.target.value)))}
                       placeholder="Price"
-                      className="w-full bg-[#0b1120] border border-[#1e293b] rounded-lg pl-3 pr-6 py-2 text-xs text-white focus:outline-none focus:border-sky-500 font-bold"
+                      className="w-full bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-lg pl-3 pr-6 py-2 text-xs text-white focus:outline-none focus:border-pink-500 font-bold"
                     />
                     <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-bold">৳</span>
                   </div>
@@ -3784,11 +3784,11 @@ function WebsiteManager({ settings, setSettings, onClose }: { settings: WebsiteS
                     value={dc.time}
                     onChange={(e) => updateDeliveryCharge(dc.id, 'time', e.target.value)}
                     placeholder="Est. Time (e.g. 1-2 Days)"
-                    className="w-28 bg-[#0b1120] border border-[#1e293b] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-sky-500"
+                    className="w-28 bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-pink-500"
                   />
                   <button 
                     onClick={() => removeDeliveryCharge(dc.id)}
-                    className="w-8 h-8 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 flex items-center justify-center shrink-0 transition-colors"
+                    className="w-8 h-8 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 flex items-center justify-center shrink-0 transition-colors cursor-pointer"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -3870,20 +3870,20 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
   const themeColor = themePrimary || '#ff3b69';
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
-            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0" 
+            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0 cursor-pointer" 
             id="marketing_back_btn"
             title="Go back"
           >
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
               <BarChart2 size={20} />
             </div>
             <div>
@@ -3905,11 +3905,11 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
       </div>
 
       <div 
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-4xl mx-auto w-full overscroll-y-contain custom-scrollbar pb-28"
+        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-4xl mx-auto w-full overscroll-y-contain custom-scrollbar pb-32"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Meta Pixel Section */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4" id="meta_pixel_card">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4" id="meta_pixel_card">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-[#0064e0]/10 border border-[#0064e0]/20 flex items-center justify-center shrink-0">
@@ -3926,8 +3926,8 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
             <button 
               onClick={() => updateMetaPixel('enabled', !draftSettings.metaPixel.enabled)}
               className={cn(
-                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0",
-                draftSettings.metaPixel.enabled ? "bg-blue-500 shadow-md shadow-blue-500/20" : "bg-slate-700/60"
+                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0 cursor-pointer",
+                draftSettings.metaPixel.enabled ? "bg-pink-500 shadow-md shadow-pink-500/20" : "bg-slate-700/60"
               )}
               id="meta_pixel_toggle"
             >
@@ -3941,7 +3941,7 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
           </div>
 
           {draftSettings.metaPixel.enabled && (
-            <div className="space-y-3.5 pt-2 border-t border-[#1e293b]/50 animate-in fade-in duration-200">
+            <div className="space-y-3.5 pt-2 border-t border-[var(--dash-border)]/40 animate-in fade-in duration-200">
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1 block">Pixel ID *</label>
                 <div className="relative flex items-center">
@@ -3950,12 +3950,12 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
                     value={draftSettings.metaPixel.pixelId}
                     onChange={(e) => updateMetaPixel('pixelId', e.target.value)}
                     placeholder="e.g. 182938472918"
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-blue-500 font-mono"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-mono"
                   />
                   <button 
                     type="button"
                     onClick={() => handleCopy(draftSettings.metaPixel.pixelId, 'meta_pixelId')}
-                    className="absolute right-2 px-2.5 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors flex items-center justify-center text-xs"
+                    className="absolute right-2 px-2.5 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors flex items-center justify-center text-xs cursor-pointer"
                     title="Copy Pixel ID"
                     id="meta_pixel_id_copy"
                   >
@@ -3973,20 +3973,20 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
                       value={draftSettings.metaPixel.accessToken}
                       onChange={(e) => updateMetaPixel('accessToken', e.target.value)}
                       placeholder="EAA..."
-                      className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 pr-16 text-xs md:text-sm text-white focus:outline-none focus:border-blue-500 font-mono"
+                      className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 pr-16 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-mono"
                     />
                     <div className="absolute right-2 flex items-center gap-1">
                       <button 
                         type="button"
                         onClick={() => setShowMetaToken(!showMetaToken)}
-                        className="p-1 text-slate-400 hover:text-white transition-colors"
+                        className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
                       >
                         {showMetaToken ? <EyeOff size={13} /> : <Eye size={13} />}
                       </button>
                       <button 
                         type="button"
                         onClick={() => handleCopy(draftSettings.metaPixel.accessToken, 'meta_accessToken')}
-                        className="p-1 text-slate-400 hover:text-white transition-colors"
+                        className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
                       >
                         {copiedField === 'meta_accessToken' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
                       </button>
@@ -4002,12 +4002,12 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
                       value={draftSettings.metaPixel.testCode}
                       onChange={(e) => updateMetaPixel('testCode', e.target.value)}
                       placeholder="TEST49835"
-                      className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-blue-500 font-mono"
+                      className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-mono"
                     />
                     <button 
                       type="button"
                       onClick={() => handleCopy(draftSettings.metaPixel.testCode, 'meta_testCode')}
-                      className="absolute right-2 px-2.5 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors flex items-center justify-center text-xs"
+                      className="absolute right-2 px-2.5 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors flex items-center justify-center text-xs cursor-pointer"
                     >
                       {copiedField === 'meta_testCode' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
                     </button>
@@ -4019,11 +4019,11 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
         </div>
 
         {/* TikTok Pixel Section */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4" id="tiktok_pixel_card">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4" id="tiktok_pixel_card">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center shrink-0">
-                <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                <svg className="w-5 h-5 text-pink-400" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.02 1.61 4.18.92 1.09 2.22 1.83 3.58 2.13l-.01 3.69c-1.32-.01-2.61-.35-3.74-1.05-.72-.45-1.34-1.05-1.81-1.76l-.04 6.8c.02 1.93-.54 3.86-1.63 5.39-1.2 1.7-3.13 2.86-5.21 3.19-2.13.34-4.36-.14-6.07-1.42C1.4 20.01.44 17.78.41 15.4c-.03-2.38.93-4.66 2.63-6.23 1.77-1.62 4.22-2.39 6.55-2.02l-.01 3.7c-1.34-.17-2.73.18-3.76 1.09-.85.76-1.31 1.88-1.26 3.02.04 1.13.59 2.19 1.48 2.88 1.02.79 2.39 1.02 3.58.62.97-.33 1.77-1.11 2.13-2.09.24-.63.31-1.3.29-1.97V.02h.01Z" />
                 </svg>
               </div>
@@ -4036,7 +4036,7 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
             <button 
               onClick={() => updateTikTokPixel('enabled', !draftSettings.tiktokPixel?.enabled)}
               className={cn(
-                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0",
+                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0 cursor-pointer",
                 draftSettings.tiktokPixel?.enabled ? "bg-pink-500 shadow-md shadow-pink-500/20" : "bg-slate-700/60"
               )}
               id="tiktok_pixel_toggle"
@@ -4051,7 +4051,7 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
           </div>
 
           {draftSettings.tiktokPixel?.enabled && (
-            <div className="space-y-3.5 pt-2 border-t border-[#1e293b]/50 animate-in fade-in duration-200">
+            <div className="space-y-3.5 pt-2 border-t border-[var(--dash-border)]/40 animate-in fade-in duration-200">
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1 block">Pixel ID *</label>
                 <div className="relative flex items-center">
@@ -4060,12 +4060,12 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
                     value={draftSettings.tiktokPixel?.pixelId || ''}
                     onChange={(e) => updateTikTokPixel('pixelId', e.target.value)}
                     placeholder="Enter TikTok Pixel ID"
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-mono"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-mono"
                   />
                   <button 
                     type="button"
                     onClick={() => handleCopy(draftSettings.tiktokPixel?.pixelId || '', 'tiktok_pixelId')}
-                    className="absolute right-2 px-2.5 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors flex items-center justify-center text-xs"
+                    className="absolute right-2 px-2.5 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors flex items-center justify-center text-xs cursor-pointer"
                     title="Copy Pixel ID"
                   >
                     {copiedField === 'tiktok_pixelId' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
@@ -4082,20 +4082,20 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
                       value={draftSettings.tiktokPixel?.accessToken || ''}
                       onChange={(e) => updateTikTokPixel('accessToken', e.target.value)}
                       placeholder="Access token"
-                      className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 pr-16 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-mono"
+                      className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 pr-16 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-mono"
                     />
                     <div className="absolute right-2 flex items-center gap-1">
                       <button 
                         type="button"
                         onClick={() => setShowTikTokToken(!showTikTokToken)}
-                        className="p-1 text-slate-400 hover:text-white transition-colors"
+                        className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
                       >
                         {showTikTokToken ? <EyeOff size={13} /> : <Eye size={13} />}
                       </button>
                       <button 
                         type="button"
                         onClick={() => handleCopy(draftSettings.tiktokPixel?.accessToken || '', 'tiktok_accessToken')}
-                        className="p-1 text-slate-400 hover:text-white transition-colors"
+                        className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
                       >
                         {copiedField === 'tiktok_accessToken' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
                       </button>
@@ -4111,12 +4111,12 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
                       value={draftSettings.tiktokPixel?.testCode || ''}
                       onChange={(e) => updateTikTokPixel('testCode', e.target.value)}
                       placeholder="TEST83864"
-                      className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-mono"
+                      className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-mono"
                     />
                     <button 
                       type="button"
                       onClick={() => handleCopy(draftSettings.tiktokPixel?.testCode || '', 'tiktok_testCode')}
-                      className="absolute right-2 px-2.5 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors flex items-center justify-center text-xs"
+                      className="absolute right-2 px-2.5 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors flex items-center justify-center text-xs cursor-pointer"
                     >
                       {copiedField === 'tiktok_testCode' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
                     </button>
@@ -4128,10 +4128,10 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
         </div>
 
         {/* Google Analytics 4 Section */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4" id="ga4_pixel_card">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4" id="ga4_pixel_card">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center shrink-0">
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
                   <rect x="5" y="13" width="3.5" height="6" rx="1" fill="#F9AB00" />
                   <rect x="10.25" y="9" width="3.5" height="10" rx="1" fill="#F25C05" />
@@ -4147,8 +4147,8 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
             <button 
               onClick={() => updateGA4('enabled', !draftSettings.ga4?.enabled)}
               className={cn(
-                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0",
-                draftSettings.ga4?.enabled ? "bg-amber-500 shadow-md shadow-amber-500/20" : "bg-slate-700/60"
+                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0 cursor-pointer",
+                draftSettings.ga4?.enabled ? "bg-pink-500 shadow-md shadow-pink-500/20" : "bg-slate-700/60"
               )}
               id="ga4_toggle"
             >
@@ -4162,7 +4162,7 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
           </div>
 
           {draftSettings.ga4?.enabled && (
-            <div className="space-y-3.5 pt-2 border-t border-[#1e293b]/50 animate-in fade-in duration-200">
+            <div className="space-y-3.5 pt-2 border-t border-[var(--dash-border)]/40 animate-in fade-in duration-200">
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1 block">Measurement ID (G-XXXXXXXXXX) *</label>
                 <div className="relative flex items-center">
@@ -4171,12 +4171,12 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
                     value={draftSettings.ga4?.measurementId || ''}
                     onChange={(e) => updateGA4('measurementId', e.target.value)}
                     placeholder="G-XXXXXX"
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-amber-500 font-mono"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-mono"
                   />
                   <button 
                     type="button"
                     onClick={() => handleCopy(draftSettings.ga4?.measurementId || '', 'ga4_measurementId')}
-                    className="absolute right-2 px-2.5 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors flex items-center justify-center text-xs"
+                    className="absolute right-2 px-2.5 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-slate-400 hover:text-white transition-colors flex items-center justify-center text-xs cursor-pointer"
                     title="Copy Measurement ID"
                   >
                     {copiedField === 'ga4_measurementId' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
@@ -4192,20 +4192,20 @@ function MarketingManager({ settings, setSettings, onClose, themePrimary }: { se
                     value={draftSettings.ga4?.apiSecret || ''}
                     onChange={(e) => updateGA4('apiSecret', e.target.value)}
                     placeholder="API Secret for server-side purchase tracking"
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 pr-16 text-xs md:text-sm text-white focus:outline-none focus:border-amber-500 font-mono"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 pr-16 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-mono"
                   />
                   <div className="absolute right-2 flex items-center gap-1">
                     <button 
                       type="button"
                       onClick={() => setShowGA4Secret(!showGA4Secret)}
-                      className="p-1 text-slate-400 hover:text-white transition-colors"
+                      className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
                     >
                       {showGA4Secret ? <EyeOff size={13} /> : <Eye size={13} />}
                     </button>
                     <button 
                       type="button"
                       onClick={() => handleCopy(draftSettings.ga4?.apiSecret || '', 'ga4_apiSecret')}
-                      className="p-1 text-slate-400 hover:text-white transition-colors"
+                      className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer"
                     >
                       {copiedField === 'ga4_apiSecret' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
                     </button>
@@ -4290,19 +4290,19 @@ function CourierManager({ settings, setSettings, onClose, themePrimary }: { sett
   const themeColor = themePrimary || '#ff3b69';
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
-            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0"
+            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0 cursor-pointer"
             title="Go back"
           >
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
               <Truck size={20} />
             </div>
             <div>
@@ -4324,14 +4324,14 @@ function CourierManager({ settings, setSettings, onClose, themePrimary }: { sett
       </div>
 
       <div 
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-4xl mx-auto w-full overscroll-y-contain custom-scrollbar pb-28"
+        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-4xl mx-auto w-full overscroll-y-contain custom-scrollbar pb-32"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Steadfast Section */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0">
                 <Truck size={20} />
               </div>
               <div>
@@ -4339,10 +4339,10 @@ function CourierManager({ settings, setSettings, onClose, themePrimary }: { sett
                 <p className="text-xs text-slate-400">One-click parcel booking and consignment label generation.</p>
               </div>
             </div>
-            <span className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">Active</span>
+            <span className="bg-pink-500/10 border border-pink-500/20 text-pink-400 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">Active</span>
           </div>
 
-          <div className="space-y-3.5 pt-2 border-t border-[#1e293b]/50">
+          <div className="space-y-3.5 pt-2 border-t border-[var(--dash-border)]/40">
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1 block">API Key *</label>
               <div className="relative flex items-center">
@@ -4350,14 +4350,14 @@ function CourierManager({ settings, setSettings, onClose, themePrimary }: { sett
                   type={showSteadfastApi ? "text" : "password"}
                   value={draftSettings.steadfast.apiKey}
                   onChange={(e) => updateSteadfast('apiKey', e.target.value)}
-                  className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 pr-20 text-xs md:text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 pr-20 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-mono"
                   placeholder="Enter Steadfast API Key"
                 />
                 <div className="absolute right-2 flex items-center gap-1">
-                  <button onClick={() => setShowSteadfastApi(!showSteadfastApi)} className="p-1 text-slate-400 hover:text-white transition-colors">
+                  <button onClick={() => setShowSteadfastApi(!showSteadfastApi)} className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer">
                     {showSteadfastApi ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
-                  <button onClick={() => navigator.clipboard.writeText(draftSettings.steadfast.apiKey)} className="p-1 text-slate-400 hover:text-white transition-colors">
+                  <button onClick={() => navigator.clipboard.writeText(draftSettings.steadfast.apiKey)} className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer">
                     <Copy size={14} />
                   </button>
                 </div>
@@ -4371,14 +4371,14 @@ function CourierManager({ settings, setSettings, onClose, themePrimary }: { sett
                   type={showSteadfastSecret ? "text" : "password"}
                   value={draftSettings.steadfast.secretKey}
                   onChange={(e) => updateSteadfast('secretKey', e.target.value)}
-                  className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 pr-20 text-xs md:text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 pr-20 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-mono"
                   placeholder="Enter Steadfast Secret Key"
                 />
                 <div className="absolute right-2 flex items-center gap-1">
-                  <button onClick={() => setShowSteadfastSecret(!showSteadfastSecret)} className="p-1 text-slate-400 hover:text-white transition-colors">
+                  <button onClick={() => setShowSteadfastSecret(!showSteadfastSecret)} className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer">
                     {showSteadfastSecret ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
-                  <button onClick={() => navigator.clipboard.writeText(draftSettings.steadfast.secretKey)} className="p-1 text-slate-400 hover:text-white transition-colors">
+                  <button onClick={() => navigator.clipboard.writeText(draftSettings.steadfast.secretKey)} className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer">
                     <Copy size={14} />
                   </button>
                 </div>
@@ -4388,10 +4388,10 @@ function CourierManager({ settings, setSettings, onClose, themePrimary }: { sett
         </div>
 
         {/* BD COURIER API Section */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0">
                 <Layers size={20} />
               </div>
               <div>
@@ -4401,37 +4401,37 @@ function CourierManager({ settings, setSettings, onClose, themePrimary }: { sett
             </div>
             <button 
               onClick={addBdCourierApi}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs bg-white/5 hover:bg-white/10 text-amber-400 border border-amber-500/20 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold text-xs bg-pink-500/10 hover:bg-pink-500/20 text-pink-400 border border-pink-500/20 transition-all cursor-pointer"
             >
               <Plus size={14} /> Add API Key
             </button>
           </div>
 
-          <div className="space-y-3.5 pt-2 border-t border-[#1e293b]/50">
+          <div className="space-y-3.5 pt-2 border-t border-[var(--dash-border)]/40">
             {(!draftSettings.bdCourierApis || draftSettings.bdCourierApis.length === 0) ? (
-              <div className="text-center py-8 text-slate-500 text-xs bg-[#070b14] rounded-xl border border-[#1e293b] border-dashed">
+              <div className="text-center py-8 text-slate-500 text-xs bg-[var(--dash-bg)] rounded-xl border border-[var(--dash-border)] border-dashed">
                 No BD Courier APIs configured. Click "Add API Key" to enable customer fraud checking.
               </div>
             ) : (
               draftSettings.bdCourierApis.map((api, index) => (
-                <div key={api.id} className="bg-[#070b14] border border-[#1e293b] rounded-xl p-4 space-y-3">
+                <div key={api.id} className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full uppercase border border-amber-500/20">API #{index + 1}</span>
+                      <span className="text-[10px] font-bold text-pink-400 bg-pink-500/10 px-2 py-0.5 rounded-full uppercase border border-pink-500/20">API #{index + 1}</span>
                       <input 
                         type="text"
                         value={api.name || ''}
                         onChange={(e) => updateBdCourierApi(api.id, 'name', e.target.value)}
                         placeholder="Label / Key Note (Optional)"
-                        className="bg-transparent text-xs text-slate-300 focus:outline-none border-b border-transparent focus:border-amber-500"
+                        className="bg-transparent text-xs text-slate-300 focus:outline-none border-b border-transparent focus:border-pink-500"
                       />
                     </div>
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => updateBdCourierApi(api.id, 'enabled', !api.enabled)}
                         className={cn(
-                          "w-10 h-5.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0",
-                          api.enabled ? "bg-amber-500 shadow-md shadow-amber-500/20" : "bg-slate-700/60"
+                          "w-10 h-5.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0 cursor-pointer",
+                          api.enabled ? "bg-pink-500 shadow-md shadow-pink-500/20" : "bg-slate-700/60"
                         )}
                       >
                         <div
@@ -4443,7 +4443,7 @@ function CourierManager({ settings, setSettings, onClose, themePrimary }: { sett
                       </button>
                       <button 
                         onClick={() => removeBdCourierApi(api.id)}
-                        className="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 flex items-center justify-center transition-colors"
+                        className="w-7 h-7 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 flex items-center justify-center transition-colors cursor-pointer"
                       >
                         <Trash2 size={13} />
                       </button>
@@ -4455,14 +4455,14 @@ function CourierManager({ settings, setSettings, onClose, themePrimary }: { sett
                       type={showBdCourierApi[api.id] ? "text" : "password"}
                       value={api.apiKey}
                       onChange={(e) => updateBdCourierApi(api.id, 'apiKey', e.target.value)}
-                      className="w-full bg-[#0b1120] border border-[#1e293b] rounded-xl px-3.5 py-2 pr-20 text-xs md:text-sm text-white focus:outline-none focus:border-amber-500 font-mono"
+                      className="w-full bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2 pr-20 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-mono"
                       placeholder="Paste BD Courier API Key"
                     />
                     <div className="absolute right-2 flex items-center gap-1">
-                      <button onClick={() => toggleBdCourierApiVisibility(api.id)} className="p-1 text-slate-400 hover:text-white transition-colors">
+                      <button onClick={() => toggleBdCourierApiVisibility(api.id)} className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer">
                         {showBdCourierApi[api.id] ? <EyeOff size={13} /> : <Eye size={13} />}
                       </button>
-                      <button onClick={() => navigator.clipboard.writeText(api.apiKey)} className="p-1 text-slate-400 hover:text-white transition-colors">
+                      <button onClick={() => navigator.clipboard.writeText(api.apiKey)} className="p-1 text-slate-400 hover:text-white transition-colors cursor-pointer">
                         <Copy size={13} />
                       </button>
                     </div>
@@ -4509,19 +4509,19 @@ function PriceCalculatorManager({ settings, setSettings, onClose, themePrimary }
   const themeColor = themePrimary || '#ff3b69';
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
-            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0"
+            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0 cursor-pointer"
             title="Go back"
           >
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
               <Calculator size={20} />
             </div>
             <div>
@@ -4543,17 +4543,17 @@ function PriceCalculatorManager({ settings, setSettings, onClose, themePrimary }
       </div>
 
       <div 
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-2xl mx-auto w-full overscroll-y-contain custom-scrollbar pb-28"
+        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-2xl mx-auto w-full overscroll-y-contain custom-scrollbar pb-32"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
           <div>
             <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1 block">Yuan (CNY) Exchange Rate (৳) *</label>
             <input 
               type="number" 
               value={yuanRate}
               onChange={(e) => setYuanRate(e.target.value)}
-              className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-rose-500 font-bold"
+              className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-bold"
             />
             <p className="text-[11px] text-slate-500 mt-1">Exchange rate applied to Chinese supplier factory prices.</p>
           </div>
@@ -4563,7 +4563,7 @@ function PriceCalculatorManager({ settings, setSettings, onClose, themePrimary }
               type="number" 
               value={additionalCost}
               onChange={(e) => setAdditionalCost(e.target.value)}
-              className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-rose-500 font-bold"
+              className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-bold"
             />
             <p className="text-[11px] text-slate-500 mt-1">Freight, customs, and port clearance handling cost per piece.</p>
           </div>
@@ -4573,7 +4573,7 @@ function PriceCalculatorManager({ settings, setSettings, onClose, themePrimary }
               type="number" 
               value={profit}
               onChange={(e) => setProfit(e.target.value)}
-              className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-rose-500 font-bold"
+              className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-bold"
             />
             <p className="text-[11px] text-slate-500 mt-1">Default target markup automatically added to suggested selling price.</p>
           </div>
@@ -4841,19 +4841,19 @@ function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdm
   const themeColor = websiteSettings.themeColors?.primary || '#ff3b69';
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
-            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0"
+            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0 cursor-pointer"
             title="Go back"
           >
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
               <Shield size={20} />
             </div>
             <div>
@@ -4865,14 +4865,14 @@ function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdm
       </div>
 
       <div 
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-4xl mx-auto w-full overscroll-y-contain custom-scrollbar pb-28"
+        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-4xl mx-auto w-full overscroll-y-contain custom-scrollbar pb-32"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Profile Card */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-pink-500/20 to-purple-500/20 border border-pink-500/30 flex items-center justify-center text-pink-400 font-bold text-lg shadow-inner">
+              <div className="w-12 h-12 rounded-2xl bg-pink-500/20 border border-pink-500/30 flex items-center justify-center text-pink-400 font-bold text-lg shadow-inner">
                 {currentAdmin.email ? currentAdmin.email[0].toUpperCase() : 'A'}
               </div>
               <div>
@@ -4895,13 +4895,13 @@ function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdm
         </div>
 
         {/* Change Password Card */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl shadow-xl overflow-hidden">
           <div 
             className="flex items-center justify-between p-4 md:p-5 cursor-pointer hover:bg-white/[0.02] transition-colors"
             onClick={() => toggleSection('password')}
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400">
+              <div className="w-9 h-9 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400">
                 <Lock size={18} />
               </div>
               <div>
@@ -4912,7 +4912,7 @@ function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdm
             {expandedSections.password ? <ChevronUp size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
           </div>
           {expandedSections.password && (
-            <form onSubmit={handleChangePassword} className="space-y-3.5 p-4 md:p-5 pt-0 border-t border-[#1e293b]/50 mt-2">
+            <form onSubmit={handleChangePassword} className="space-y-3.5 p-4 md:p-5 pt-0 border-t border-[var(--dash-border)]/40 mt-2">
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1 block">Current Password *</label>
                 <input 
@@ -4921,7 +4921,7 @@ function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdm
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   required
                   placeholder="Enter current password"
-                  className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-purple-500"
+                  className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500"
                 />
               </div>
               <div>
@@ -4932,7 +4932,7 @@ function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdm
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   placeholder="Min 4 characters"
-                  className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-purple-500"
+                  className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500"
                 />
               </div>
               <div>
@@ -4943,7 +4943,7 @@ function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdm
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   placeholder="Repeat new password"
-                  className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-purple-500"
+                  className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500"
                 />
               </div>
               
@@ -4965,13 +4965,13 @@ function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdm
         </div>
 
         {/* Change Email Card */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl shadow-xl overflow-hidden">
           <div 
             className="flex items-center justify-between p-4 md:p-5 cursor-pointer hover:bg-white/[0.02] transition-colors"
             onClick={() => toggleSection('email')}
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+              <div className="w-9 h-9 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400">
                 <Mail size={18} />
               </div>
               <div>
@@ -4982,7 +4982,7 @@ function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdm
             {expandedSections.email ? <ChevronUp size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
           </div>
           {expandedSections.email && (
-            <form onSubmit={handleChangeEmail} className="space-y-3.5 p-4 md:p-5 pt-0 border-t border-[#1e293b]/50 mt-2">
+            <form onSubmit={handleChangeEmail} className="space-y-3.5 p-4 md:p-5 pt-0 border-t border-[var(--dash-border)]/40 mt-2">
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1 block">New Email Address *</label>
                 <input 
@@ -4991,7 +4991,7 @@ function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdm
                   onChange={(e) => setNewEmail(e.target.value)}
                   required
                   placeholder="admin@yourdomain.com"
-                  className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-sky-500"
+                  className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500"
                 />
               </div>
               {emailMsg.text && (
@@ -5011,13 +5011,13 @@ function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdm
         </div>
 
         {/* Auto Logout Card */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl shadow-xl overflow-hidden">
           <div 
             className="flex items-center justify-between p-4 md:p-5 cursor-pointer hover:bg-white/[0.02] transition-colors"
             onClick={() => toggleSection('autoLogout')}
           >
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+              <div className="w-9 h-9 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400">
                 <Clock size={18} />
               </div>
               <div>
@@ -5028,7 +5028,7 @@ function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdm
             {expandedSections.autoLogout ? <ChevronUp size={18} className="text-slate-400" /> : <ChevronDown size={18} className="text-slate-400" />}
           </div>
           {expandedSections.autoLogout && (
-            <form onSubmit={handleUpdateLogout} className="space-y-3.5 p-4 md:p-5 pt-0 border-t border-[#1e293b]/50 mt-2">
+            <form onSubmit={handleUpdateLogout} className="space-y-3.5 p-4 md:p-5 pt-0 border-t border-[var(--dash-border)]/40 mt-2">
               <div className="flex flex-col sm:flex-row gap-3 items-end">
                 <div className="flex-1 w-full">
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1 block">Session Expiry (Days) *</label>
@@ -5038,7 +5038,7 @@ function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdm
                     value={autoLogoutDays}
                     onChange={(e) => setAutoLogoutDays(e.target.value)}
                     required
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-amber-500 font-bold"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-bold"
                   />
                 </div>
                 <button 
@@ -5060,13 +5060,13 @@ function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdm
 
         {/* Admin Management Section */}
         {currentAdmin.id === 'default-admin' && (
-          <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+          <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
             <div>
               <h2 className="text-sm md:text-base font-bold text-white mb-0.5">Staff & Team Account Permissions</h2>
               <p className="text-xs text-slate-400">Review pending registrations and grant or revoke access.</p>
             </div>
             
-            <div className="flex flex-wrap items-center gap-2 border-b border-[#1e293b]/60 pb-3">
+            <div className="flex flex-wrap items-center gap-2 border-b border-[var(--dash-border)]/60 pb-3">
               <button
                 onClick={() => setUserTab('pending')}
                 className={cn(
@@ -5100,12 +5100,12 @@ function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdm
               {userTab === 'pending' && (
                 <div className="space-y-2.5">
                   {pendingUsers.length === 0 ? (
-                    <div className="text-center py-8 text-slate-500 text-xs bg-[#070b14] rounded-xl border border-[#1e293b] border-dashed">
+                    <div className="text-center py-8 text-slate-500 text-xs bg-[var(--dash-bg)] rounded-xl border border-[var(--dash-border)] border-dashed">
                       No pending team registrations.
                     </div>
                   ) : (
                     pendingUsers.map(user => (
-                      <div key={user.id} className="flex items-center justify-between p-3.5 bg-[#070b14] rounded-xl border border-[#1e293b]">
+                      <div key={user.id} className="flex items-center justify-between p-3.5 bg-[var(--dash-bg)] rounded-xl border border-[var(--dash-border)]">
                         <div>
                           <p className="text-white text-xs md:text-sm font-bold">{user.email}</p>
                           <p className="text-[10px] text-slate-500">Registered: {new Date(user.createdAt).toLocaleDateString()}</p>
@@ -5135,12 +5135,12 @@ function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdm
               {userTab === 'active' && (
                 <div className="space-y-2.5">
                   {activeUsers.length === 0 ? (
-                    <div className="text-center py-8 text-slate-500 text-xs bg-[#070b14] rounded-xl border border-[#1e293b] border-dashed">
+                    <div className="text-center py-8 text-slate-500 text-xs bg-[var(--dash-bg)] rounded-xl border border-[var(--dash-border)] border-dashed">
                       No other active staff accounts.
                     </div>
                   ) : (
                     activeUsers.map(user => (
-                      <div key={user.id} className="flex items-center justify-between p-3.5 bg-[#070b14] rounded-xl border border-[#1e293b]">
+                      <div key={user.id} className="flex items-center justify-between p-3.5 bg-[var(--dash-bg)] rounded-xl border border-[var(--dash-border)]">
                         <div>
                           <p className="text-white text-xs md:text-sm font-bold">{user.email}</p>
                           <span className="text-[10px] text-emerald-400 font-semibold">Active Member</span>
@@ -5160,19 +5160,19 @@ function AccountManager({ adminUsers, setAdminUsers, currentAdmin, setCurrentAdm
               {userTab === 'blocked' && (
                 <div className="space-y-2.5">
                   {blockedUsers.length === 0 ? (
-                    <div className="text-center py-8 text-slate-500 text-xs bg-[#070b14] rounded-xl border border-[#1e293b] border-dashed">
+                    <div className="text-center py-8 text-slate-500 text-xs bg-[var(--dash-bg)] rounded-xl border border-[var(--dash-border)] border-dashed">
                       No blocked accounts.
                     </div>
                   ) : (
                     blockedUsers.map(user => (
-                      <div key={user.id} className="flex items-center justify-between p-3.5 bg-[#070b14] rounded-xl border border-[#1e293b] opacity-80">
+                      <div key={user.id} className="flex items-center justify-between p-3.5 bg-[var(--dash-bg)] rounded-xl border border-[var(--dash-border)] opacity-80">
                         <div>
                           <p className="text-slate-400 text-xs md:text-sm line-through">{user.email}</p>
                           <span className="text-[10px] text-red-400 font-semibold">Blocked</span>
                         </div>
                         <button 
                           onClick={() => handleUnblock(user.id)}
-                          className="px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-xl hover:bg-blue-500/20 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+                          className="px-3 py-1.5 bg-pink-500/10 border border-pink-500/20 text-pink-400 rounded-xl hover:bg-pink-500/20 transition-all flex items-center gap-1.5 text-xs font-bold cursor-pointer"
                         >
                           <Unlock size={14} /> Unblock
                         </button>
@@ -5224,19 +5224,19 @@ function QtyRulesManager({ settings, setSettings, onClose, themePrimary }: { set
   const themeColor = themePrimary || '#ff3b69';
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
-            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0"
+            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0 cursor-pointer"
             title="Go back"
           >
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
               <PackagePlus size={20} />
             </div>
             <div>
@@ -5258,10 +5258,10 @@ function QtyRulesManager({ settings, setSettings, onClose, themePrimary }: { set
       </div>
 
       <div 
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-2xl mx-auto w-full overscroll-y-contain custom-scrollbar pb-28"
+        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-2xl mx-auto w-full overscroll-y-contain custom-scrollbar pb-32"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-sm md:text-base font-bold text-white mb-0.5">Quantity-Based Pricing Engine</h2>
@@ -5270,8 +5270,8 @@ function QtyRulesManager({ settings, setSettings, onClose, themePrimary }: { set
             <button 
               onClick={() => setEnabled(!enabled)}
               className={cn(
-                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0",
-                enabled ? "bg-amber-500 shadow-md shadow-amber-500/20" : "bg-slate-700/60"
+                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0 cursor-pointer",
+                enabled ? "bg-pink-500 shadow-md shadow-pink-500/20" : "bg-slate-700/60"
               )}
             >
               <div 
@@ -5284,7 +5284,7 @@ function QtyRulesManager({ settings, setSettings, onClose, themePrimary }: { set
           </div>
 
           {enabled && (
-            <div className="space-y-4 pt-4 border-t border-[#1e293b]/50 animate-in fade-in duration-200">
+            <div className="space-y-4 pt-4 border-t border-[var(--dash-border)]/40 animate-in fade-in duration-200">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1 block">Minimum Pieces (Qty &ge;) *</label>
@@ -5294,7 +5294,7 @@ function QtyRulesManager({ settings, setSettings, onClose, themePrimary }: { set
                       value={minQuantity} 
                       onChange={e => setMinQuantity(e.target.value)} 
                       placeholder="6"
-                      className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 pr-12 text-xs md:text-sm text-white focus:outline-none focus:border-amber-500 font-bold"
+                      className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 pr-12 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-bold"
                     />
                     <span className="absolute right-3 text-xs text-slate-500 font-bold">pcs</span>
                   </div>
@@ -5307,20 +5307,20 @@ function QtyRulesManager({ settings, setSettings, onClose, themePrimary }: { set
                       value={discountPerPiece} 
                       onChange={e => setDiscountPerPiece(e.target.value)} 
                       placeholder="5"
-                      className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 pr-12 text-xs md:text-sm text-white focus:outline-none focus:border-amber-500 font-bold"
+                      className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 pr-12 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 font-bold"
                     />
                     <span className="absolute right-3 text-xs text-slate-500 font-bold">৳</span>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-[#070b14] border border-[#1e293b] rounded-xl p-3.5 flex gap-3 items-start">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+              <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-3.5 flex gap-3 items-start">
+                <div className="w-8 h-8 rounded-lg bg-pink-500/10 text-pink-400 flex items-center justify-center shrink-0">
                   <PackagePlus size={16} />
                 </div>
                 <div className="text-xs text-slate-400 space-y-1">
                   <p className="font-bold text-white">Rule Execution Summary:</p>
-                  <p>Purchasing <strong className="text-amber-400">&ge;{minQuantity || 0} pieces</strong> grants a <strong className="text-amber-400">{discountPerPiece || 0}৳</strong> discount per item at checkout.</p>
+                  <p>Purchasing <strong className="text-pink-400">&ge;{minQuantity || 0} pieces</strong> grants a <strong className="text-pink-400">{discountPerPiece || 0}৳</strong> discount per item at checkout.</p>
                   <p className="text-[11px] text-slate-500">Note: Custom tier rules configured inside individual products will override this default store rule.</p>
                 </div>
               </div>
@@ -5377,20 +5377,20 @@ export function SeoSettingsManager({ settings, setSettings, onClose, themePrimar
   const themeColor = themePrimary || '#ff3b69';
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       {/* Top Header Bar */}
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
-            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0"
+            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0 cursor-pointer"
             id="seo_back_btn"
             title="Go back"
           >
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 shrink-0 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
               <Globe size={20} />
             </div>
             <div>
@@ -5414,14 +5414,14 @@ export function SeoSettingsManager({ settings, setSettings, onClose, themePrimar
 
       {/* Main Content Area */}
       <div 
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-4xl mx-auto w-full overscroll-y-contain custom-scrollbar pb-28"
+        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-4xl mx-auto w-full overscroll-y-contain custom-scrollbar pb-32"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Basic SEO Controls (Box 1) */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4" id="seo_basic_card">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4" id="seo_basic_card">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0">
                 <Tag size={20} />
               </div>
               <div>
@@ -5435,7 +5435,7 @@ export function SeoSettingsManager({ settings, setSettings, onClose, themePrimar
             </div>
           </div>
 
-          <div className="space-y-3.5 pt-2 border-t border-[#1e293b]/50">
+          <div className="space-y-3.5 pt-2 border-t border-[var(--dash-border)]/40">
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1 block">Store Meta Title *</label>
               <input
@@ -5443,7 +5443,7 @@ export function SeoSettingsManager({ settings, setSettings, onClose, themePrimar
                 value={seo.metaTitle || ''}
                 onChange={(e) => setSeo({ ...seo, metaTitle: e.target.value })}
                 placeholder="e.g. PaikariX - Wholesale Import & B2B Supply in Bangladesh"
-                className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500"
                 id="seo_meta_title_input"
               />
             </div>
@@ -5455,7 +5455,7 @@ export function SeoSettingsManager({ settings, setSettings, onClose, themePrimar
                 onChange={(e) => setSeo({ ...seo, metaDescription: e.target.value })}
                 placeholder="Short paragraph describing your store, wholesale categories, and buyer guarantees..."
                 rows={2}
-                className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-indigo-500 resize-y min-h-[56px]"
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 resize-y min-h-[56px]"
                 id="seo_meta_description_textarea"
               />
             </div>
@@ -5467,7 +5467,7 @@ export function SeoSettingsManager({ settings, setSettings, onClose, themePrimar
                 value={seo.metaKeywords || ''}
                 onChange={(e) => setSeo({ ...seo, metaKeywords: e.target.value })}
                 placeholder="e.g. wholesale, electronics, import bd, wholesale gadgets (comma separated)"
-                className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-indigo-500"
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500"
                 id="seo_meta_keywords_input"
               />
             </div>
@@ -5475,7 +5475,7 @@ export function SeoSettingsManager({ settings, setSettings, onClose, themePrimar
         </div>
 
         {/* Social Media Sharing Controls (Box 2) */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4" id="seo_social_card">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4" id="seo_social_card">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0">
@@ -5488,7 +5488,7 @@ export function SeoSettingsManager({ settings, setSettings, onClose, themePrimar
             </div>
           </div>
 
-          <div className="space-y-3.5 pt-2 border-t border-[#1e293b]/50">
+          <div className="space-y-3.5 pt-2 border-t border-[var(--dash-border)]/40">
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1 block">Social Share Title</label>
               <input
@@ -5496,7 +5496,7 @@ export function SeoSettingsManager({ settings, setSettings, onClose, themePrimar
                 value={seo.socialShareTitle || ''}
                 onChange={(e) => setSeo({ ...seo, socialShareTitle: e.target.value })}
                 placeholder="Enter social share title (optional)"
-                className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500"
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500"
                 id="seo_social_title_input"
               />
             </div>
@@ -5508,14 +5508,14 @@ export function SeoSettingsManager({ settings, setSettings, onClose, themePrimar
                 onChange={(e) => setSeo({ ...seo, socialShareDescription: e.target.value })}
                 placeholder="Text that appears under the link preview card..."
                 rows={2}
-                className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 resize-y min-h-[56px]"
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-3.5 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 resize-y min-h-[56px]"
                 id="seo_social_description_textarea"
               />
             </div>
 
             <div>
               <label className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-1 block">Default Social Share Banner (1200x630px)</label>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-[#070b14] border border-[#1e293b] rounded-xl p-3.5">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-3.5">
                 <div className="w-24 h-16 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0 overflow-hidden" id="social_image_preview_box">
                   {seo.defaultSocialShareImage ? (
                     <img src={seo.defaultSocialShareImage} alt="Social Share Preview" className="w-full h-full object-cover" />
@@ -5550,10 +5550,10 @@ export function SeoSettingsManager({ settings, setSettings, onClose, themePrimar
         </div>
 
         {/* Branding & Appearance (Box 3) */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4" id="seo_branding_card">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4" id="seo_branding_card">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0">
                 <Palette size={20} />
               </div>
               <div>
@@ -5563,13 +5563,13 @@ export function SeoSettingsManager({ settings, setSettings, onClose, themePrimar
             </div>
           </div>
 
-          <div className="pt-2 border-t border-[#1e293b]/50">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-[#070b14] border border-[#1e293b] rounded-xl p-3.5">
+          <div className="pt-2 border-t border-[var(--dash-border)]/40">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-3.5">
               <div className="w-14 h-14 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0 overflow-hidden" id="favicon_preview_box">
                 {seo.favicon ? (
                   <img src={seo.favicon} alt="Favicon Preview" className="w-8 h-8 object-contain" />
                 ) : (
-                  <Star size={20} className="text-amber-400" />
+                  <Star size={20} className="text-pink-400" />
                 )}
               </div>
               
@@ -5627,19 +5627,19 @@ export function ImageSettingsManager({ onClose, themePrimary }: { onClose: () =>
   const themeColor = themePrimary || '#ff3b69';
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
-            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0"
+            className="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition-all shrink-0 cursor-pointer"
             title="Go back"
           >
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 shrink-0 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
               <ImageIcon size={20} />
             </div>
             <div>
@@ -5660,11 +5660,11 @@ export function ImageSettingsManager({ onClose, themePrimary }: { onClose: () =>
       </div>
 
       <div 
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-3xl mx-auto w-full overscroll-y-contain custom-scrollbar pb-28"
+        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-4 max-w-3xl mx-auto w-full overscroll-y-contain custom-scrollbar pb-32"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Auto Optimization */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div>
               <h3 className="text-sm md:text-base font-bold text-white mb-0.5">Automated Client-Side Image Compression</h3>
@@ -5673,8 +5673,8 @@ export function ImageSettingsManager({ onClose, themePrimary }: { onClose: () =>
             <button 
               onClick={() => setEnabled(!enabled)}
               className={cn(
-                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0",
-                enabled ? "bg-sky-500 shadow-md shadow-sky-500/20" : "bg-slate-700/60"
+                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0 cursor-pointer",
+                enabled ? "bg-pink-500 shadow-md shadow-pink-500/20" : "bg-slate-700/60"
               )}
             >
               <div 
@@ -5687,15 +5687,15 @@ export function ImageSettingsManager({ onClose, themePrimary }: { onClose: () =>
           </div>
 
           {enabled && (
-            <div className="space-y-5 pt-4 border-t border-[#1e293b]/50 animate-in fade-in duration-200">
+            <div className="space-y-5 pt-4 border-t border-[var(--dash-border)]/40 animate-in fade-in duration-200">
               <div>
                 <div className="flex justify-between text-xs font-bold uppercase tracking-wider mb-2">
                   <span className="text-slate-300">Compression Quality</span>
-                  <span className="text-sky-400 font-mono text-sm">{quality}%</span>
+                  <span className="text-pink-400 font-mono text-sm">{quality}%</span>
                 </div>
                 <input 
                   type="range" min="1" max="100" value={quality} onChange={e => setQuality(Number(e.target.value))}
-                  className="w-full h-1.5 bg-[#070b14] border border-[#1e293b] rounded-full appearance-none cursor-pointer accent-sky-500"
+                  className="w-full h-1.5 bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-full appearance-none cursor-pointer accent-pink-500"
                 />
                 <p className="text-[11px] text-slate-500 mt-1">Recommended: 80%. Balances sharp product visuals with sub-second page loads.</p>
               </div>
@@ -5703,11 +5703,11 @@ export function ImageSettingsManager({ onClose, themePrimary }: { onClose: () =>
               <div>
                 <div className="flex justify-between text-xs font-bold uppercase tracking-wider mb-2">
                   <span className="text-slate-300">Maximum Resolution Scale</span>
-                  <span className="text-sky-400 font-mono text-sm">{scale}%</span>
+                  <span className="text-pink-400 font-mono text-sm">{scale}%</span>
                 </div>
                 <input 
                   type="range" min="10" max="100" value={scale} onChange={e => setScale(Number(e.target.value))}
-                  className="w-full h-1.5 bg-[#070b14] border border-[#1e293b] rounded-full appearance-none cursor-pointer accent-sky-500"
+                  className="w-full h-1.5 bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-full appearance-none cursor-pointer accent-pink-500"
                 />
                 <p className="text-[11px] text-slate-500 mt-1">Scales down excessive 4K/8K images from supplier cameras to web-friendly bounds.</p>
               </div>
@@ -5716,21 +5716,21 @@ export function ImageSettingsManager({ onClose, themePrimary }: { onClose: () =>
         </div>
 
         {/* Thumbnail Settings */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
           <div>
             <h3 className="text-sm md:text-base font-bold text-white mb-0.5">High-Speed Grid Thumbnail Generator</h3>
             <p className="text-xs text-slate-400">Creates lightweight thumbnail variants for fast grid scrolling and instant mobile catalog browsing.</p>
           </div>
 
-          <div className="space-y-5 pt-3 border-t border-[#1e293b]/50">
+          <div className="space-y-5 pt-3 border-t border-[var(--dash-border)]/40">
             <div>
               <div className="flex justify-between text-xs font-bold uppercase tracking-wider mb-2">
                 <span className="text-slate-300">Thumbnail Target Width</span>
-                <span className="text-sky-400 font-mono text-sm">{thumbnailWidth}px</span>
+                <span className="text-pink-400 font-mono text-sm">{thumbnailWidth}px</span>
               </div>
               <input 
                 type="range" min="100" max="1080" step="10" value={thumbnailWidth} onChange={e => setThumbnailWidth(Number(e.target.value))}
-                className="w-full h-1.5 bg-[#070b14] border border-[#1e293b] rounded-full appearance-none cursor-pointer accent-sky-500"
+                className="w-full h-1.5 bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-full appearance-none cursor-pointer accent-pink-500"
               />
               <p className="text-[11px] text-slate-500 mt-1">Recommended: 350px - 500px for retina mobile displays.</p>
             </div>
@@ -5738,11 +5738,11 @@ export function ImageSettingsManager({ onClose, themePrimary }: { onClose: () =>
             <div>
               <div className="flex justify-between text-xs font-bold uppercase tracking-wider mb-2">
                 <span className="text-slate-300">Thumbnail Compression Quality</span>
-                <span className="text-sky-400 font-mono text-sm">{thumbnailQuality}%</span>
+                <span className="text-pink-400 font-mono text-sm">{thumbnailQuality}%</span>
               </div>
               <input 
                 type="range" min="10" max="100" value={thumbnailQuality} onChange={e => setThumbnailQuality(Number(e.target.value))}
-                className="w-full h-1.5 bg-[#070b14] border border-[#1e293b] rounded-full appearance-none cursor-pointer accent-sky-500"
+                className="w-full h-1.5 bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-full appearance-none cursor-pointer accent-pink-500"
               />
               <p className="text-[11px] text-slate-500 mt-1">Recommended: 60% - 75% for optimum grid performance.</p>
             </div>

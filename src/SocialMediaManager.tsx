@@ -84,9 +84,9 @@ export default function SocialMediaManager({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
@@ -96,7 +96,7 @@ export default function SocialMediaManager({
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
               <Share2 size={20} />
             </div>
             <div>
@@ -129,22 +129,22 @@ export default function SocialMediaManager({
 
       {/* Main Content */}
       <div 
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 max-w-3xl mx-auto w-full pb-28 overscroll-y-contain custom-scrollbar"
+        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-5 max-w-3xl mx-auto w-full pb-32 overscroll-y-contain custom-scrollbar"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Main Floating Trigger Icon */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[#1e293b]/50">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--dash-border)]/40">
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300">Floating Button Hub Icon</h2>
             <span className="text-xs text-slate-400 font-medium">Appears bottom-right</span>
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-2xl bg-[#070b14] border border-[#1e293b] flex items-center justify-center relative overflow-hidden group shadow-inner">
+            <div className="w-16 h-16 rounded-2xl bg-[var(--dash-bg)] border border-[var(--dash-border)] flex items-center justify-center relative overflow-hidden group shadow-inner">
               {mainIcon ? (
                 <img src={mainIcon} alt="Main Hub" className="w-10 h-10 object-contain" />
               ) : (
-                <Share2 size={24} className="text-slate-500" />
+                <Share2 size={24} className="text-pink-400" />
               )}
               <input 
                 type="file" 
@@ -170,8 +170,8 @@ export default function SocialMediaManager({
         </div>
 
         {/* Social Links List */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[#1e293b]/50">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--dash-border)]/40">
             <div>
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300">Active Social Channels</h2>
               <p className="text-[11px] text-slate-400 mt-0.5">Direct chat links for WhatsApp, Messenger, Telegram, Facebook, etc.</p>
@@ -194,13 +194,13 @@ export default function SocialMediaManager({
               links.map((link, idx) => (
                 <div 
                   key={link.id || idx}
-                  className="bg-[#070b14] border border-[#1e293b] rounded-xl p-3.5 flex items-center gap-3 group hover:border-slate-700 transition-colors"
+                  className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-3.5 flex items-center gap-3 group hover:border-slate-600 transition-colors"
                 >
-                  <div className="w-11 h-11 rounded-xl bg-[#0b1120] border border-[#1e293b] flex items-center justify-center relative overflow-hidden shrink-0 shadow-inner">
+                  <div className="w-11 h-11 rounded-xl bg-[var(--dash-card)] border border-[var(--dash-border)] flex items-center justify-center relative overflow-hidden shrink-0 shadow-inner">
                     {link.icon ? (
                       <img src={link.icon} alt="" className="w-6 h-6 object-contain" />
                     ) : (
-                      <Globe size={18} className="text-slate-500" />
+                      <Globe size={18} className="text-slate-400" />
                     )}
                     <input 
                       type="file" 
@@ -222,7 +222,7 @@ export default function SocialMediaManager({
 
                   <button 
                     onClick={() => handleRemove(link.id)}
-                    className="p-2 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors shrink-0"
+                    className="p-2 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors shrink-0 cursor-pointer"
                     title="Remove link"
                   >
                     <Trash2 size={16} />
@@ -232,29 +232,6 @@ export default function SocialMediaManager({
             )}
           </div>
         </div>
-      </div>
-
-      {/* Sticky Bottom Bar */}
-      <div className="sticky bottom-0 bg-[#070b14]/90 backdrop-blur-md border-t border-[#1e293b] p-3.5 md:p-4 flex items-center justify-between z-20 shrink-0">
-        <button
-          onClick={onClose}
-          className="px-4 py-2.5 rounded-xl border border-slate-700 hover:bg-white/5 text-slate-300 font-semibold text-xs transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          style={{ backgroundColor: themeColor }}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 disabled:opacity-50 cursor-pointer"
-        >
-          {isSaving ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <Check size={16} className="stroke-[3]" />
-          )}
-          Save Settings
-        </button>
       </div>
     </div>
   );

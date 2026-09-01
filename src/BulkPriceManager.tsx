@@ -123,7 +123,7 @@ export default function BulkPriceManager({ products, setProducts, categories, su
   };
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-[120] bg-emerald-500 text-white px-5 py-2.5 rounded-xl shadow-2xl font-bold text-xs flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
@@ -132,7 +132,7 @@ export default function BulkPriceManager({ products, setProducts, categories, su
       )}
 
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
@@ -142,7 +142,7 @@ export default function BulkPriceManager({ products, setProducts, categories, su
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400 shrink-0 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
               <SlidersHorizontal size={20} />
             </div>
             <div>
@@ -156,23 +156,35 @@ export default function BulkPriceManager({ products, setProducts, categories, su
           </div>
         </div>
 
-        <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
-          {filteredProducts.length} / {products.length} Selected
-        </span>
+        <button
+          onClick={applyAllChanges}
+          disabled={isApplying || filteredProducts.length === 0}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-xs md:text-sm text-white bg-pink-500 hover:bg-pink-600 active:scale-95 transition-all shadow-lg shadow-pink-500/20 disabled:opacity-50 cursor-pointer shrink-0"
+        >
+          {isApplying ? (
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+          ) : (
+            <CheckCircle2 size={16} />
+          )}
+          <span>Apply ({filteredProducts.length})</span>
+        </button>
       </div>
 
       {/* Main Content */}
       <div 
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 max-w-3xl mx-auto w-full pb-28 overscroll-y-contain custom-scrollbar"
+        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-5 max-w-3xl mx-auto w-full pb-32 overscroll-y-contain custom-scrollbar"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Scope Card */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[#1e293b]/50">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--dash-border)]/40">
             <div className="flex items-center gap-2">
-              <Layers size={16} className="text-cyan-400" />
+              <Layers size={16} className="text-pink-400" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300">1. Select Target Scope</h2>
             </div>
+            <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-pink-500/10 text-pink-300 border border-pink-500/20">
+              {filteredProducts.length} / {products.length} Products
+            </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -181,7 +193,7 @@ export default function BulkPriceManager({ products, setProducts, categories, su
               <select
                 value={selectedCategory}
                 onChange={e => setSelectedCategory(e.target.value)}
-                className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
               >
                 <option value="All">All Categories ({products.length})</option>
                 {categories.map(c => (
@@ -195,7 +207,7 @@ export default function BulkPriceManager({ products, setProducts, categories, su
               <select
                 value={selectedSupplier}
                 onChange={e => setSelectedSupplier(e.target.value)}
-                className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-cyan-500 transition-colors"
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
               >
                 <option value="All">All Suppliers</option>
                 <option value="None">No Supplier Assigned</option>
@@ -208,8 +220,8 @@ export default function BulkPriceManager({ products, setProducts, categories, su
         </div>
 
         {/* Buy Price Card */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[#1e293b]/50">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--dash-border)]/40">
             <div className="flex items-center gap-2">
               <DollarSign size={16} className="text-pink-400" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300">2. Adjust Buy Price</h2>
@@ -220,11 +232,11 @@ export default function BulkPriceManager({ products, setProducts, categories, su
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
               <label className="text-[11px] font-semibold text-slate-400 mb-1.5 block">Operation</label>
-              <div className="flex rounded-xl bg-[#070b14] p-1 border border-[#1e293b]">
+              <div className="flex rounded-xl bg-[var(--dash-bg)] p-1 border border-[var(--dash-border)]">
                 <button
                   onClick={() => setBuyPriceOperation('increase')}
                   className={cn(
-                    "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1",
+                    "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer",
                     buyPriceOperation === 'increase' ? "bg-emerald-500 text-white shadow-sm" : "text-slate-400 hover:text-white"
                   )}
                 >
@@ -233,7 +245,7 @@ export default function BulkPriceManager({ products, setProducts, categories, su
                 <button
                   onClick={() => setBuyPriceOperation('decrease')}
                   className={cn(
-                    "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1",
+                    "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer",
                     buyPriceOperation === 'decrease' ? "bg-rose-500 text-white shadow-sm" : "text-slate-400 hover:text-white"
                   )}
                 >
@@ -244,12 +256,12 @@ export default function BulkPriceManager({ products, setProducts, categories, su
 
             <div>
               <label className="text-[11px] font-semibold text-slate-400 mb-1.5 block">Adjustment Type</label>
-              <div className="flex rounded-xl bg-[#070b14] p-1 border border-[#1e293b]">
+              <div className="flex rounded-xl bg-[var(--dash-bg)] p-1 border border-[var(--dash-border)]">
                 <button
                   onClick={() => setBuyPriceChangeType('amount')}
                   className={cn(
-                    "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all",
-                    buyPriceChangeType === 'amount' ? "bg-cyan-500 text-white shadow-sm" : "text-slate-400 hover:text-white"
+                    "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                    buyPriceChangeType === 'amount' ? "bg-pink-500 text-white shadow-sm" : "text-slate-400 hover:text-white"
                   )}
                 >
                   Fixed (৳)
@@ -257,8 +269,8 @@ export default function BulkPriceManager({ products, setProducts, categories, su
                 <button
                   onClick={() => setBuyPriceChangeType('percent')}
                   className={cn(
-                    "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all",
-                    buyPriceChangeType === 'percent' ? "bg-cyan-500 text-white shadow-sm" : "text-slate-400 hover:text-white"
+                    "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                    buyPriceChangeType === 'percent' ? "bg-pink-500 text-white shadow-sm" : "text-slate-400 hover:text-white"
                   )}
                 >
                   Percentage (%)
@@ -275,17 +287,17 @@ export default function BulkPriceManager({ products, setProducts, categories, su
                 placeholder={buyPriceChangeType === 'amount' ? "e.g. 50" : "e.g. 10"}
                 value={buyPriceChangeValue}
                 onChange={e => setBuyPriceChangeValue(e.target.value)}
-                className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-2 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
               />
             </div>
           </div>
         </div>
 
         {/* Sell Price & Margin Card */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[#1e293b]/50">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--dash-border)]/40">
             <div className="flex items-center gap-2">
-              <DollarSign size={16} className="text-emerald-400" />
+              <DollarSign size={16} className="text-pink-400" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300">3. Set Profit Margin Over Buy Price</h2>
             </div>
             <span className="text-[11px] text-slate-500">Optional</span>
@@ -301,7 +313,7 @@ export default function BulkPriceManager({ products, setProducts, categories, su
                 placeholder="e.g. 150 (Formula: Sell Price = Buy Price + Profit)"
                 value={sellPriceProfitValue}
                 onChange={e => setSellPriceProfitValue(e.target.value)}
-                className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-emerald-500 transition-colors placeholder:text-slate-600"
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 transition-colors placeholder:text-slate-600"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-slate-500 font-bold">
                 ৳ / unit
@@ -314,10 +326,10 @@ export default function BulkPriceManager({ products, setProducts, categories, su
         </div>
 
         {/* Inventory Stock Card */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[#1e293b]/50">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--dash-border)]/40">
             <div className="flex items-center gap-2">
-              <Package size={16} className="text-purple-400" />
+              <Package size={16} className="text-pink-400" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300">4. Inventory Stock Update</h2>
             </div>
             <span className="text-[11px] text-slate-500">Optional</span>
@@ -326,12 +338,12 @@ export default function BulkPriceManager({ products, setProducts, categories, su
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-[11px] font-semibold text-slate-400 mb-1.5 block">Stock Operation</label>
-              <div className="flex rounded-xl bg-[#070b14] p-1 border border-[#1e293b]">
+              <div className="flex rounded-xl bg-[var(--dash-bg)] p-1 border border-[var(--dash-border)]">
                 <button
                   onClick={() => setStockOperation('add')}
                   className={cn(
-                    "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all",
-                    stockOperation === 'add' ? "bg-purple-500 text-white shadow-sm" : "text-slate-400 hover:text-white"
+                    "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                    stockOperation === 'add' ? "bg-pink-500 text-white shadow-sm" : "text-slate-400 hover:text-white"
                   )}
                 >
                   Set Exact
@@ -339,8 +351,8 @@ export default function BulkPriceManager({ products, setProducts, categories, su
                 <button
                   onClick={() => setStockOperation('increase')}
                   className={cn(
-                    "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all",
-                    stockOperation === 'increase' ? "bg-purple-500 text-white shadow-sm" : "text-slate-400 hover:text-white"
+                    "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                    stockOperation === 'increase' ? "bg-pink-500 text-white shadow-sm" : "text-slate-400 hover:text-white"
                   )}
                 >
                   + Add Stock
@@ -348,8 +360,8 @@ export default function BulkPriceManager({ products, setProducts, categories, su
                 <button
                   onClick={() => setStockOperation('decrease')}
                   className={cn(
-                    "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all",
-                    stockOperation === 'decrease' ? "bg-purple-500 text-white shadow-sm" : "text-slate-400 hover:text-white"
+                    "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer",
+                    stockOperation === 'decrease' ? "bg-pink-500 text-white shadow-sm" : "text-slate-400 hover:text-white"
                   )}
                 >
                   - Reduce
@@ -364,33 +376,11 @@ export default function BulkPriceManager({ products, setProducts, categories, su
                 placeholder="e.g. 50"
                 value={stockChangeValue}
                 onChange={e => setStockChangeValue(e.target.value)}
-                className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl px-4 py-2 text-xs md:text-sm text-white focus:outline-none focus:border-purple-500 transition-colors"
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 transition-colors"
               />
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Sticky Action Footer */}
-      <div className="sticky bottom-0 bg-[#070b14]/90 backdrop-blur-md border-t border-[#1e293b] p-3.5 md:p-4 flex items-center justify-between z-20 shrink-0">
-        <button
-          onClick={onClose}
-          className="px-4 py-2.5 rounded-xl border border-slate-700 hover:bg-white/5 text-slate-300 font-semibold text-xs transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={applyAllChanges}
-          disabled={isApplying || filteredProducts.length === 0}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs md:text-sm text-white bg-cyan-500 hover:bg-cyan-600 active:scale-95 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50 cursor-pointer"
-        >
-          {isApplying ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <CheckCircle2 size={16} />
-          )}
-          Apply Changes to {filteredProducts.length} Items
-        </button>
       </div>
     </div>
   );

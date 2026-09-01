@@ -61,9 +61,9 @@ export default function NotificationManager({ websiteSettings, setWebsiteSetting
   };
 
   return (
-    <div className="fixed inset-0 z-[110] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[110] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose}
@@ -72,7 +72,7 @@ export default function NotificationManager({ websiteSettings, setWebsiteSetting
             <ChevronLeft size={20} />
           </button>
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 shrink-0 shadow-inner">
+            <div className="w-10 h-10 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
               <Bell size={20} />
             </div>
             <div>
@@ -105,14 +105,14 @@ export default function NotificationManager({ websiteSettings, setWebsiteSetting
 
       {/* Main Content */}
       <div 
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 max-w-3xl mx-auto w-full pb-28 overscroll-y-contain custom-scrollbar"
+        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-5 max-w-3xl mx-auto w-full pb-32 overscroll-y-contain custom-scrollbar"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Telegram Enable Toggle */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3.5">
-              <div className="w-11 h-11 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 shrink-0 shadow-inner">
+              <div className="w-11 h-11 rounded-2xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 shrink-0 shadow-inner">
                 <Send size={20} className="translate-x-[-1px] translate-y-[1px]" />
               </div>
               <div>
@@ -124,8 +124,8 @@ export default function NotificationManager({ websiteSettings, setWebsiteSetting
             <button
               onClick={() => setEnabled(!enabled)}
               className={cn(
-                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0",
-                enabled ? "bg-sky-500 shadow-md shadow-sky-500/20" : "bg-slate-700/60"
+                "w-12 h-6.5 rounded-full relative transition-all duration-300 ease-in-out p-0.5 focus:outline-none shrink-0 cursor-pointer",
+                enabled ? "bg-pink-500 shadow-md shadow-pink-500/20" : "bg-slate-700/60"
               )}
             >
               <div
@@ -140,10 +140,10 @@ export default function NotificationManager({ websiteSettings, setWebsiteSetting
 
         {/* Telegram Credentials Card */}
         {enabled && (
-          <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-5 animate-in fade-in slide-in-from-top-2 duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-[#1e293b]/50">
+          <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-5 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--dash-border)]/40">
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300">Bot Credentials</h2>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-sky-500/10 text-sky-400 border border-sky-500/20">
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-pink-500/10 text-pink-400 border border-pink-500/20">
                 Encrypted Delivery
               </span>
             </div>
@@ -151,7 +151,7 @@ export default function NotificationManager({ websiteSettings, setWebsiteSetting
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-semibold text-slate-400 mb-1.5 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5"><Key size={13} className="text-sky-400" /> Telegram Bot Token</span>
+                  <span className="flex items-center gap-1.5"><Key size={13} className="text-pink-400" /> Telegram Bot Token</span>
                 </label>
                 <div className="relative">
                   <input
@@ -159,12 +159,12 @@ export default function NotificationManager({ websiteSettings, setWebsiteSetting
                     value={botToken}
                     onChange={(e) => setBotToken(e.target.value)}
                     placeholder="e.g. 8642328760:AAH3b9ij..."
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl pl-4 pr-11 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-sky-500 transition-colors font-mono"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl pl-4 pr-11 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 transition-colors font-mono"
                   />
                   <button
                     type="button"
                     onClick={handleCopyToken}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
                     title="Copy Token"
                   >
                     {copiedToken ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
@@ -174,7 +174,7 @@ export default function NotificationManager({ websiteSettings, setWebsiteSetting
 
               <div>
                 <label className="text-xs font-semibold text-slate-400 mb-1.5 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5"><MessageSquare size={13} className="text-sky-400" /> Telegram Chat ID</span>
+                  <span className="flex items-center gap-1.5"><MessageSquare size={13} className="text-pink-400" /> Telegram Chat ID</span>
                 </label>
                 <div className="relative">
                   <input
@@ -182,12 +182,12 @@ export default function NotificationManager({ websiteSettings, setWebsiteSetting
                     value={chatId}
                     onChange={(e) => setChatId(e.target.value)}
                     placeholder="e.g. 6805318773"
-                    className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl pl-4 pr-11 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-sky-500 transition-colors font-mono"
+                    className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl pl-4 pr-11 py-2.5 text-xs md:text-sm text-white focus:outline-none focus:border-pink-500 transition-colors font-mono"
                   />
                   <button
                     type="button"
                     onClick={handleCopyChatId}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-white rounded-lg transition-colors cursor-pointer"
                     title="Copy Chat ID"
                   >
                     {copiedChatId ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
@@ -197,44 +197,21 @@ export default function NotificationManager({ websiteSettings, setWebsiteSetting
             </div>
 
             {/* Quick Setup Help Guide */}
-            <div className="bg-sky-500/5 border border-sky-500/20 p-4 rounded-xl flex gap-3 text-slate-300 text-xs">
-              <AlertCircle className="w-5 h-5 flex-shrink-0 text-sky-400 mt-0.5" />
+            <div className="bg-pink-500/5 border border-pink-500/20 p-4 rounded-xl flex gap-3 text-slate-300 text-xs">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 text-pink-400 mt-0.5" />
               <div className="space-y-1 leading-relaxed">
                 <span className="font-bold text-white block">How to connect your bot:</span>
                 <p className="text-slate-400 text-[11px]">
-                  1. Create a bot using <strong className="text-sky-300">@BotFather</strong> on Telegram to get your <strong>Bot Token</strong>.
+                  1. Create a bot using <strong className="text-pink-300">@BotFather</strong> on Telegram to get your <strong>Bot Token</strong>.
                   <br />
-                  2. Open a chat with your bot and send <strong className="text-sky-300">/start</strong>.
+                  2. Open a chat with your bot and send <strong className="text-pink-300">/start</strong>.
                   <br />
-                  3. Use <strong className="text-sky-300">@userinfobot</strong> to get your numeric <strong>Chat ID</strong>.
+                  3. Use <strong className="text-pink-300">@userinfobot</strong> to get your numeric <strong>Chat ID</strong>.
                 </p>
               </div>
             </div>
           </div>
         )}
-      </div>
-
-      {/* Sticky Bottom Bar */}
-      <div className="sticky bottom-0 bg-[#070b14]/90 backdrop-blur-md border-t border-[#1e293b] p-3.5 md:p-4 flex items-center justify-between z-20 shrink-0">
-        <button
-          onClick={onClose}
-          className="px-4 py-2.5 rounded-xl border border-slate-700 hover:bg-white/5 text-slate-300 font-semibold text-xs transition-colors"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          style={{ backgroundColor: themeColor }}
-          className="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 disabled:opacity-50 cursor-pointer"
-        >
-          {isSaving ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-          ) : (
-            <Check size={16} className="stroke-[3]" />
-          )}
-          Save Settings
-        </button>
       </div>
     </div>
   );

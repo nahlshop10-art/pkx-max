@@ -64,9 +64,9 @@ export default function SupplierManager({ settings, setSettings, onClose }: Supp
   const themeColor = settings.themeColors?.primary || '#ff3b69';
 
   return (
-    <div className="fixed inset-0 z-[100] bg-[#070b14] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
+    <div className="fixed inset-0 z-[100] bg-[var(--dash-bg)] text-[#e2e8f0] flex flex-col font-sans overflow-hidden md:left-[240px]">
       {/* Top Bar */}
-      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[#1e293b]/70 bg-[#070b14]/90 backdrop-blur-md sticky top-0 z-20 shrink-0">
+      <div className="flex items-center justify-between px-4 py-3.5 md:px-8 md:py-4 border-b border-[var(--dash-border)]/70 bg-[var(--dash-bg)]/95 backdrop-blur-md sticky top-0 z-20 shrink-0">
         <div className="flex items-center gap-3">
           <button 
             onClick={onClose} 
@@ -90,19 +90,23 @@ export default function SupplierManager({ settings, setSettings, onClose }: Supp
           </div>
         </div>
 
-        <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">
-          {suppliers.length} Total
-        </span>
+        <button
+          onClick={onClose}
+          style={{ backgroundColor: themeColor }}
+          className="px-4 py-2 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer shrink-0"
+        >
+          Done
+        </button>
       </div>
 
       {/* Main Content */}
       <div 
-        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 max-w-3xl mx-auto w-full pb-24 overscroll-y-contain custom-scrollbar"
+        className="flex-1 overflow-y-auto p-4 md:p-8 space-y-5 max-w-3xl mx-auto w-full pb-32 overscroll-y-contain custom-scrollbar"
         style={{ WebkitOverflowScrolling: 'touch' }}
       >
         {/* Quick Add Card */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-[#1e293b]/50">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--dash-border)]/40">
             <div className="flex items-center gap-2">
               <Building2 size={16} className="text-amber-400" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-300">Add New Supplier</h2>
@@ -119,14 +123,14 @@ export default function SupplierManager({ settings, setSettings, onClose }: Supp
           </div>
 
           {isAdding && (
-            <div className="bg-[#070b14] border border-[#1e293b] p-3.5 rounded-xl space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] p-3.5 rounded-xl space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
               <label className="text-xs font-semibold text-slate-300">Supplier / Vendor Name</label>
               <div className="flex items-center gap-2">
                 <input 
                   type="text" 
                   value={newSupplier}
                   onChange={(e) => setNewSupplier(e.target.value)}
-                  className="flex-1 bg-[#0b1120] border border-[#1e293b] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-colors placeholder:text-slate-600"
+                  className="flex-1 bg-[var(--dash-card)] border border-[var(--dash-border)] rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-pink-500 transition-colors placeholder:text-slate-600"
                   placeholder="e.g. Guangzhou Wholesale Market"
                   autoFocus
                   onKeyDown={(e) => {
@@ -146,7 +150,7 @@ export default function SupplierManager({ settings, setSettings, onClose }: Supp
                 </button>
                 <button 
                   onClick={() => { setIsAdding(false); setNewSupplier(''); }}
-                  className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                  className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors cursor-pointer"
                 >
                   <X size={16} />
                 </button>
@@ -163,15 +167,15 @@ export default function SupplierManager({ settings, setSettings, onClose }: Supp
                 placeholder="Search suppliers..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full bg-[#070b14] border border-[#1e293b] rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-amber-500 transition-all"
+                className="w-full bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-pink-500 transition-all"
               />
             </div>
           )}
         </div>
 
         {/* Supplier Directory List */}
-        <div className="bg-[#0b1120] border border-[#1e293b]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-3">
-          <div className="flex items-center justify-between pb-3 border-b border-[#1e293b]/50">
+        <div className="bg-[var(--dash-card)] border border-[var(--dash-border)]/70 rounded-2xl p-4 md:p-6 shadow-xl space-y-3">
+          <div className="flex items-center justify-between pb-3 border-b border-[var(--dash-border)]/40">
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400">Supplier Directory</h2>
             <span className="text-[11px] text-slate-500">
               Showing {filteredSuppliers.length} of {suppliers.length}
@@ -180,7 +184,7 @@ export default function SupplierManager({ settings, setSettings, onClose }: Supp
 
           <div className="space-y-2 pt-1">
             {filteredSuppliers.length === 0 ? (
-              <div className="text-center py-10 px-4 rounded-xl border border-dashed border-[#1e293b] bg-white/[0.01]">
+              <div className="text-center py-10 px-4 rounded-xl border border-dashed border-[var(--dash-border)] bg-white/[0.01]">
                 <Factory size={32} className="mx-auto text-slate-600 mb-2" />
                 <p className="text-xs text-slate-400 font-medium">
                   {searchQuery ? 'No suppliers match your search.' : 'No suppliers added yet.'}
@@ -193,7 +197,7 @@ export default function SupplierManager({ settings, setSettings, onClose }: Supp
               filteredSuppliers.map((supplier, idx) => (
                 <div 
                   key={idx} 
-                  className="bg-[#070b14] border border-[#1e293b] rounded-xl p-3.5 flex items-center justify-between transition-all hover:border-slate-700 group"
+                  className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-3.5 flex items-center justify-between transition-all hover:border-slate-600 group"
                 >
                   {editingSupplier === supplier ? (
                     <div className="flex-1 flex items-center gap-2">
@@ -201,7 +205,7 @@ export default function SupplierManager({ settings, setSettings, onClose }: Supp
                         type="text" 
                         value={editValue}
                         onChange={(e) => setEditValue(e.target.value)}
-                        className="flex-1 bg-[#0b1120] text-white border border-[#1e293b] rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-amber-500"
+                        className="flex-1 bg-[var(--dash-card)] text-white border border-[var(--dash-border)] rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-pink-500"
                         autoFocus
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') handleEdit(supplier);
@@ -213,14 +217,14 @@ export default function SupplierManager({ settings, setSettings, onClose }: Supp
                       />
                       <button 
                         onClick={() => handleEdit(supplier)} 
-                        className="text-emerald-400 p-2 hover:bg-emerald-500/10 rounded-lg transition-colors"
+                        className="text-emerald-400 p-2 hover:bg-emerald-500/10 rounded-lg transition-colors cursor-pointer"
                         title="Save edit"
                       >
                         <Check size={16} className="stroke-[3]" />
                       </button>
                       <button 
                         onClick={() => setEditingSupplier(null)} 
-                        className="text-slate-500 p-2 hover:bg-white/5 rounded-lg transition-colors"
+                        className="text-slate-500 p-2 hover:bg-white/5 rounded-lg transition-colors cursor-pointer"
                         title="Cancel"
                       >
                         <X size={16} />
@@ -229,7 +233,7 @@ export default function SupplierManager({ settings, setSettings, onClose }: Supp
                   ) : (
                     <>
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center font-bold text-xs shrink-0">
+                        <div className="w-9 h-9 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-400 flex items-center justify-center font-bold text-xs shrink-0">
                           {supplier.charAt(0).toUpperCase()}
                         </div>
                         <span className="text-white font-medium text-xs md:text-sm truncate">
@@ -240,14 +244,14 @@ export default function SupplierManager({ settings, setSettings, onClose }: Supp
                       <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity shrink-0">
                         <button 
                           onClick={() => { setEditingSupplier(supplier); setEditValue(supplier); }} 
-                          className="text-slate-400 hover:text-amber-400 p-2 hover:bg-amber-500/10 rounded-lg transition-colors"
+                          className="text-slate-400 hover:text-pink-400 p-2 hover:bg-pink-500/10 rounded-lg transition-colors cursor-pointer"
                           title="Edit supplier"
                         >
                           <Edit3 size={15} />
                         </button>
                         <button 
                           onClick={() => handleRemove(supplier)} 
-                          className="text-slate-400 hover:text-red-400 p-2 hover:bg-red-500/10 rounded-lg transition-colors"
+                          className="text-slate-400 hover:text-red-400 p-2 hover:bg-red-500/10 rounded-lg transition-colors cursor-pointer"
                           title="Delete supplier"
                         >
                           <Trash2 size={15} />
@@ -260,20 +264,6 @@ export default function SupplierManager({ settings, setSettings, onClose }: Supp
             )}
           </div>
         </div>
-      </div>
-
-      {/* Sticky Bottom Bar */}
-      <div className="sticky bottom-0 bg-[#070b14]/90 backdrop-blur-md border-t border-[#1e293b] p-3.5 md:p-4 flex items-center justify-between z-20 shrink-0">
-        <span className="text-xs text-slate-500">
-          Suppliers auto-sync with your product catalog
-        </span>
-        <button
-          onClick={onClose}
-          style={{ backgroundColor: themeColor }}
-          className="px-6 py-2.5 rounded-xl font-bold text-xs md:text-sm text-white hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-pink-500/20 cursor-pointer"
-        >
-          Done
-        </button>
       </div>
     </div>
   );
